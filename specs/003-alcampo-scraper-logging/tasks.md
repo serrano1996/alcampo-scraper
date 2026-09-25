@@ -140,7 +140,8 @@ Formato de commit: `<tipo>(003-alcampo-scraper-logging): <descripción en inglé
 - **RF:** RF-14, RF-15, RF-16
 - **Hecho cuando:** todos los casos pasan.
 
-### [ ] T11 — Integración transversal: correlación, secretos e inyección
+### [x] T11 — Integración transversal: correlación, secretos e inyección
+> **Verificación por mutación (2026-09-25):** se cambió `term=%r` por `term=%s` en el handler del `502` → `test_client_input_cannot_forge_log_lines` falla (un mensaje contiene un salto de línea real); restaurado → pasa. **Ajuste:** la mutación prevista (quitar `%r` en la línea de inicio) no habría demostrado nada, porque esa línea registra un `dict`, y un `dict` formateado con `%s` ya escapa sus valores (comprobado). Por eso el test de inyección pasa por el `502`, donde `term` se registra suelto.
 - **RED:** en `tests/integration/test_logging_integration.py`:
   - **correlación:** `503` persistente → todos los registros de la petición (inicio, `WARNING` de reintento, `ERROR` agotado, `ERROR` del `502`, fin) comparten `request_id`, y coincide con `X-Request-ID`;
   - **secretos (RF-17):** respuesta mockeada con `Set-Cookie: VISITORID=secret-cookie-value; Path=/` y `Set-Cookie: global_sid=secret-sid-value` → ninguno de los dos valores aparece en `caplog.text`;

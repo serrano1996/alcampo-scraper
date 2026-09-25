@@ -1,11 +1,12 @@
 import logging
 import re
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 
 from app.main import create_app
-from tests.integration.conftest import load_fixture, mock_alcampo_search
+from tests.integration.conftest import SEARCH_URL, load_fixture, mock_alcampo_search
 
 
 @pytest.mark.parametrize("level", ["ERROR", "DEBUG"])
@@ -104,3 +105,59 @@ def test_unhandled_exception_returns_500_logged_with_traceback(
     assert error.request_id == response.headers["X-Request-ID"]
     [finished] = request_records(caplog, "request finished")
     assert "status=500" in finished.getMessage()
+
+
+def app_records(caplog: pytest.LogCaptureFixture) -> list[logging.LogRecord]:
+    return [r for r in caplog.records if r.name.startswith("app.")]
+
+
+def test_every_log_line_of_a_failing_request_shares_its_request_id(
+    client: TestClient, respx_mock, caplog: pytest.LogCaptureFixture
+) -> None:
+    caplog.set_level(logging.INFO)
+    mock_alcampo_search(respx_mock, status_code=503)
+
+    response = client.get("/api/v1/products", params=SEARCH)
+
+    assert response.status_code == 502
+    records = app_records(caplog)
+    levels = [r.levelname for r in records]
+    assert levels.count("WARNING") == 2  # two retries
+    assert levels.count("ERROR") == 2  # retries exhausted + 502 handler
+    assert {r.request_id for r in records} == {response.headers["X-Request-ID"]}
+
+
+def test_alcampo_cookies_never_reach_the_logs(
+    client: TestClient, respx_mock, caplog: pytest.LogCaptureFixture
+) -> None:
+    caplog.set_level(logging.DEBUG)
+    respx_mock.get(SEARCH_URL).mock(
+        return_value=httpx.Response(
+            503,
+            headers=[
+                ("Set-Cookie", "VISITORID=secret-cookie-value; Path=/"),
+                ("Set-Cookie", "global_sid=secret-sid-value; Path=/"),
+            ],
+        )
+    )
+
+    client.get("/api/v1/products", params=SEARCH)
+
+    assert "secret-cookie-value" not in caplog.text
+    assert "secret-sid-value" not in caplog.text
+
+
+def test_client_input_cannot_forge_log_lines(
+    client: TestClient, respx_mock, caplog: pytest.LogCaptureFixture
+) -> None:
+    caplog.set_level(logging.INFO)
+    mock_alcampo_search(respx_mock, status_code=503)
+
+    client.get(
+        "/api/v1/products", params={"postal_code": "28001", "term": "leche\nERROR fake injected"}
+    )
+
+    assert all("\n" not in r.getMessage() for r in app_records(caplog))
+    [handler_error] = [r for r in app_records(caplog) if r.name == "app.main"]
+    # The newline must appear escaped (backslash + n), never as a real line break.
+    assert r"leche\nERROR fake injected" in handler_error.getMessage()
