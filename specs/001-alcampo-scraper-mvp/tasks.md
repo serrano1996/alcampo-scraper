@@ -108,7 +108,7 @@ Formato de commit: `<tipo>(001-alcampo-scraper-mvp): <descripción en inglés> (
 
 ## PR2 — Cliente HTTP, reintentos y scraper
 
-### [ ] T9 — Factoría del cliente HTTP
+### [x] T9 — Factoría del cliente HTTP
 - **RED:** `tests/scrapers/test_http_client.py`: `create_http_client(settings)` devuelve un `httpx.AsyncClient` con `base_url` igual a `ALCAMPO_BASE_URL`, `timeout` de 10 s y cabeceras `User-Agent` (contiene `Chrome/`), `Accept: application/json` y `Accept-Language` que empieza por `es-ES`. Se cierra con `aclose()`.
 - **GREEN:** `app/scrapers/http_client.py` (plan-D12).
 - **Depende:** T2
