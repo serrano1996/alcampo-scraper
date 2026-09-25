@@ -5,11 +5,12 @@ import fakeredis
 import pytest
 
 from app.core.config import Settings
-from app.exceptions import UpstreamUnavailableError
+from app.exceptions import UpstreamBlockedError, UpstreamUnavailableError
 from app.models.alcampo import AlcampoSearchResponse
 from app.models.product import ProductQuery
 from app.services.product_service import ProductService
 from app.services.search_cache import SearchCacheRepository
+from app.services.waf_cooldown import WAF_COOLDOWN_KEY, WafCooldownRepository
 
 FIXED_NOW = datetime(2026, 9, 24, 10, 0, 0, tzinfo=UTC)
 
@@ -61,7 +62,13 @@ def make_service(
         redis_url="redis://localhost:6379/0",
     )
     cache = SearchCacheRepository(redis)
-    service = ProductService(scraper=scraper, cache=cache, settings=settings, clock=clock)
+    service = ProductService(
+        scraper=scraper,
+        cache=cache,
+        cooldown=WafCooldownRepository(redis),
+        settings=settings,
+        clock=clock,
+    )
     return service, cache
 
 
@@ -165,3 +172,26 @@ async def test_scraper_error_propagates_and_nothing_is_cached(
         await service.search(ProductQuery(postal_code="28001", term="leche"))
 
     assert await cache.get(warehouse="5", term="leche") is None
+
+
+async def test_blocked_scraper_activates_the_cooldown_and_propagates(
+    redis: fakeredis.FakeAsyncRedis,
+) -> None:
+    service, _ = make_service(FailingScraper(UpstreamBlockedError("waf")), redis)
+
+    with pytest.raises(UpstreamBlockedError):
+        await service.search(ProductQuery(postal_code="28001", term="leche"))
+
+    assert await WafCooldownRepository(redis).is_active() is True
+    assert 179 <= await redis.ttl(WAF_COOLDOWN_KEY) <= 180
+
+
+async def test_plain_upstream_error_does_not_activate_the_cooldown(
+    redis: fakeredis.FakeAsyncRedis,
+) -> None:
+    service, _ = make_service(FailingScraper(UpstreamUnavailableError("503")), redis)
+
+    with pytest.raises(UpstreamUnavailableError):
+        await service.search(ProductQuery(postal_code="28001", term="leche"))
+
+    assert await WafCooldownRepository(redis).is_active() is False

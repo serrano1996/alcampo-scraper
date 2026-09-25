@@ -69,4 +69,6 @@ async def test_waf_challenge_returns_502_with_a_single_call(client: TestClient, 
 
     assert response.status_code == 502
     assert route.call_count == 1
-    assert await client.app.state.redis.dbsize() == 0
+    redis = client.app.state.redis
+    assert await redis.keys("search:*") == []
+    assert await redis.exists("waf:cooldown") == 1

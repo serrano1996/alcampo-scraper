@@ -5,11 +5,13 @@ from datetime import UTC, datetime
 from typing import Protocol
 
 from app.core.config import Settings
+from app.exceptions import UpstreamBlockedError
 from app.mappers.product_mapper import map_search
 from app.models.alcampo import AlcampoSearchResponse
 from app.models.product import ProductQuery, ProductSearchResponse, SearchMetadata
 from app.scrapers.alcampo_search import DEFAULT_WAREHOUSE
 from app.services.search_cache import SearchCacheRepository
+from app.services.waf_cooldown import WafCooldownRepository
 
 Clock = Callable[[], datetime]
 
@@ -30,11 +32,13 @@ class ProductService:
         *,
         scraper: SearchScraper,
         cache: SearchCacheRepository,
+        cooldown: WafCooldownRepository,
         settings: Settings,
         clock: Clock = _default_clock,
     ) -> None:
         self._scraper = scraper
         self._cache = cache
+        self._cooldown = cooldown
         self._settings = settings
         self._clock = clock
 
@@ -50,7 +54,13 @@ class ProductService:
                 }
             )
 
-        raw = await self._scraper.search(query.term)
+        try:
+            raw = await self._scraper.search(query.term)
+        except UpstreamBlockedError:
+            # The WAF blocked the egress IP: stop hitting Alcampo for a while
+            # (spec 002 RF-15). Plain upstream errors do not start a cooldown.
+            await self._cooldown.activate(ttl_seconds=self._settings.waf_cooldown_seconds)
+            raise
         products = map_search(raw)
         response = ProductSearchResponse(
             search=SearchMetadata(

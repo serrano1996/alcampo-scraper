@@ -129,11 +129,13 @@ Formato de commit: `<tipo>(002-alcampo-scraper-antibaneo): <descripción en ingl
 - **RF:** RF-15, RF-18, RF-19
 - **Hecho cuando:** todos los casos pasan.
 
-### [ ] T11 — El servicio activa la marca ante un bloqueo
+### [x] T11 — El servicio activa la marca ante un bloqueo
 - **RED:** en `tests/services/test_product_service.py`, con un repositorio de enfriamiento real sobre fakeredis:
   - el scraper lanza `UpstreamBlockedError` → la excepción se propaga **y** la marca queda activa con TTL `WAF_COOLDOWN_SECONDS`;
   - el scraper lanza `UpstreamUnavailableError` normal → se propaga y la marca **no** se activa.
   - Actualizar el helper `make_service` para inyectar el repositorio.
+  - **Regresión (plan §5), adelantada desde T13:** reescribir `test_waf_challenge_returns_502_with_a_single_call` para que compruebe que no hay claves `search:*` y que **sí** existe `waf:cooldown`, en lugar de `dbsize() == 0`.
+  > **Corrección durante la implementación (2026-09-25):** la regresión aparece aquí, no en T13. Al conectar el enfriamiento en `dependencies.py`, la app real empieza a guardar `waf:cooldown`. Con la corrección en T13, T11 no podía cerrar con la suite en verde.
 - **GREEN:** parámetro `cooldown: WafCooldownRepository` en `ProductService`; `except UpstreamBlockedError: activate(...); raise`. Actualizar `get_product_service` en `app/core/dependencies.py` para que la app real siga funcionando.
 - **Depende:** T8, T9, T10
 - **RF:** RF-15
@@ -149,10 +151,9 @@ Formato de commit: `<tipo>(002-alcampo-scraper-antibaneo): <descripción en ingl
 - **RF:** RF-16, RF-17
 - **Hecho cuando:** todos los casos pasan.
 
-### [ ] T13 — Integración end-to-end y regresión del test de WAF
+### [ ] T13 — Integración end-to-end
 - **RED:** en `tests/integration/test_products_endpoint.py`:
   - **escenario completo:** búsqueda de `leche` → `200` (queda en cache); búsqueda de `agua` → challenge → `502` (1 llamada a Alcampo); `agua` otra vez → `502` **sin llamada nueva**; `leche` otra vez → `200` desde cache;
-  - **regresión (plan §5):** reescribir `test_waf_challenge_returns_502_with_a_single_call` para que compruebe que no hay claves `search:*` y que **sí** existe `waf:cooldown`, en lugar de `dbsize() == 0`.
 - **GREEN:** no debería hacer falta código nuevo. **Punto de control R4:** si `respx` no permite distinguir rutas por `params={"q": ...}`, usar `side_effect` por petición y anotarlo aquí.
 - **Depende:** T12
 - **RF:** RF-15, RF-16, RF-17

@@ -113,6 +113,8 @@ class UpstreamBlockedError(UpstreamUnavailableError):
 | `tests/scrapers/test_http_client.py::test_create_http_client_sets_realistic_headers` | exige `"Chrome/"` en el UA; con el pool puede salir Firefox o Safari | fijar `choose` y comprobar pertenencia al pool |
 | `tests/integration/test_products_endpoint.py::test_waf_challenge_returns_502_with_a_single_call` | exige `redis.dbsize() == 0` tras un challenge; ahora queda `waf:cooldown` | comprobar que no hay claves `search:*` y que **sí** existe `waf:cooldown` |
 
+**Corrección (2026-09-25):** la regresión de WAF la provoca T11 (al conectar el enfriamiento en `dependencies.py`), así que se corrige en T11 y no en T13, como se planteó al principio. Sigue estando en PR2.
+
 Los tests de `test_retry.py` no se rompen gracias a D9. El test `retry` de WAF (`pytest.raises(UpstreamUnavailableError)`) sigue pasando porque `UpstreamBlockedError` es subclase (D1).
 
 ## 6. Estrategia de test por RF
@@ -166,7 +168,7 @@ Los tests de `test_retry.py` no se rompen gracias a D9. El test `retry` de WAF (
 7. **Config:** `waf_cooldown_seconds`.
 8. **Repositorio** `WafCooldownRepository`.
 9. **Servicio y dependencias:** marca tras cache; activación ante bloqueo.
-10. **Integración:** escenario end-to-end + regresión del test de WAF.
+10. **Integración:** escenario end-to-end (la regresión del test de WAF se corrige en el paso 9, donde aparece).
 11. **Docs** y verificación real con 1 búsqueda.
 
 ## 9. Estimación y entrega

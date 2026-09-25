@@ -9,6 +9,7 @@ from fastapi import Request
 from app.scrapers.alcampo_search import AlcampoSearchScraper
 from app.services.product_service import ProductService
 from app.services.search_cache import SearchCacheRepository
+from app.services.waf_cooldown import WafCooldownRepository
 
 
 def get_product_service(request: Request) -> ProductService:
@@ -16,4 +17,9 @@ def get_product_service(request: Request) -> ProductService:
     state = request.app.state
     scraper = AlcampoSearchScraper(client=state.http_client, settings=state.settings)
     cache = SearchCacheRepository(state.redis)
-    return ProductService(scraper=scraper, cache=cache, settings=state.settings)
+    return ProductService(
+        scraper=scraper,
+        cache=cache,
+        cooldown=WafCooldownRepository(state.redis),
+        settings=state.settings,
+    )
