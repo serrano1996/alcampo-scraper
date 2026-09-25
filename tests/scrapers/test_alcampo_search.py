@@ -25,6 +25,7 @@ def make_scraper(*, max_attempts: int = 3) -> tuple[AlcampoSearchScraper, httpx.
         redis_url="redis://localhost:6379/0",
         retry_max_attempts=max_attempts,
         retry_base_delay=0,
+        retry_jitter_max_s=0,
     )
     client = httpx.AsyncClient(base_url=settings.alcampo_base_url)
     scraper = AlcampoSearchScraper(client=client, settings=settings)
@@ -118,3 +119,25 @@ async def test_search_raises_on_persistent_transport_error_not_httpx() -> None:
             await scraper.search("leche")
     finally:
         await client.aclose()
+
+
+async def test_search_passes_the_configured_jitter_to_retries(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, float] = {}
+
+    async def fake_send_with_retry(send, *, max_attempts, base_delay, jitter_max):
+        captured["jitter_max"] = jitter_max
+        return httpx.Response(200, json=load_fixture("alcampo_search_leche.json"))
+
+    monkeypatch.setattr("app.scrapers.alcampo_search.send_with_retry", fake_send_with_retry)
+    settings = Settings(
+        _env_file=None,
+        alcampo_base_url="https://alcampo.test",
+        redis_url="redis://localhost:6379/0",
+        retry_jitter_max_s=0.25,
+    )
+    async with httpx.AsyncClient(base_url=settings.alcampo_base_url) as client:
+        await AlcampoSearchScraper(client=client, settings=settings).search("leche")
+
+    assert captured == {"jitter_max": 0.25}

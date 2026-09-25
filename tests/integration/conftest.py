@@ -31,6 +31,7 @@ def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
     monkeypatch.setenv("ALCAMPO_BASE_URL", ALCAMPO_BASE_URL)
     monkeypatch.setenv("REDIS_URL", "redis://localhost:6379/0")
     monkeypatch.setenv("RETRY_BASE_DELAY", "0")
+    monkeypatch.setenv("RETRY_JITTER_MAX_S", "0")
     monkeypatch.setattr(main_module, "create_redis", lambda _url: fakeredis.FakeAsyncRedis())
 
     with TestClient(create_app()) as test_client:

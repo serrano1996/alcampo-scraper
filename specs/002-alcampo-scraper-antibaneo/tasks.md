@@ -86,7 +86,8 @@ Formato de commit: `<tipo>(002-alcampo-scraper-antibaneo): <descripción en ingl
 - **RF:** RF-5, RF-6, RF-7, RF-8, RF-11
 - **Hecho cuando:** todos los casos pasan.
 
-### [ ] T7 — Cableado del scraper y verificación real del fingerprint
+### [x] T7 — Cableado del scraper y verificación real del fingerprint
+> **Verificación real (2026-09-25T09:58:02Z):** 1 búsqueda de `leche` con `create_http_client` → `200`, 50 productos (`54180`, 5.28, `0.88 €/L`), sin challenge del WAF. UA elegido: índice 5 (Safari 27 / macOS), con `Referer` y `ecom-request-source: web`. También se fijó `retry_jitter_max_s=0` en `make_scraper` de `test_alcampo_search.py`, que usa esperas reales.
 - **RED:**
   - en `tests/scrapers/test_alcampo_search.py`: con `Settings(retry_jitter_max_s=0.25)`, el scraper llama a `send_with_retry` con `jitter_max=0.25` (se captura con `monkeypatch` sobre `app.scrapers.alcampo_search.send_with_retry`);
   - en `tests/integration/conftest.py`: fijar `RETRY_JITTER_MAX_S=0` (plan-D12).

@@ -44,6 +44,7 @@ class AlcampoSearchScraper:
             send,
             max_attempts=self._settings.retry_max_attempts,
             base_delay=self._settings.retry_base_delay,
+            jitter_max=self._settings.retry_jitter_max_s,
         )
 
         try:
