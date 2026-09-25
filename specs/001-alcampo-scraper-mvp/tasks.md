@@ -70,7 +70,7 @@ Formato de commit: `<tipo>(001-alcampo-scraper-mvp): <descripción en inglés> (
 - **RF:** RF-9, RF-19
 - **Hecho cuando:** todos los casos pasan usando la fixture real, sin copiarla a mano.
 
-### [ ] T6 — Formato del precio por unidad
+### [x] T6 — Formato del precio por unidad
 - **RED:** `tests/mappers/test_product_mapper.py::test_format_unit_price_*`:
   - `PER_LITRE` + `"0.88"` → `"0.88 €/L"`;
   - `"0.80"` → `"0.80 €/L"` (no `"0.8"`);
