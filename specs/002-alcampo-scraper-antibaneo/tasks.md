@@ -29,7 +29,7 @@ Formato de commit: `<tipo>(002-alcampo-scraper-antibaneo): <descripción en ingl
 - **RF:** RF-10
 - **Hecho cuando:** los 4 casos pasan.
 
-### [ ] T2 — Pool de User-Agents, elegido una vez por cliente
+### [x] T2 — Pool de User-Agents, elegido una vez por cliente
 - **RED:** en `tests/scrapers/test_http_client.py`:
   - `USER_AGENTS` es **exactamente** la tupla de la spec RF-2 (6 entradas, sin duplicados);
   - `create_http_client(settings, choose=fake)` llama a `fake` **una sola vez**, con `USER_AGENTS` como argumento;
