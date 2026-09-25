@@ -1,0 +1,65 @@
+{
+  "productGroups": [],
+  "metadata": {},
+  "additionalPageInfo": {
+    "categories": [],
+    "filters": [
+      {
+        "filterId": "dummyValue",
+        "label": "Filtros",
+        "attributes": [
+          {
+            "filterAttributeId": "new",
+            "label": "Nuevo Producto",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "alcampoBrandGeneric",
+            "label": "Marca Alcampo",
+            "selected": false
+          }
+        ],
+        "type": "RETAILER"
+      }
+    ],
+    "advertisingBanners": [],
+    "breadcrumb": [],
+    "sortOptions": [
+      {
+        "sortOptionId": "favorite",
+        "messageKey": "sorting.option.favorite",
+        "selected": true
+      },
+      {
+        "sortOptionId": "pricePerAscending",
+        "messageKey": "sorting.option.price.per.ascending",
+        "selected": false
+      },
+      {
+        "sortOptionId": "pricePerDescending",
+        "messageKey": "sorting.option.price.per.descending",
+        "selected": false
+      },
+      {
+        "sortOptionId": "priceAscending",
+        "messageKey": "sorting.option.price.ascending",
+        "selected": false
+      },
+      {
+        "sortOptionId": "priceDescending",
+        "messageKey": "sorting.option.price.descending",
+        "selected": false
+      }
+    ],
+    "currentCategory": {
+      "name": "Root",
+      "categoryId": "038fa25b-9e7d-4463-a66a-b88b47bf2f0f",
+      "productCount": 0,
+      "retailerCategoryId": "root"
+    },
+    "query": {
+      "searchTerm": "xqzwvkjhgf"
+    }
+  },
+  "missedPromotions": []
+}

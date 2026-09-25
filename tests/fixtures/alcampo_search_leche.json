@@ -1,0 +1,1023 @@
+{
+  "productGroups": [
+    {
+      "type": "personalized",
+      "decoratedProducts": [
+        {
+          "productId": "176cfd5e-afa9-4aa1-8b6f-fe3d757c535e",
+          "retailerProductId": "54180",
+          "type": "REGULAR",
+          "name": "AUCHAN Leche semidesnatada de vaca 6 x 1l Producto Alcampo.",
+          "brand": "PRODUCTO ALCAMPO",
+          "packSizeDescription": "6000ml",
+          "price": {
+            "amount": "5.28",
+            "currency": "EUR"
+          },
+          "unitPrice": {
+            "price": {
+              "amount": "0.88",
+              "currency": "EUR"
+            },
+            "unit": "fop.price.per.litre",
+            "unitName": "PER_LITRE"
+          },
+          "available": true,
+          "isVerifiedPurchase": false,
+          "quantityInBasket": 0,
+          "maxQuantityReached": false,
+          "quantityRestrictionGroup": {
+            "quantityRestrictionGroupId": "b31ca945-1405-4306-8333-693b70248b03",
+            "contribution": 10.0
+          },
+          "promotions": [
+            {
+              "promoId": "c5ca3d4d-acb7-410c-aff4-7216e52cb500",
+              "retailerPromotionId": "1152136_1",
+              "description": "Producto en Folleto (24/09/26_07/10/26)",
+              "type": "OFFER",
+              "presentationMode": "DEFAULT",
+              "limitReached": false
+            }
+          ],
+          "taxCodesDisplayNames": [],
+          "imageConfig": {
+            "availableFormats": [
+              "jpg",
+              "webp"
+            ],
+            "availableResolutions": [
+              "100x100",
+              "150x150",
+              "200x200",
+              "300x300",
+              "350x350",
+              "410x410",
+              "500x500",
+              "640x640",
+              "800x800",
+              "960x960",
+              "1120x1120",
+              "1280x1280"
+            ]
+          },
+          "image": {
+            "src": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/300x300.jpg",
+            "description": "AUCHAN Leche semidesnatada de vaca 6 x 1l Producto Alcampo.",
+            "fopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/100x100.webp 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/150x150.webp 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/200x200.webp 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/350x350.webp 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/410x410.webp 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/100x100.jpg 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/150x150.jpg 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/200x200.jpg 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/350x350.jpg 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/410x410.jpg 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/500x500.jpg 500w",
+            "bopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/640x640.webp 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/800x800.webp 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/960x960.webp 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/1120x1120.webp 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/1280x1280.webp 1280w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/500x500.jpg 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/640x640.jpg 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/800x800.jpg 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/960x960.jpg 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/1120x1120.jpg 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/1280x1280.jpg 1280w",
+            "imageId": "1aec1514-3cce-46d9-8133-20fdebbdb2cc"
+          },
+          "images": [
+            {
+              "src": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/500x500.jpg",
+              "description": "AUCHAN Leche semidesnatada de vaca 6 x 1l Producto Alcampo.",
+              "fopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/100x100.webp 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/150x150.webp 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/200x200.webp 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/350x350.webp 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/410x410.webp 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/100x100.jpg 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/150x150.jpg 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/200x200.jpg 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/350x350.jpg 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/410x410.jpg 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/500x500.jpg 500w",
+              "bopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/640x640.webp 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/800x800.webp 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/960x960.webp 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/1120x1120.webp 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/1280x1280.webp 1280w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/500x500.jpg 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/640x640.jpg 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/800x800.jpg 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/960x960.jpg 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/1120x1120.jpg 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/1280x1280.jpg 1280w",
+              "imageId": "1aec1514-3cce-46d9-8133-20fdebbdb2cc"
+            }
+          ],
+          "imageIds": [
+            "1aec1514-3cce-46d9-8133-20fdebbdb2cc"
+          ],
+          "imagePaths": [
+            "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc"
+          ],
+          "iconAttributes": [
+            {
+              "label": "Producto Alcampo",
+              "file": "icon_alcampo_product"
+            }
+          ],
+          "icons": [],
+          "basketLines": [],
+          "timeRestricted": false,
+          "alternatives": [],
+          "isInShoppingList": false,
+          "isInCurrentCatalog": true,
+          "ratingSummary": {
+            "overallRating": "5.0",
+            "count": 1
+          },
+          "retailerFinancingPlanIds": [
+            "022",
+            "025",
+            "026",
+            "027",
+            "016",
+            "021"
+          ],
+          "alcohol": false,
+          "categoryPath": [
+            "Leche, Huevos, Lácteos, Yogures y Bebidas vegetales",
+            "Leche",
+            "Leche semidesnatada"
+          ],
+          "isNew": false
+        },
+        {
+          "productId": "6ab4700b-58f9-4d2c-942a-7ddce3286b57",
+          "retailerProductId": "54178",
+          "type": "REGULAR",
+          "name": "AUCHAN Leche entera de vaca 6 x 1 l Producto Alcampo.",
+          "brand": "PRODUCTO ALCAMPO",
+          "packSizeDescription": "6000ml",
+          "price": {
+            "amount": "5.76",
+            "currency": "EUR"
+          },
+          "unitPrice": {
+            "price": {
+              "amount": "0.96",
+              "currency": "EUR"
+            },
+            "unit": "fop.price.per.litre",
+            "unitName": "PER_LITRE"
+          },
+          "available": true,
+          "isVerifiedPurchase": false,
+          "quantityInBasket": 0,
+          "maxQuantityReached": false,
+          "quantityRestrictionGroup": {
+            "quantityRestrictionGroupId": "9126fbac-51f9-45b3-9c60-0f1f9137a668",
+            "contribution": 10.0
+          },
+          "promotions": [
+            {
+              "promoId": "c5ca3d4d-acb7-410c-aff4-7216e52cb500",
+              "retailerPromotionId": "1152136_1",
+              "description": "Producto en Folleto (24/09/26_07/10/26)",
+              "type": "OFFER",
+              "presentationMode": "DEFAULT",
+              "limitReached": false
+            }
+          ],
+          "taxCodesDisplayNames": [],
+          "imageConfig": {
+            "availableFormats": [
+              "jpg",
+              "webp"
+            ],
+            "availableResolutions": [
+              "100x100",
+              "150x150",
+              "200x200",
+              "300x300",
+              "350x350",
+              "410x410",
+              "500x500",
+              "640x640",
+              "800x800",
+              "960x960",
+              "1120x1120",
+              "1280x1280"
+            ]
+          },
+          "image": {
+            "src": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/300x300.jpg",
+            "description": "AUCHAN Leche entera de vaca 6 x 1 l Producto Alcampo.",
+            "fopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/100x100.webp 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/150x150.webp 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/200x200.webp 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/350x350.webp 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/410x410.webp 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/100x100.jpg 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/150x150.jpg 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/200x200.jpg 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/350x350.jpg 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/410x410.jpg 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/500x500.jpg 500w",
+            "bopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/640x640.webp 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/800x800.webp 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/960x960.webp 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/1120x1120.webp 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/1280x1280.webp 1280w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/500x500.jpg 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/640x640.jpg 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/800x800.jpg 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/960x960.jpg 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/1120x1120.jpg 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/1280x1280.jpg 1280w",
+            "imageId": "845a9f8d-6b50-4055-81ce-1b7e621987f3"
+          },
+          "images": [
+            {
+              "src": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/500x500.jpg",
+              "description": "AUCHAN Leche entera de vaca 6 x 1 l Producto Alcampo.",
+              "fopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/100x100.webp 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/150x150.webp 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/200x200.webp 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/350x350.webp 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/410x410.webp 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/100x100.jpg 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/150x150.jpg 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/200x200.jpg 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/350x350.jpg 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/410x410.jpg 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/500x500.jpg 500w",
+              "bopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/640x640.webp 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/800x800.webp 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/960x960.webp 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/1120x1120.webp 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/1280x1280.webp 1280w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/500x500.jpg 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/640x640.jpg 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/800x800.jpg 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/960x960.jpg 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/1120x1120.jpg 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3/1280x1280.jpg 1280w",
+              "imageId": "845a9f8d-6b50-4055-81ce-1b7e621987f3"
+            }
+          ],
+          "imageIds": [
+            "845a9f8d-6b50-4055-81ce-1b7e621987f3"
+          ],
+          "imagePaths": [
+            "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/845a9f8d-6b50-4055-81ce-1b7e621987f3"
+          ],
+          "iconAttributes": [
+            {
+              "label": "Producto Alcampo",
+              "file": "icon_alcampo_product"
+            }
+          ],
+          "icons": [],
+          "basketLines": [],
+          "timeRestricted": false,
+          "alternatives": [],
+          "isInShoppingList": false,
+          "isInCurrentCatalog": true,
+          "ratingSummary": {
+            "overallRating": "0.0",
+            "count": 0
+          },
+          "retailerFinancingPlanIds": [
+            "022",
+            "025",
+            "026",
+            "027",
+            "016",
+            "021"
+          ],
+          "alcohol": false,
+          "categoryPath": [
+            "Leche, Huevos, Lácteos, Yogures y Bebidas vegetales",
+            "Leche",
+            "Leche entera"
+          ],
+          "isNew": false
+        },
+        {
+          "productId": "920847ab-0577-4132-a6e2-ad2d5f62f8c3",
+          "retailerProductId": "53549",
+          "type": "REGULAR",
+          "name": "AUCHAN Leche semidesnatada de vaca 1 l. Producto Alcampo",
+          "brand": "PRODUCTO ALCAMPO",
+          "packSizeDescription": "1000ml",
+          "price": {
+            "amount": "0.88",
+            "currency": "EUR"
+          },
+          "unitPrice": {
+            "price": {
+              "amount": "0.88",
+              "currency": "EUR"
+            },
+            "unit": "fop.price.per.litre",
+            "unitName": "PER_LITRE"
+          },
+          "available": true,
+          "isVerifiedPurchase": false,
+          "quantityInBasket": 0,
+          "maxQuantityReached": false,
+          "promotions": [
+            {
+              "promoId": "c5ca3d4d-acb7-410c-aff4-7216e52cb500",
+              "retailerPromotionId": "1152136_1",
+              "description": "Producto en Folleto (24/09/26_07/10/26)",
+              "type": "OFFER",
+              "presentationMode": "DEFAULT",
+              "limitReached": false
+            }
+          ],
+          "taxCodesDisplayNames": [],
+          "imageConfig": {
+            "availableFormats": [
+              "jpg",
+              "webp"
+            ],
+            "availableResolutions": [
+              "100x100",
+              "150x150",
+              "200x200",
+              "300x300",
+              "350x350",
+              "410x410",
+              "500x500",
+              "640x640",
+              "800x800",
+              "960x960",
+              "1120x1120",
+              "1280x1280"
+            ]
+          },
+          "image": {
+            "src": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/300x300.jpg",
+            "description": "AUCHAN Leche semidesnatada de vaca 1 l. Producto Alcampo",
+            "fopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/100x100.webp 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/150x150.webp 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/200x200.webp 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/350x350.webp 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/410x410.webp 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/100x100.jpg 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/150x150.jpg 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/200x200.jpg 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/350x350.jpg 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/410x410.jpg 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/500x500.jpg 500w",
+            "bopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/640x640.webp 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/800x800.webp 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/960x960.webp 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/1120x1120.webp 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/1280x1280.webp 1280w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/500x500.jpg 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/640x640.jpg 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/800x800.jpg 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/960x960.jpg 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/1120x1120.jpg 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/1280x1280.jpg 1280w",
+            "imageId": "bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6"
+          },
+          "images": [
+            {
+              "src": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/500x500.jpg",
+              "description": "AUCHAN Leche semidesnatada de vaca 1 l. Producto Alcampo",
+              "fopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/100x100.webp 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/150x150.webp 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/200x200.webp 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/350x350.webp 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/410x410.webp 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/100x100.jpg 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/150x150.jpg 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/200x200.jpg 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/350x350.jpg 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/410x410.jpg 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/500x500.jpg 500w",
+              "bopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/640x640.webp 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/800x800.webp 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/960x960.webp 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/1120x1120.webp 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/1280x1280.webp 1280w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/500x500.jpg 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/640x640.jpg 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/800x800.jpg 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/960x960.jpg 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/1120x1120.jpg 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6/1280x1280.jpg 1280w",
+              "imageId": "bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6"
+            }
+          ],
+          "imageIds": [
+            "bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6"
+          ],
+          "imagePaths": [
+            "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/bc18f2e4-6303-454d-8f0e-8ee1f0a0c6c6"
+          ],
+          "iconAttributes": [
+            {
+              "label": "Producto Alcampo",
+              "file": "icon_alcampo_product"
+            }
+          ],
+          "icons": [],
+          "basketLines": [],
+          "timeRestricted": false,
+          "alternatives": [],
+          "isInShoppingList": false,
+          "isInCurrentCatalog": true,
+          "ratingSummary": {
+            "overallRating": "0.0",
+            "count": 0
+          },
+          "retailerFinancingPlanIds": [
+            "022",
+            "025",
+            "026",
+            "027",
+            "016",
+            "021"
+          ],
+          "alcohol": false,
+          "categoryPath": [
+            "Leche, Huevos, Lácteos, Yogures y Bebidas vegetales",
+            "Leche",
+            "Leche semidesnatada"
+          ],
+          "isNew": false
+        }
+      ],
+      "otherProductIds": [],
+      "name": "fop.headertitle.personalised",
+      "clusterCategories": []
+    }
+  ],
+  "metadata": {
+    "nextPageToken": "cf78cbe4-2f2e-4db6-b72a-617e8d6a9350"
+  },
+  "additionalPageInfo": {
+    "categories": [
+      {
+        "childCategories": [
+          {
+            "childCategories": [
+              {
+                "childCategories": [],
+                "name": "Leche entera",
+                "categoryId": "c63004e5-e774-453f-ba20-2881c6c43561",
+                "productCount": 73,
+                "breadcrumbs": [],
+                "retailerCategoryId": "OCEntera"
+              },
+              {
+                "childCategories": [],
+                "name": "Leche baja o sin lactosa",
+                "categoryId": "103af665-d181-4fa7-8694-3d6f3e798003",
+                "productCount": 69,
+                "breadcrumbs": [],
+                "retailerCategoryId": "OCSinlactosa"
+              },
+              {
+                "childCategories": [],
+                "name": "Leche desnatada",
+                "categoryId": "b9440c26-b4bd-4716-8bc7-19d08414e8be",
+                "productCount": 59,
+                "breadcrumbs": [],
+                "retailerCategoryId": "OCDesnatada"
+              },
+              {
+                "childCategories": [],
+                "name": "Leche semidesnatada",
+                "categoryId": "0b0dbaad-0611-4956-8c57-43d48d49f4a8",
+                "productCount": 74,
+                "breadcrumbs": [],
+                "retailerCategoryId": "OCSemidesnatada"
+              },
+              {
+                "childCategories": [],
+                "name": "Leche con calcio",
+                "categoryId": "0872b4eb-aae0-40fb-b6fd-762fb5459ef2",
+                "productCount": 28,
+                "breadcrumbs": [],
+                "retailerCategoryId": "OCLechecalcio"
+              },
+              {
+                "childCategories": [],
+                "name": "Leche fresca",
+                "categoryId": "53f04bb6-a99b-4794-b977-6dd20c2ae34c",
+                "productCount": 6,
+                "breadcrumbs": [],
+                "retailerCategoryId": "OCFresca"
+              },
+              {
+                "childCategories": [],
+                "name": "Leche oveja o cabra",
+                "categoryId": "261c6ba2-7f21-4dd2-b0d7-afb06546819c",
+                "productCount": 7,
+                "breadcrumbs": [],
+                "retailerCategoryId": "OCLecheoveja"
+              },
+              {
+                "childCategories": [],
+                "name": "Preparados lácteos omega 3",
+                "categoryId": "ffe9707c-7af1-4838-8a91-a7ca0a5c626d",
+                "productCount": 4,
+                "breadcrumbs": [],
+                "retailerCategoryId": "OCPreparadosomega3leche"
+              },
+              {
+                "childCategories": [],
+                "name": "Preparados fibra, control colesterol y otros",
+                "categoryId": "6a954499-3945-4055-86dc-5c2a0491d08d",
+                "productCount": 8,
+                "breadcrumbs": [],
+                "retailerCategoryId": "OCPreparadofibracolesterolleche"
+              },
+              {
+                "childCategories": [],
+                "name": "Infantil, Energía y Crecimiento",
+                "categoryId": "98d6b7c6-99b3-4d6e-8236-f596a2c8171e",
+                "productCount": 4,
+                "breadcrumbs": [],
+                "retailerCategoryId": "OCPreparadoinfantilleche"
+              }
+            ],
+            "name": "Leche",
+            "categoryId": "48c34870-c5a3-46c9-870b-590c66fe8848",
+            "productCount": 332,
+            "breadcrumbs": [],
+            "retailerCategoryId": "OC1603"
+          },
+          {
+            "childCategories": [],
+            "name": "Yogures, Bífidus, L-Casei y productos vegetales y fermentados",
+            "categoryId": "978c072d-5441-4380-8b90-51d90e100dfe",
+            "productCount": 60,
+            "breadcrumbs": [],
+            "retailerCategoryId": "OC1601"
+          },
+          {
+            "childCategories": [],
+            "name": "Postres",
+            "categoryId": "6ece27a2-0311-42e2-bb0f-9693ce28959b",
+            "productCount": 52,
+            "breadcrumbs": [],
+            "retailerCategoryId": "OC1602"
+          },
+          {
+            "childCategories": [],
+            "name": "Leche condensada, polvo y evaporada",
+            "categoryId": "a5af685d-6356-49a2-b858-8dff0f2c1ac6",
+            "productCount": 16,
+            "breadcrumbs": [],
+            "retailerCategoryId": "OC160316"
+          },
+          {
+            "childCategories": [],
+            "name": "Bebidas vegetales",
+            "categoryId": "f14cc519-de84-4d4d-a264-a0e726301290",
+            "productCount": 4,
+            "breadcrumbs": [],
+            "retailerCategoryId": "OC1609"
+          },
+          {
+            "childCategories": [],
+            "name": "Batidos, horchatas y bebidas frías de café",
+            "categoryId": "f7f4c8d7-8132-446f-8963-ba5697dc7c31",
+            "productCount": 24,
+            "breadcrumbs": [],
+            "retailerCategoryId": "OC1604"
+          },
+          {
+            "childCategories": [],
+            "name": "Zumos con leche",
+            "categoryId": "9ace4eda-69ed-4ad4-8b93-4157314b4bf0",
+            "productCount": 22,
+            "breadcrumbs": [],
+            "retailerCategoryId": "OC160403"
+          },
+          {
+            "childCategories": [],
+            "name": "Mantequilla",
+            "categoryId": "284b4c3b-33dc-4f0f-9713-d327ca2277b3",
+            "productCount": 2,
+            "breadcrumbs": [],
+            "retailerCategoryId": "OC1606"
+          },
+          {
+            "childCategories": [],
+            "name": "Nata",
+            "categoryId": "bf0c15c3-6009-469b-8372-3f149f956746",
+            "productCount": 5,
+            "breadcrumbs": [],
+            "retailerCategoryId": "OC1605"
+          },
+          {
+            "childCategories": [],
+            "name": "Productos proteicos",
+            "categoryId": "c9f16f3b-c9ba-4777-a14e-4b8b146faf7b",
+            "productCount": 18,
+            "breadcrumbs": [],
+            "retailerCategoryId": "OC1612"
+          }
+        ],
+        "name": "Leche, Huevos, Lácteos, Yogures y Bebidas vegetales",
+        "categoryId": "e33fcb5b-8a16-4202-b88b-13d7dfc547ce",
+        "productCount": 535,
+        "breadcrumbs": [],
+        "retailerCategoryId": "OC16"
+      }
+    ],
+    "filters": [
+      {
+        "filterId": "boolean",
+        "label": "boolean",
+        "attributes": [
+          {
+            "filterAttributeId": "onOffer",
+            "label": "onOffer",
+            "selected": false
+          }
+        ],
+        "type": "BOOLEAN"
+      },
+      {
+        "filterId": "brands",
+        "label": "brands",
+        "attributes": [
+          {
+            "filterAttributeId": "CENTRAL LECHERA ASTURIANA",
+            "label": "CENTRAL LECHERA ASTURIANA",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "L.R.",
+            "label": "L.R.",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "PULEVA",
+            "label": "PULEVA",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "PASCUAL",
+            "label": "PASCUAL",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "PRÉSIDENT",
+            "label": "PRÉSIDENT",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "ACTIMEL",
+            "label": "ACTIMEL",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "LA LECHERA",
+            "label": "LA LECHERA",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "BIFRUTAS",
+            "label": "BIFRUTAS",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "LAUKI",
+            "label": "LAUKI",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "DANONE",
+            "label": "DANONE",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "YOPRO",
+            "label": "YOPRO",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "ALCAMPO CULTIVAMOS LO BUENO",
+            "label": "ALCAMPO CULTIVAMOS LO BUENO",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "PASTORET",
+            "label": "PASTORET",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "NESTLÉ",
+            "label": "NESTLÉ",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "DANACOL",
+            "label": "DANACOL",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "LA COLMENAREÑA",
+            "label": "LA COLMENAREÑA",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "PRESIDENT",
+            "label": "PRESIDENT",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "COVAP",
+            "label": "COVAP",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "CELTA",
+            "label": "CELTA",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "KAIKU",
+            "label": "KAIKU",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "NESCAFÉ",
+            "label": "NESCAFÉ",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "DON SIMON",
+            "label": "DON SIMON",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "ORIGENS",
+            "label": "ORIGENS",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "YARANZA",
+            "label": "YARANZA",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "DANONINO",
+            "label": "DANONINO",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "PRODUCTO ECONÓMICO ALCAMPO",
+            "label": "PRODUCTO ECONÓMICO ALCAMPO",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "LARSA",
+            "label": "LARSA",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "RAM",
+            "label": "RAM",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "CACAOLAT",
+            "label": "CACAOLAT",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "DULCESA",
+            "label": "DULCESA",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "ALCAMPO GOURMET",
+            "label": "ALCAMPO GOURMET",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "FEIRACO",
+            "label": "FEIRACO",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "MÁRDEL",
+            "label": "MÁRDEL",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "LEYMA",
+            "label": "LEYMA",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "NATIVA",
+            "label": "NATIVA",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "ASTURIANA",
+            "label": "ASTURIANA",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "TIERRA DE SABOR",
+            "label": "TIERRA DE SABOR",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "COLACAO",
+            "label": "COLACAO",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "NIDINA",
+            "label": "NIDINA",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "REINA",
+            "label": "REINA",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "CLESA",
+            "label": "CLESA",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "RÍO",
+            "label": "RÍO",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "LA BELLA EASO",
+            "label": "LA BELLA EASO",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "NAN",
+            "label": "NAN",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "ALMIRÓN",
+            "label": "ALMIRÓN",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "STARBUCKS",
+            "label": "STARBUCKS",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "MILKA",
+            "label": "MILKA",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "PRODUCTO ALCAMPO",
+            "label": "PRODUCTO ALCAMPO",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "ÚNICLA",
+            "label": "ÚNICLA",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "CASA GRANDE DE XANCEDA",
+            "label": "CASA GRANDE DE XANCEDA",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "BLEMIL",
+            "label": "BLEMIL",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "CANTERO DE LETUR",
+            "label": "CANTERO DE LETUR",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "MÖNTBELLE",
+            "label": "MÖNTBELLE",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "PRIÉGOLA",
+            "label": "PRIÉGOLA",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "SANTA GADEA",
+            "label": "SANTA GADEA",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "NESQUIK",
+            "label": "NESQUIK",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "DALKY",
+            "label": "DALKY",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "NUTRIBÉN",
+            "label": "NUTRIBÉN",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "NIVEA",
+            "label": "NIVEA",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "DOLCE GUSTO",
+            "label": "DOLCE GUSTO",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "JUNGLY",
+            "label": "JUNGLY",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "SVELTESSE",
+            "label": "SVELTESSE",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "LABAN",
+            "label": "LABAN",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "FERRERO ROCHER",
+            "label": "FERRERO ROCHER",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "MADRIZ",
+            "label": "MADRIZ",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "MERCADER",
+            "label": "MERCADER",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "KALISE",
+            "label": "KALISE",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "MÖNTEBELLE",
+            "label": "MÖNTEBELLE",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "HIPP",
+            "label": "HIPP",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "EL CASTILLO",
+            "label": "EL CASTILLO",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "QUESO",
+            "label": "QUESO",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "LA FAGEDA",
+            "label": "LA FAGEDA",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "LINDAHLS",
+            "label": "LINDAHLS",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "1880",
+            "label": "1880",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "BLÉDINA",
+            "label": "BLÉDINA",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "ENFAMIL",
+            "label": "ENFAMIL",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "GAZA",
+            "label": "GAZA",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "AROY-D",
+            "label": "AROY-D",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "RONKARI",
+            "label": "RONKARI",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "JUVER",
+            "label": "JUVER",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "GILLOT",
+            "label": "GILLOT",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "FLOR DE ESGUEVA",
+            "label": "FLOR DE ESGUEVA",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "LINDT",
+            "label": "LINDT",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "PASTELERÍA",
+            "label": "PASTELERÍA",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "VALOR",
+            "label": "VALOR",
+            "selected": false
+          }
+        ],
+        "type": "BRANDS"
+      },
+      {
+        "filterId": "dummyValue",
+        "label": "Filtros",
+        "attributes": [
+          {
+            "filterAttributeId": "new",
+            "label": "Nuevo Producto",
+            "selected": false
+          },
+          {
+            "filterAttributeId": "alcampoBrandGeneric",
+            "label": "Marca Alcampo",
+            "selected": false
+          }
+        ],
+        "type": "RETAILER"
+      }
+    ],
+    "advertisingBanners": [],
+    "breadcrumb": [],
+    "sortOptions": [
+      {
+        "sortOptionId": "favorite",
+        "messageKey": "sorting.option.favorite",
+        "selected": true
+      },
+      {
+        "sortOptionId": "pricePerAscending",
+        "messageKey": "sorting.option.price.per.ascending",
+        "selected": false
+      },
+      {
+        "sortOptionId": "pricePerDescending",
+        "messageKey": "sorting.option.price.per.descending",
+        "selected": false
+      },
+      {
+        "sortOptionId": "priceAscending",
+        "messageKey": "sorting.option.price.ascending",
+        "selected": false
+      },
+      {
+        "sortOptionId": "priceDescending",
+        "messageKey": "sorting.option.price.descending",
+        "selected": false
+      }
+    ],
+    "currentCategory": {
+      "name": "Root",
+      "categoryId": "038fa25b-9e7d-4463-a66a-b88b47bf2f0f",
+      "productCount": 0,
+      "retailerCategoryId": "root"
+    },
+    "query": {
+      "searchTerm": "leche"
+    }
+  },
+  "missedPromotions": []
+}
