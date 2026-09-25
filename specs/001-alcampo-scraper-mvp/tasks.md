@@ -45,7 +45,7 @@ Formato de commit: `<tipo>(001-alcampo-scraper-mvp): <descripción en inglés> (
 - **RF:** RF-17, RF-20 (plan-D7)
 - **Hecho cuando:** el test pasa.
 
-### [ ] T4 — Schemas de la API
+### [x] T4 — Schemas de la API
 - **RED:** `tests/models/test_product.py`:
   - `ProductQuery(term="  leche ")` → `term == "leche"`;
   - `term="   "`, `term` de 51 caracteres, `postal_code=""` → `ValidationError`;
