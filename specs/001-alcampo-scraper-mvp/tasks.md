@@ -57,7 +57,7 @@ Formato de commit: `<tipo>(001-alcampo-scraper-mvp): <descripción en inglés> (
 - **RF:** RF-2, RF-8, RF-10
 - **Hecho cuando:** todos los casos pasan.
 
-### [ ] T5 — Schemas crudos de Alcampo
+### [x] T5 — Schemas crudos de Alcampo
 - **RED:** `tests/models/test_alcampo.py`:
   - la fixture real `alcampo_search_leche.json` valida contra `AlcampoSearchResponse` con 1 grupo y 3 productos crudos;
   - un JSON sin `productGroups` → `ValidationError`;
