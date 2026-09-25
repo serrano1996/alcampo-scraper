@@ -5,7 +5,10 @@ injectable `sleep`, so tests never wait for real time (plan-D3).
 """
 
 import asyncio
+import re
 from collections.abc import Awaitable, Callable
+from datetime import UTC, datetime
+from email.utils import parsedate_to_datetime
 
 import httpx
 
@@ -14,6 +17,29 @@ from app.exceptions import UpstreamUnavailableError
 Sleep = Callable[[float], Awaitable[None]]
 
 WAF_CHALLENGE_HEADER = "x-amzn-waf-action"
+
+_RETRY_AFTER_SECONDS = re.compile(r"^[0-9]+$")
+
+
+def parse_retry_after(value: str | None, *, now: datetime) -> float | None:
+    """Parse a `Retry-After` header into seconds to wait (spec 002 RF-5..RF-7, plan-D7).
+
+    Accepts the two HTTP formats: non-negative integer seconds, or an HTTP date.
+    A date in the past means "retry now" (0.0). Anything else returns `None`, so
+    the caller falls back to exponential backoff.
+    """
+    if value is None:
+        return None
+    value = value.strip()
+    if _RETRY_AFTER_SECONDS.match(value):
+        return float(value)
+    try:
+        retry_at = parsedate_to_datetime(value)
+    except (TypeError, ValueError):
+        return None
+    if retry_at.tzinfo is None:
+        retry_at = retry_at.replace(tzinfo=UTC)
+    return max((retry_at - now).total_seconds(), 0.0)
 
 
 def _is_waf_challenge(response: httpx.Response) -> bool:

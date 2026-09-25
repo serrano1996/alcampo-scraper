@@ -1,8 +1,12 @@
+from datetime import UTC, datetime
+
 import httpx
 import pytest
 
 from app.exceptions import UpstreamUnavailableError
-from app.scrapers.retry import send_with_retry
+from app.scrapers.retry import parse_retry_after, send_with_retry
+
+NOW = datetime(2026, 9, 24, 10, 0, 0, tzinfo=UTC)
 
 
 class FakeSleep:
@@ -135,3 +139,21 @@ async def test_retries_on_transport_error() -> None:
 
     assert response.status_code == 200
     assert sleep.calls == [0.5]
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("120", 120.0),
+        ("0", 0.0),
+        ("Wed, 24 Sep 2026 10:00:30 GMT", 30.0),
+        ("Wed, 24 Sep 2026 09:59:00 GMT", 0.0),
+    ],
+)
+def test_parse_retry_after_valid_values(value: str, expected: float) -> None:
+    assert parse_retry_after(value, now=NOW) == expected
+
+
+@pytest.mark.parametrize("value", [None, "", "abc", "-5", "1.5"])
+def test_parse_retry_after_invalid_values_return_none(value: str | None) -> None:
+    assert parse_retry_after(value, now=NOW) is None

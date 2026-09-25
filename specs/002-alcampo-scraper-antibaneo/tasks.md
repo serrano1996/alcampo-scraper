@@ -50,7 +50,7 @@ Formato de commit: `<tipo>(002-alcampo-scraper-antibaneo): <descripción en ingl
 - **RF:** RF-3, RF-4
 - **Hecho cuando:** todos los casos pasan.
 
-### [ ] T4 — `parse_retry_after`
+### [x] T4 — `parse_retry_after`
 - **RED:** en `tests/scrapers/test_retry.py`, con `now` fijo en `2026-09-24T10:00:00Z`:
   - `"120"` → `120.0`; `"0"` → `0.0`;
   - `"Wed, 24 Sep 2026 10:00:30 GMT"` → `30.0`;
