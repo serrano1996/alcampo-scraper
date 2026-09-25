@@ -175,7 +175,7 @@ Formato de commit: `<tipo>(001-alcampo-scraper-mvp): <descripción en inglés> (
 - **RF:** RF-11, RF-12
 - **Hecho cuando:** todos los casos pasan.
 
-### [ ] T15 — Servicio: camino sin cache
+### [x] T15 — Servicio: camino sin cache
 - **RED:** `tests/services/test_product_service.py`, con un scraper falso, cache real sobre fakeredis y reloj fijo:
   - miss → llama al scraper 1 vez;
   - `search` con `warehouse="5"`, `strategy_used="api"`, `scraped_at` igual al reloj y `total_results` igual al número de productos;
