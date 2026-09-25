@@ -120,3 +120,27 @@ def test_negative_waf_cooldown_seconds_fails(monkeypatch: pytest.MonkeyPatch) ->
 
     with pytest.raises(ValidationError):
         Settings(_env_file=None)
+
+
+@pytest.mark.parametrize(("raw", "expected"), [("debug", "DEBUG"), ("Warning", "WARNING")])
+def test_log_level_is_case_insensitive(
+    monkeypatch: pytest.MonkeyPatch, raw: str, expected: str
+) -> None:
+    set_required(monkeypatch)
+    monkeypatch.setenv("LOG_LEVEL", raw)
+
+    assert Settings(_env_file=None).log_level == expected
+
+
+def test_unknown_log_level_fails(monkeypatch: pytest.MonkeyPatch) -> None:
+    set_required(monkeypatch)
+    monkeypatch.setenv("LOG_LEVEL", "VERBOSE")
+
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None)
+
+
+def test_log_level_defaults_to_info(monkeypatch: pytest.MonkeyPatch) -> None:
+    set_required(monkeypatch)
+
+    assert Settings(_env_file=None).log_level == "INFO"

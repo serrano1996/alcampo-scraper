@@ -2,8 +2,10 @@
 
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+LOG_LEVELS = frozenset({"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"})
 
 
 class Settings(BaseSettings):
@@ -19,6 +21,15 @@ class Settings(BaseSettings):
     retry_jitter_max_s: float = Field(default=0.3, ge=0)
     waf_cooldown_seconds: int = Field(default=180, ge=0)
     log_level: str = "INFO"
+
+    @field_validator("log_level")
+    @classmethod
+    def _validate_log_level(cls, value: str) -> str:
+        """Accept any case, fail at startup on unknown levels (spec 003 RF-2, plan-D11)."""
+        level = value.strip().upper()
+        if level not in LOG_LEVELS:
+            raise ValueError(f"LOG_LEVEL must be one of {sorted(LOG_LEVELS)}, got {value!r}")
+        return level
 
 
 @lru_cache

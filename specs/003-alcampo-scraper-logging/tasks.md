@@ -18,7 +18,7 @@ Formato de commit: `<tipo>(003-alcampo-scraper-logging): <descripción en inglé
 
 ## PR1 — Infraestructura: formato, request id, `500` y `502`
 
-### [ ] T1 — Validar `LOG_LEVEL`
+### [x] T1 — Validar `LOG_LEVEL`
 - **RED:** en `tests/core/test_config.py`:
   - `LOG_LEVEL=debug` → `log_level == "DEBUG"`;
   - `LOG_LEVEL=Warning` → `"WARNING"`;
