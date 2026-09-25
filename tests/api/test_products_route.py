@@ -1,9 +1,11 @@
+import logging
 from datetime import UTC, datetime
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.core.dependencies import get_product_service
-from app.exceptions import UpstreamBlockedError, UpstreamUnavailableError
+from app.exceptions import CooldownActiveError, UpstreamBlockedError, UpstreamUnavailableError
 from app.main import create_app
 from app.models.product import Product, ProductQuery, ProductSearchResponse, SearchMetadata
 
@@ -95,3 +97,44 @@ def test_upstream_blocked_error_returns_the_standard_502() -> None:
     assert response.status_code == 502
     assert response.json() == {"detail": "Upstream service unavailable"}
     assert "waf" not in response.text
+
+
+SEARCH = {"postal_code": "28001", "term": "leche"}
+
+
+def records_at(caplog: pytest.LogCaptureFixture, level: int) -> list[logging.LogRecord]:
+    return [r for r in caplog.records if r.levelno == level]
+
+
+def test_upstream_502_is_logged_as_error_with_reason_and_search(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    client = make_client(FakeService(error=UpstreamUnavailableError("upstream returned 503")))
+
+    response = client.get("/api/v1/products", params=SEARCH)
+
+    assert response.status_code == 502
+    [error] = records_at(caplog, logging.ERROR)
+    message = error.getMessage()
+    assert "upstream returned 503" in message
+    assert "'28001'" in message
+    assert "'leche'" in message
+
+
+def test_cooldown_502_is_only_a_warning(caplog: pytest.LogCaptureFixture) -> None:
+    client = make_client(FakeService(error=CooldownActiveError("WAF cooldown active")))
+
+    response = client.get("/api/v1/products", params=SEARCH)
+
+    assert response.status_code == 502
+    assert response.json() == {"detail": "Upstream service unavailable"}
+    assert len(records_at(caplog, logging.WARNING)) == 1
+    assert records_at(caplog, logging.ERROR) == []
+
+
+def test_waf_challenge_502_is_logged_as_error(caplog: pytest.LogCaptureFixture) -> None:
+    client = make_client(FakeService(error=UpstreamBlockedError("WAF challenge")))
+
+    client.get("/api/v1/products", params=SEARCH)
+
+    assert len(records_at(caplog, logging.ERROR)) == 1

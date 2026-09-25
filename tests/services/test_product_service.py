@@ -5,7 +5,7 @@ import fakeredis
 import pytest
 
 from app.core.config import Settings
-from app.exceptions import UpstreamBlockedError, UpstreamUnavailableError
+from app.exceptions import CooldownActiveError, UpstreamBlockedError, UpstreamUnavailableError
 from app.models.alcampo import AlcampoSearchResponse
 from app.models.product import ProductQuery
 from app.services.product_service import ProductService
@@ -230,3 +230,13 @@ async def test_without_cooldown_a_miss_calls_alcampo(redis: fakeredis.FakeAsyncR
     await service.search(ProductQuery(postal_code="28001", term="leche"))
 
     assert scraper.calls == ["leche"]
+
+
+async def test_active_cooldown_raises_cooldown_active_error(
+    redis: fakeredis.FakeAsyncRedis,
+) -> None:
+    service, _ = make_service(FakeScraper(make_raw_response(has_products=True)), redis)
+    await WafCooldownRepository(redis).activate(ttl_seconds=180)
+
+    with pytest.raises(CooldownActiveError):
+        await service.search(ProductQuery(postal_code="28001", term="leche"))

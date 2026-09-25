@@ -1,5 +1,10 @@
 import app.exceptions
-from app.exceptions import AlcampoScraperError, UpstreamBlockedError, UpstreamUnavailableError
+from app.exceptions import (
+    AlcampoScraperError,
+    CooldownActiveError,
+    UpstreamBlockedError,
+    UpstreamUnavailableError,
+)
 
 
 def test_upstream_unavailable_error_is_a_domain_error() -> None:
@@ -18,3 +23,7 @@ def test_upstream_blocked_error_is_an_upstream_unavailable_error() -> None:
 
     assert isinstance(error, UpstreamUnavailableError)
     assert error.reason == "waf"
+
+
+def test_cooldown_active_error_is_an_upstream_unavailable_error() -> None:
+    assert isinstance(CooldownActiveError("cooldown"), UpstreamUnavailableError)

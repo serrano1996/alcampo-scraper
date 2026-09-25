@@ -25,3 +25,11 @@ class UpstreamBlockedError(UpstreamUnavailableError):
     subtype to start a cooldown (spec 002 RF-15). Being a subclass, it still
     maps to the standard 502 through the `UpstreamUnavailableError` handler.
     """
+
+
+class CooldownActiveError(UpstreamUnavailableError):
+    """Raised when a search is rejected because the WAF cooldown is active.
+
+    A foreseen, managed degradation: the 502 handler logs it as a WARNING, not an
+    ERROR, so a cooldown does not flood the logs (spec 003 RF-12, spec-D2).
+    """

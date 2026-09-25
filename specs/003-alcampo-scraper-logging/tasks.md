@@ -76,7 +76,7 @@ Formato de commit: `<tipo>(003-alcampo-scraper-logging): <descripción en inglé
 - **RF:** RF-6
 - **Hecho cuando:** todos los casos pasan.
 
-### [ ] T6 — `CooldownActiveError` y nivel del `502` según el tipo
+### [x] T6 — `CooldownActiveError` y nivel del `502` según el tipo
 - **RED:**
   - `tests/test_exceptions.py`: `CooldownActiveError` es subclase de `UpstreamUnavailableError`;
   - `tests/services/test_product_service.py`: con la marca activa, un miss lanza `CooldownActiveError`;

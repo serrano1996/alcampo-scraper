@@ -1,5 +1,6 @@
 """Application factory and lifespan: creates and closes the shared HTTP and Redis clients."""
 
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -10,9 +11,11 @@ from fastapi.responses import JSONResponse
 from app.api.v1.products import router as products_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
-from app.exceptions import UpstreamUnavailableError
+from app.exceptions import CooldownActiveError, UpstreamUnavailableError
 from app.middleware.request_context import RequestContextMiddleware
 from app.scrapers.http_client import create_http_client
+
+logger = logging.getLogger(__name__)
 
 
 def create_redis(redis_url: str) -> redis.Redis:
@@ -43,6 +46,22 @@ def create_app() -> FastAPI:
     async def upstream_unavailable_handler(
         request: Request, exc: UpstreamUnavailableError
     ) -> JSONResponse:
+        postal_code = request.query_params.get("postal_code")
+        term = request.query_params.get("term")
+        if isinstance(exc, CooldownActiveError):
+            # Foreseen and managed: the actionable ERROR was the challenge itself
+            # (spec 003 RF-11); one per rejected search would flood the logs (RF-12).
+            logger.warning(
+                "search rejected during WAF cooldown postal_code=%r term=%r", postal_code, term
+            )
+        else:
+            logger.error(
+                "upstream unavailable reason=%r postal_code=%r term=%r",
+                exc.reason,
+                postal_code,
+                term,
+            )
+        # The reason is for logs only: the body never carries it (spec 001 RF-17).
         return JSONResponse(status_code=502, content={"detail": "Upstream service unavailable"})
 
     @app.get("/health")
