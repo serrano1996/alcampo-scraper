@@ -29,7 +29,7 @@ Formato de commit: `<tipo>(003-alcampo-scraper-logging): <descripción en inglé
 - **RF:** RF-2
 - **Hecho cuando:** los 4 casos pasan.
 
-### [ ] T2 — `configure_logging`, `request_id_var` y factoría de `LogRecord`
+### [x] T2 — `configure_logging`, `request_id_var` y factoría de `LogRecord`
 - **RED:** `tests/core/test_logging.py`:
   - `configure_logging("INFO", stream=buf)` + `getLogger("x").info("hola")` → `buf` contiene **una** línea con, en este orden: timestamp, `INFO`, `[-]`, `x` y `hola`;
   - con `request_id_var` fijado a `"abc"`, la línea lleva `[abc]` y `caplog.records[-1].request_id == "abc"`;
