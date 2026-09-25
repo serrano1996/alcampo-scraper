@@ -195,3 +195,38 @@ async def test_plain_upstream_error_does_not_activate_the_cooldown(
         await service.search(ProductQuery(postal_code="28001", term="leche"))
 
     assert await WafCooldownRepository(redis).is_active() is False
+
+
+async def test_active_cooldown_on_a_miss_fails_without_calling_alcampo(
+    redis: fakeredis.FakeAsyncRedis,
+) -> None:
+    scraper = FakeScraper(make_raw_response(has_products=True))
+    service, _ = make_service(scraper, redis)
+    await WafCooldownRepository(redis).activate(ttl_seconds=180)
+
+    with pytest.raises(UpstreamUnavailableError):
+        await service.search(ProductQuery(postal_code="28001", term="leche"))
+
+    assert scraper.calls == []
+
+
+async def test_active_cooldown_still_serves_cache_hits(redis: fakeredis.FakeAsyncRedis) -> None:
+    scraper = FakeScraper(make_raw_response(has_products=True))
+    service, _ = make_service(scraper, redis)
+    first = await service.search(ProductQuery(postal_code="28001", term="leche"))
+    scraper.calls.clear()
+    await WafCooldownRepository(redis).activate(ttl_seconds=180)
+
+    second = await service.search(ProductQuery(postal_code="28001", term="leche"))
+
+    assert second == first
+    assert scraper.calls == []
+
+
+async def test_without_cooldown_a_miss_calls_alcampo(redis: fakeredis.FakeAsyncRedis) -> None:
+    scraper = FakeScraper(make_raw_response(has_products=True))
+    service, _ = make_service(scraper, redis)
+
+    await service.search(ProductQuery(postal_code="28001", term="leche"))
+
+    assert scraper.calls == ["leche"]

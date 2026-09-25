@@ -141,7 +141,7 @@ Formato de commit: `<tipo>(002-alcampo-scraper-antibaneo): <descripción en ingl
 - **RF:** RF-15
 - **Hecho cuando:** los casos pasan y toda la suite, incluida la integración de la 001, sigue en verde.
 
-### [ ] T12 — El servicio respeta la marca
+### [x] T12 — El servicio respeta la marca
 - **RED:** en `test_product_service.py`:
   - marca activa + miss → `UpstreamUnavailableError` y **0** llamadas al scraper;
   - marca activa + hit → respuesta de cache y 0 llamadas al scraper;

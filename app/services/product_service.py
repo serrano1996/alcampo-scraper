@@ -5,7 +5,7 @@ from datetime import UTC, datetime
 from typing import Protocol
 
 from app.core.config import Settings
-from app.exceptions import UpstreamBlockedError
+from app.exceptions import UpstreamBlockedError, UpstreamUnavailableError
 from app.mappers.product_mapper import map_search
 from app.models.alcampo import AlcampoSearchResponse
 from app.models.product import ProductQuery, ProductSearchResponse, SearchMetadata
@@ -53,6 +53,12 @@ class ProductService:
                     )
                 }
             )
+
+        # Checked after the cache on purpose (plan-D3): cached searches keep
+        # working during a cooldown (spec 002 RF-17); misses fail fast without
+        # touching Alcampo (RF-16).
+        if await self._cooldown.is_active():
+            raise UpstreamUnavailableError("WAF cooldown active")
 
         try:
             raw = await self._scraper.search(query.term)
