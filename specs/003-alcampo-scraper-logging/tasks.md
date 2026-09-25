@@ -93,7 +93,7 @@ Formato de commit: `<tipo>(003-alcampo-scraper-logging): <descripción en inglé
 
 ## PR2 — Eventos de dominio y docs
 
-### [ ] T7 — Logs de reintentos
+### [x] T7 — Logs de reintentos
 - **RED:** en `tests/scrapers/test_retry.py`, con `caplog` y `url="/search?q=leche"`:
   - `503, 200` → 1 `WARNING` con intento `1`, status `503`, la URL y la espera;
   - `ConnectTimeout, 200` → 1 `WARNING` con el tipo de error `ConnectTimeout`;

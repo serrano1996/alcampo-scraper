@@ -5,6 +5,7 @@ injectable `sleep`, so tests never wait for real time (plan-D3).
 """
 
 import asyncio
+import logging
 import random
 import re
 from collections.abc import Awaitable, Callable
@@ -19,6 +20,8 @@ Sleep = Callable[[float], Awaitable[None]]
 Uniform = Callable[[float, float], float]
 
 WAF_CHALLENGE_HEADER = "x-amzn-waf-action"
+
+logger = logging.getLogger(__name__)
 
 MAX_RETRY_AFTER_WAIT_SECONDS = 60.0
 
@@ -67,6 +70,7 @@ async def send_with_retry(
     sleep: Sleep = asyncio.sleep,
     uniform: Uniform = random.uniform,
     now: Callable[[], datetime] = _utc_now,
+    url: str = "-",
 ) -> httpx.Response:
     """Call `send`, retrying transient failures with exponential backoff.
 
@@ -84,7 +88,21 @@ async def send_with_retry(
     On a 429, `Retry-After` (seconds or HTTP date) replaces the backoff, and the
     final wait, jitter included, is capped at 60 s (spec 002 RF-5..RF-8,
     plan-D8). `Retry-After` is ignored on any other status (spec-D4).
+
+    Logging (spec 003 RF-8..RF-10): a WARNING per retry, an ERROR when retries
+    are exhausted or a 4xx is not retryable. The WAF challenge is logged by the
+    service, which knows the cooldown (plan-D8). `url` is passed explicitly
+    rather than read from httpx objects (plan-D7) and logged with %r (RF-18).
     """
+
+    async def wait_before_retry(attempt: int, reason: str, wait: float) -> None:
+        logger.warning(
+            "retrying attempt=%d reason=%s url=%r wait_s=%.2f", attempt, reason, url, wait
+        )
+        await sleep(wait)
+
+    def exhausted(attempt: int, reason: str) -> None:
+        logger.error("retries exhausted attempts=%d reason=%s url=%r", attempt, reason, url)
 
     def backoff(attempt: int) -> float:
         return base_delay * 2 ** (attempt - 1) + uniform(0, jitter_max)
@@ -104,9 +122,11 @@ async def send_with_retry(
             response = await send()
         except httpx.TransportError as exc:
             last_transport_error = exc
+            reason = type(exc).__name__
             if attempt == max_attempts:
+                exhausted(attempt, reason)
                 raise UpstreamUnavailableError("transport error, retries exhausted") from exc
-            await sleep(backoff(attempt))
+            await wait_before_retry(attempt, reason, backoff(attempt))
             continue
 
         if _is_waf_challenge(response):
@@ -116,15 +136,18 @@ async def send_with_retry(
             return response
 
         if not _is_retryable(response):
+            logger.error("non-retryable upstream status=%d url=%r", response.status_code, url)
             raise UpstreamUnavailableError(f"non-retryable upstream status {response.status_code}")
 
+        reason = f"status {response.status_code}"
         if attempt == max_attempts:
+            exhausted(attempt, reason)
             raise UpstreamUnavailableError(f"upstream returned {response.status_code}")
 
         if response.status_code == 429:
-            await sleep(rate_limited_wait(response, attempt))
+            await wait_before_retry(attempt, reason, rate_limited_wait(response, attempt))
         else:
-            await sleep(backoff(attempt))
+            await wait_before_retry(attempt, reason, backoff(attempt))
 
     # Unreachable: the loop above always returns or raises before completing.
     raise UpstreamUnavailableError("retries exhausted") from last_transport_error

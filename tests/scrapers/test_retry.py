@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime
 
 import httpx
@@ -306,3 +307,111 @@ async def test_waf_challenge_raises_upstream_blocked_error_after_one_call() -> N
 
     assert len(calls) == 1
     assert sleep.calls == []
+
+
+URL = "/search?q=leche"
+
+
+def retry_records(caplog: pytest.LogCaptureFixture, level: int) -> list[logging.LogRecord]:
+    return [r for r in caplog.records if r.name == "app.scrapers.retry" and r.levelno == level]
+
+
+async def test_each_retry_logs_a_warning(caplog: pytest.LogCaptureFixture) -> None:
+    await send_with_retry(
+        sequence(make_response(503), make_response(200)),
+        max_attempts=3,
+        base_delay=0.5,
+        sleep=FakeSleep(),
+        url=URL,
+    )
+
+    [warning] = retry_records(caplog, logging.WARNING)
+    message = warning.getMessage()
+    assert "attempt=1" in message
+    assert "503" in message
+    assert repr(URL) in message
+    assert "wait_s=0.50" in message
+    assert retry_records(caplog, logging.ERROR) == []
+
+
+async def test_transport_error_retry_names_the_error(caplog: pytest.LogCaptureFixture) -> None:
+    await send_with_retry(
+        sequence(httpx.ConnectTimeout("boom"), make_response(200)),
+        max_attempts=3,
+        base_delay=0.5,
+        sleep=FakeSleep(),
+        url=URL,
+    )
+
+    [warning] = retry_records(caplog, logging.WARNING)
+    assert "ConnectTimeout" in warning.getMessage()
+
+
+async def test_exhausted_retries_log_an_error(caplog: pytest.LogCaptureFixture) -> None:
+    with pytest.raises(UpstreamUnavailableError):
+        await send_with_retry(
+            sequence(make_response(503), make_response(503), make_response(503)),
+            max_attempts=3,
+            base_delay=0.5,
+            sleep=FakeSleep(),
+            url=URL,
+        )
+
+    assert len(retry_records(caplog, logging.WARNING)) == 2
+    [error] = retry_records(caplog, logging.ERROR)
+    assert "attempts=3" in error.getMessage()
+    assert repr(URL) in error.getMessage()
+
+
+async def test_exhausted_transport_errors_log_an_error(caplog: pytest.LogCaptureFixture) -> None:
+    with pytest.raises(UpstreamUnavailableError):
+        await send_with_retry(
+            sequence(httpx.ConnectError("x"), httpx.ConnectError("x")),
+            max_attempts=2,
+            base_delay=0.5,
+            sleep=FakeSleep(),
+            url=URL,
+        )
+
+    [error] = retry_records(caplog, logging.ERROR)
+    assert "attempts=2" in error.getMessage()
+    assert "ConnectError" in error.getMessage()
+
+
+async def test_non_retryable_4xx_logs_an_error_without_warnings(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    with pytest.raises(UpstreamUnavailableError):
+        await send_with_retry(
+            sequence(make_response(404)), max_attempts=3, base_delay=0.5, sleep=FakeSleep(), url=URL
+        )
+
+    [error] = retry_records(caplog, logging.ERROR)
+    assert "404" in error.getMessage()
+    assert repr(URL) in error.getMessage()
+    assert retry_records(caplog, logging.WARNING) == []
+
+
+async def test_waf_challenge_is_not_logged_by_retry(caplog: pytest.LogCaptureFixture) -> None:
+    with pytest.raises(UpstreamBlockedError):
+        await send_with_retry(
+            sequence(make_response(202, headers={"x-amzn-waf-action": "challenge"})),
+            max_attempts=3,
+            base_delay=0.5,
+            sleep=FakeSleep(),
+            url=URL,
+        )
+
+    assert [r for r in caplog.records if r.name == "app.scrapers.retry"] == []
+
+
+async def test_url_defaults_to_dash(caplog: pytest.LogCaptureFixture) -> None:
+    await send_with_retry(
+        sequence(make_response(503), make_response(200)),
+        max_attempts=3,
+        base_delay=0.5,
+        sleep=FakeSleep(),
+    )
+
+    [warning] = retry_records(caplog, logging.WARNING)
+    assert "url='-'" in warning.getMessage()
