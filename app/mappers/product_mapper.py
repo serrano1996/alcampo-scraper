@@ -6,7 +6,9 @@ and PER_METER are inferred from the web bundle's translation keys
 Any other unit name degrades to `price_format: None` (RF-8) instead of failing.
 """
 
-from app.models.alcampo import AlcampoProduct, AlcampoUnitPrice
+from pydantic import ValidationError
+
+from app.models.alcampo import AlcampoProduct, AlcampoSearchResponse, AlcampoUnitPrice
 from app.models.product import Product
 
 UNIT_SUFFIXES: dict[str, str] = {
@@ -39,3 +41,28 @@ def map_product(raw: AlcampoProduct) -> Product:
         image_url=raw.image.src if raw.image else None,
         category=raw.category_path[-1] if raw.category_path else None,
     )
+
+
+def map_search(raw: AlcampoSearchResponse) -> list[Product]:
+    """Map a search envelope to the list of products returned by the API.
+
+    Malformed products are discarded instead of failing the whole search
+    (RF-9, spec-D7). Products repeated across groups are deduplicated by
+    `retailerProductId`, keeping the first occurrence (RF-4, spec-D7).
+    """
+    products: list[Product] = []
+    seen_ids: set[str] = set()
+
+    for group in raw.product_groups:
+        for raw_product in group.decorated_products:
+            try:
+                product_data = AlcampoProduct.model_validate(raw_product)
+            except ValidationError:
+                continue
+
+            if product_data.retailer_product_id in seen_ids:
+                continue
+            seen_ids.add(product_data.retailer_product_id)
+            products.append(map_product(product_data))
+
+    return products

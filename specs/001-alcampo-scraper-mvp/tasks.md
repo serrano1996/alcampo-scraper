@@ -93,7 +93,7 @@ Formato de commit: `<tipo>(001-alcampo-scraper-mvp): <descripción en inglés> (
 - **RF:** RF-6
 - **Hecho cuando:** todos los casos pasan.
 
-### [ ] T8 — Mapeo de la búsqueda (descarte y deduplicación)
+### [x] T8 — Mapeo de la búsqueda (descarte y deduplicación)
 - **RED:** `test_map_search_*`, todos construidos a partir de la fixture real:
   - fixture → 3 productos en orden;
   - 2 grupos con un `retailerProductId` repetido → sin duplicado, primera aparición conservada;
