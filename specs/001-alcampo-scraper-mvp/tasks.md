@@ -163,7 +163,7 @@ Formato de commit: `<tipo>(001-alcampo-scraper-mvp): <descripción en inglés> (
 
 ## PR3 — Cache, servicio, API, integración y docs
 
-### [ ] T14 — Repositorio de cache
+### [x] T14 — Repositorio de cache
 - **RED:** `tests/services/test_search_cache.py`, con un `FakeAsyncRedis()` nuevo por test:
   - `get` en clave vacía → `None`;
   - `set` y luego `get` → la misma `ProductSearchResponse`;
