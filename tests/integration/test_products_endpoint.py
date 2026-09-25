@@ -1,6 +1,7 @@
+import httpx
 from fastapi.testclient import TestClient
 
-from tests.integration.conftest import load_fixture, mock_alcampo_search
+from tests.integration.conftest import SEARCH_URL, load_fixture, mock_alcampo_search
 
 
 def test_miss_then_hit(client: TestClient, respx_mock) -> None:
@@ -72,3 +73,26 @@ async def test_waf_challenge_returns_502_with_a_single_call(client: TestClient, 
     redis = client.app.state.redis
     assert await redis.keys("search:*") == []
     assert await redis.exists("waf:cooldown") == 1
+
+
+async def test_waf_cooldown_end_to_end(client: TestClient, respx_mock) -> None:
+    leche = respx_mock.get(SEARCH_URL, params={"q": "leche"}).mock(
+        return_value=httpx.Response(200, json=load_fixture("alcampo_search_leche.json"))
+    )
+    agua = respx_mock.get(SEARCH_URL, params={"q": "agua"}).mock(
+        return_value=httpx.Response(202, headers={"x-amzn-waf-action": "challenge"})
+    )
+
+    def search(term: str) -> int:
+        params = {"postal_code": "28001", "term": term}
+        return client.get("/api/v1/products", params=params).status_code
+
+    assert search("leche") == 200  # cached from now on
+    assert search("agua") == 502  # WAF challenge: cooldown starts
+    assert agua.call_count == 1
+
+    assert search("agua") == 502  # uncached during cooldown: Alcampo is not called
+    assert agua.call_count == 1
+
+    assert search("leche") == 200  # cached during cooldown: still served
+    assert leche.call_count == 1

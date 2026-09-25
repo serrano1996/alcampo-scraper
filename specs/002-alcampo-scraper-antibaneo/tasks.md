@@ -151,7 +151,8 @@ Formato de commit: `<tipo>(002-alcampo-scraper-antibaneo): <descripción en ingl
 - **RF:** RF-16, RF-17
 - **Hecho cuando:** todos los casos pasan.
 
-### [ ] T13 — Integración end-to-end
+### [x] T13 — Integración end-to-end
+> **R4 resuelto (2026-09-25):** `respx` compara `params` de forma parcial (`<Params contains …>`): `params={"q": "agua"}` encaja aunque la petición lleve `tag` y `maxPageSize`. No hizo falta `side_effect`. El test pasó a la primera (sin código nuevo) y se comprobó que detecta el fallo: con `WAF_COOLDOWN_SECONDS=0` falla con `agua.call_count == 2`.
 - **RED:** en `tests/integration/test_products_endpoint.py`:
   - **escenario completo:** búsqueda de `leche` → `200` (queda en cache); búsqueda de `agua` → challenge → `502` (1 llamada a Alcampo); `agua` otra vez → `502` **sin llamada nueva**; `leche` otra vez → `200` desde cache;
 - **GREEN:** no debería hacer falta código nuevo. **Punto de control R4:** si `respx` no permite distinguir rutas por `params={"q": ...}`, usar `side_effect` por petición y anotarlo aquí.
