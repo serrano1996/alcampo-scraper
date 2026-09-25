@@ -26,7 +26,7 @@ Formato de commit: `<tipo>(001-alcampo-scraper-mvp): <descripción en inglés> (
 - **RF:** — (infraestructura; plan R4)
 - **Hecho cuando:** la instalación termina sin errores en el Python local, `pytest -q` pasa 1 test y `ruff check .` sale limpio. Si alguna dependencia falla en Python 3.14, **parar y avisar** (R4).
 
-### [ ] T2 — `Settings`
+### [x] T2 — `Settings`
 - **RED:** `tests/core/test_config.py`:
   - sin `ALCAMPO_BASE_URL` → `ValidationError`;
   - sin `REDIS_URL` → `ValidationError`;
