@@ -218,7 +218,7 @@ Formato de commit: `<tipo>(001-alcampo-scraper-mvp): <descripción en inglés> (
 - **RF:** RF-1, RF-11 (plan-D11)
 - **Hecho cuando:** el test pasa. **Punto de control R3:** si `respx` interfiere con el `TestClient`, **parar y avisar** con la traza.
 
-### [ ] T19 — Escenarios de integración de error y validación
+### [x] T19 — Escenarios de integración de error y validación
 - **RED:** en `test_products_endpoint.py`:
   - búsqueda sin resultados (fixture real) → `200`, `[]`;
   - `term="   "` → `422`, 0 llamadas a Alcampo y 0 claves en Redis;
