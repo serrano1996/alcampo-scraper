@@ -115,7 +115,7 @@ Formato de commit: `<tipo>(001-alcampo-scraper-mvp): <descripción en inglés> (
 - **RF:** RNF-1, RNF-3
 - **Hecho cuando:** el test pasa.
 
-### [ ] T10 — Reintentos ante fallos transitorios
+### [x] T10 — Reintentos ante fallos transitorios
 - **RED:** `tests/scrapers/test_retry.py`, con un `send` falso que devuelve una secuencia de `httpx.Response` y un `sleep` falso que registra las esperas:
   - `200` → 1 llamada, 0 esperas;
   - `503, 503, 200` → 3 llamadas, esperas `[0.5, 1.0]`;
