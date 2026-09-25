@@ -17,7 +17,9 @@ Formato de commit: `<tipo>(001-alcampo-scraper-mvp): <descripción en inglés> (
 
 ## PR1 — Base, modelos y mapper
 
-### [ ] T1 — Entorno y paquete `app`
+### [x] T1 — Entorno y paquete `app`
+> Hecho el 2026-09-25. Instalación limpia en Python 3.14.3: el riesgo R4 queda descartado. Ruff 0.16 también formatea los bloques de código Python dentro de los `.md`, así que `plan.md` se reformateó (solo espacios) para que `ruff format --check .` pase.
+
 - **RED:** `tests/test_package.py` importa `app`, `app.api.v1`, `app.core`, `app.models`, `app.mappers`, `app.scrapers` y `app.services` → `ModuleNotFoundError`.
 - **GREEN:** crear los `__init__.py` vacíos. Crear el venv e instalar con `pip install -e ".[dev]"`.
 - **Depende:** —

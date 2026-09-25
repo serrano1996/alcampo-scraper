@@ -54,9 +54,11 @@ Tests en espejo (`tests/core/`, `tests/models/`, `tests/mappers/`, `tests/scrape
 ```python
 SearchTerm = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=50)]
 
+
 class ProductQuery(BaseModel):
     postal_code: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
     term: SearchTerm
+
 
 class Product(BaseModel):
     id: str
@@ -66,13 +68,15 @@ class Product(BaseModel):
     image_url: str | None
     category: str | None
 
+
 class SearchMetadata(BaseModel):
     postal_code: str
     term: str
     warehouse: str
     strategy_used: str
-    scraped_at: datetime          # UTC, serializado con "Z"
+    scraped_at: datetime  # UTC, serializado con "Z"
     total_results: int
+
 
 class ProductSearchResponse(BaseModel):
     search: SearchMetadata
@@ -88,15 +92,19 @@ Todos con `model_config = ConfigDict(extra="ignore")`: la respuesta real tiene m
 ```python
 DecimalString = Annotated[str, StringConstraints(pattern=r"^[0-9]+(\.[0-9]+)?$")]
 
+
 class AlcampoMoney(BaseModel):
     amount: DecimalString
+
 
 class AlcampoUnitPrice(BaseModel):
     price: AlcampoMoney | None = None
     unit_name: str | None = Field(default=None, alias="unitName")
 
+
 class AlcampoImage(BaseModel):
     src: str | None = None
+
 
 class AlcampoProduct(BaseModel):
     retailer_product_id: str = Field(alias="retailerProductId", min_length=1)
@@ -106,11 +114,13 @@ class AlcampoProduct(BaseModel):
     image: AlcampoImage | None = None
     category_path: list[str] = Field(default_factory=list, alias="categoryPath")
 
+
 class AlcampoProductGroup(BaseModel):
     decorated_products: list[JsonValue] = Field(default_factory=list, alias="decoratedProducts")
 
+
 class AlcampoSearchResponse(BaseModel):
-    product_groups: list[AlcampoProductGroup] = Field(alias="productGroups")   # obligatorio → RF-19
+    product_groups: list[AlcampoProductGroup] = Field(alias="productGroups")  # obligatorio → RF-19
 ```
 
 ### Redis
