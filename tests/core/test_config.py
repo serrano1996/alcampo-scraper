@@ -7,7 +7,13 @@ REQUIRED = {
     "ALCAMPO_BASE_URL": "https://alcampo.test",
     "REDIS_URL": "redis://localhost:6379/0",
 }
-OPTIONAL = ["CACHE_TTL_SECONDS", "RETRY_MAX_ATTEMPTS", "RETRY_BASE_DELAY", "LOG_LEVEL"]
+OPTIONAL = [
+    "CACHE_TTL_SECONDS",
+    "RETRY_MAX_ATTEMPTS",
+    "RETRY_BASE_DELAY",
+    "RETRY_JITTER_MAX_S",
+    "LOG_LEVEL",
+]
 
 
 @pytest.fixture(autouse=True)
@@ -65,3 +71,27 @@ def test_get_settings_is_cached(monkeypatch: pytest.MonkeyPatch) -> None:
     set_required(monkeypatch)
 
     assert get_settings() is get_settings()
+
+
+def test_retry_jitter_max_s_defaults_to_0_3(monkeypatch: pytest.MonkeyPatch) -> None:
+    set_required(monkeypatch)
+
+    assert Settings(_env_file=None).retry_jitter_max_s == 0.3
+
+
+@pytest.mark.parametrize(("raw", "expected"), [("0", 0.0), ("1.5", 1.5)])
+def test_retry_jitter_max_s_accepts_non_negative_values(
+    monkeypatch: pytest.MonkeyPatch, raw: str, expected: float
+) -> None:
+    set_required(monkeypatch)
+    monkeypatch.setenv("RETRY_JITTER_MAX_S", raw)
+
+    assert Settings(_env_file=None).retry_jitter_max_s == expected
+
+
+def test_negative_retry_jitter_max_s_fails(monkeypatch: pytest.MonkeyPatch) -> None:
+    set_required(monkeypatch)
+    monkeypatch.setenv("RETRY_JITTER_MAX_S", "-0.1")
+
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None)

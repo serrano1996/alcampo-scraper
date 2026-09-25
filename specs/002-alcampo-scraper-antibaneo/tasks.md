@@ -17,7 +17,7 @@ Formato de commit: `<tipo>(002-alcampo-scraper-antibaneo): <descripción en ingl
 
 ## PR1 — Fingerprint, `Retry-After` y jitter (paridad con Mercadona)
 
-### [ ] T1 — `RETRY_JITTER_MAX_S` en `Settings`
+### [x] T1 — `RETRY_JITTER_MAX_S` en `Settings`
 - **RED:** en `tests/core/test_config.py`:
   - default `retry_jitter_max_s == 0.3`;
   - `RETRY_JITTER_MAX_S=0` → válido;

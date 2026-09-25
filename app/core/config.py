@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -15,6 +16,7 @@ class Settings(BaseSettings):
     cache_ttl_seconds: int = 3600
     retry_max_attempts: int = 3
     retry_base_delay: float = 0.5
+    retry_jitter_max_s: float = Field(default=0.3, ge=0)
     log_level: str = "INFO"
 
 
