@@ -38,7 +38,7 @@ Formato de commit: `<tipo>(001-alcampo-scraper-mvp): <descripción en inglés> (
 - **RF:** RF-21
 - **Hecho cuando:** los 4 casos pasan.
 
-### [ ] T3 — Excepciones de dominio
+### [x] T3 — Excepciones de dominio
 - **RED:** `tests/test_exceptions.py`: `UpstreamUnavailableError("x")` es subclase de `AlcampoScraperError`, expone `.reason == "x"` y su módulo no importa `httpx` (se comprueba que `"httpx"` no está en `app.exceptions.__dict__`).
 - **GREEN:** `app/exceptions.py`.
 - **Depende:** T1
