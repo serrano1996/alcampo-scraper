@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     retry_max_attempts: int = 3
     retry_base_delay: float = 0.5
     retry_jitter_max_s: float = Field(default=0.3, ge=0)
+    waf_cooldown_seconds: int = Field(default=180, ge=0)
     log_level: str = "INFO"
 
 

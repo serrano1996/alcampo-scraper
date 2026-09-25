@@ -12,6 +12,7 @@ OPTIONAL = [
     "RETRY_MAX_ATTEMPTS",
     "RETRY_BASE_DELAY",
     "RETRY_JITTER_MAX_S",
+    "WAF_COOLDOWN_SECONDS",
     "LOG_LEVEL",
 ]
 
@@ -92,6 +93,30 @@ def test_retry_jitter_max_s_accepts_non_negative_values(
 def test_negative_retry_jitter_max_s_fails(monkeypatch: pytest.MonkeyPatch) -> None:
     set_required(monkeypatch)
     monkeypatch.setenv("RETRY_JITTER_MAX_S", "-0.1")
+
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None)
+
+
+def test_waf_cooldown_seconds_defaults_to_180(monkeypatch: pytest.MonkeyPatch) -> None:
+    set_required(monkeypatch)
+
+    assert Settings(_env_file=None).waf_cooldown_seconds == 180
+
+
+@pytest.mark.parametrize(("raw", "expected"), [("0", 0), ("240", 240)])
+def test_waf_cooldown_seconds_accepts_non_negative_values(
+    monkeypatch: pytest.MonkeyPatch, raw: str, expected: int
+) -> None:
+    set_required(monkeypatch)
+    monkeypatch.setenv("WAF_COOLDOWN_SECONDS", raw)
+
+    assert Settings(_env_file=None).waf_cooldown_seconds == expected
+
+
+def test_negative_waf_cooldown_seconds_fails(monkeypatch: pytest.MonkeyPatch) -> None:
+    set_required(monkeypatch)
+    monkeypatch.setenv("WAF_COOLDOWN_SECONDS", "-1")
 
     with pytest.raises(ValidationError):
         Settings(_env_file=None)

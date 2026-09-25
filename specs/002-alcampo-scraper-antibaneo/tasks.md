@@ -110,7 +110,7 @@ Formato de commit: `<tipo>(002-alcampo-scraper-antibaneo): <descripción en ingl
 - **RF:** RF-12, RF-14
 - **Hecho cuando:** todos los casos pasan y el test de WAF de la 001 (`pytest.raises(UpstreamUnavailableError)`) sigue en verde sin tocarlo.
 
-### [ ] T9 — `WAF_COOLDOWN_SECONDS` en `Settings`
+### [x] T9 — `WAF_COOLDOWN_SECONDS` en `Settings`
 - **RED:** en `tests/core/test_config.py`: default `180`; `0` válido; `-1` → `ValidationError`; override por entorno. Añadir la variable a `OPTIONAL`.
 - **GREEN:** `waf_cooldown_seconds: int = Field(default=180, ge=0)`.
 - **Depende:** —
