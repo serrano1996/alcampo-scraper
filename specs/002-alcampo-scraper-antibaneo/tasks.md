@@ -160,7 +160,7 @@ Formato de commit: `<tipo>(002-alcampo-scraper-antibaneo): <descripción en ingl
 - **RF:** RF-15, RF-16, RF-17
 - **Hecho cuando:** todos los casos pasan.
 
-### [ ] T14 — Docs vivas
+### [x] T14 — Docs vivas
 - **RED:** `tests/core/test_env_example.py`: `.env.example` contiene `RETRY_JITTER_MAX_S` y `WAF_COOLDOWN_SECONDS`, y todas las variables que declara `Settings` (evita que vuelvan a desincronizarse).
 - **GREEN:** actualizar `.env.example` (por `Bash`, porque `Write` está bloqueado en `.env*`) y `README.md`: las dos variables nuevas, una sección sobre el enfriamiento (qué hace, cuánto dura, que las búsquedas cacheadas siguen funcionando) y la deuda de revisión del pool de User-Agents.
 - **Depende:** T13
