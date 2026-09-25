@@ -4,7 +4,7 @@ API REST asíncrona (FastAPI) que extrae, procesa y sirve datos de productos de
 [Alcampo online](https://www.compraonline.alcampo.es). Ofrece el mismo contrato que
 `mercadona-scraper` para poder comparar ambos supermercados sin adaptar el consumidor.
 
-> Estado: implementadas `specs/001-alcampo-scraper-mvp` (MVP de búsqueda) y `specs/002-alcampo-scraper-antibaneo` (medidas antibaneo). Ver [limitaciones conocidas](#limitaciones-conocidas).
+> Estado: implementadas `specs/001-alcampo-scraper-mvp` (MVP de búsqueda), `specs/002-alcampo-scraper-antibaneo` (medidas antibaneo) y `specs/003-alcampo-scraper-logging` (logging). Ver [limitaciones conocidas](#limitaciones-conocidas).
 
 ## Puesta en marcha
 
@@ -77,11 +77,38 @@ Invisibles para el consumidor, salvo algo más de latencia en los reintentos. De
 
 **Mantenimiento:** el pool de User-Agents se verificó el 2026-09-25 contra las fuentes oficiales de cada navegador. Revisarlo cada ~3 meses: un User-Agent desfasado delata al bot. Está en `app/scrapers/http_client.py` y hay que actualizar también su copia en `tests/scrapers/test_http_client.py`.
 
+## Logging
+
+Todo va a `stderr` en texto plano (sin dependencias nuevas); quien despliegue lo captura. Detalle en [`specs/003-alcampo-scraper-logging`](specs/003-alcampo-scraper-logging/spec.md).
+
+```
+2026-09-25 10:00:00,123 INFO [3f2a9c0e1b7d4e6f8a1b2c3d4e5f6a7b] app.middleware.request_context: request finished status=200 duration_ms=41.7
+```
+
+Formato: fecha y hora, nivel, `[request id]`, logger y mensaje. Fuera de una petición (arranque, parada) el request id es `-`.
+
+- **`LOG_LEVEL`** (`INFO` por defecto): `DEBUG`, `INFO`, `WARNING`, `ERROR` o `CRITICAL`, sin distinguir mayúsculas. Cualquier otro valor impide arrancar.
+- **Request id por petición.** Cada petición recibe un id propio que aparece en **todas** sus líneas de log y se devuelve en la cabecera **`X-Request-ID`** (también en `422`, `500` y `502`). Si un consumidor reporta un error, con ese id se encuentran todas las líneas de su petición. Un `X-Request-ID` enviado por el cliente se ignora, para que nadie pueda meter texto propio en los logs.
+- **Cada petición** deja una línea al empezar (método, ruta y parámetros) y otra al terminar (estado y duración).
+
+Qué nivel tiene cada evento:
+
+| Nivel | Eventos |
+|---|---|
+| `ERROR` | error no controlado (con traceback, responde `500`); `502` por Alcampo caído, reintentos agotados o `4xx` no reintentable; challenge del WAF (con la duración del enfriamiento); respuesta de Alcampo con JSON inválido o formato inesperado; **todos** los productos de una respuesta descartados (probable cambio de formato en Alcampo) |
+| `WARNING` | cada reintento; búsqueda rechazada durante el enfriamiento; algunos productos descartados; entrada de cache corrupta |
+| `INFO` | inicio y fin de cada petición |
+
+**Nunca se registran** cookies de Alcampo, cabeceras completas, el cuerpo de las respuestas de Alcampo ni (a partir de la spec 004) la `X-API-Key`. Los valores que envía el cliente se registran escapados (`%r`), así que un salto de línea no puede fabricar líneas falsas.
+
+uvicorn sigue emitiendo su propio access log, sin request id. Si molesta, se desactiva al desplegar (`--no-access-log`).
+
 ## Limitaciones conocidas
 
 - **`postal_code` no influye todavía en el resultado.** La Fase 0 demostró que Alcampo cambia precio y catálogo según la región (tienda/zona), pero resolverla en vivo cuesta ~8 peticiones y roza el rate-limit de su WAF. Esta primera feature busca siempre en la región por defecto de una sesión anónima ("Vaguada", Madrid, `warehouse: "5"`). La resolución real de `postal_code` → región llega en `specs/007-...` (pendiente).
 - **`price_format` solo está verificado para `PER_LITRE`.** Las unidades `PER_KG`, `PER_EACH` y `PER_METER` se infieren del bundle web de Alcampo, no de una respuesta real observada.
-- Sin logging estructurado ni autenticación todavía: llegan en `specs/003` y `specs/004`.
+- Sin autenticación todavía: llega en `specs/004`.
+- Logs solo en texto plano: sin JSON ni integración con plataformas de observabilidad (fuera de alcance en la spec 003).
 - El enfriamiento no supera el bloqueo del WAF, solo evita insistir. Si el bloqueo dura más que `WAF_COOLDOWN_SECONDS` (se observaron hasta ~4 min), la siguiente búsqueda recibe otro challenge y abre un nuevo enfriamiento.
 
 Detalle completo de lo verificado en vivo: [Fase 0](docs/investigacion/fase-0-alcampo.md).
