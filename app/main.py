@@ -11,6 +11,7 @@ from app.api.v1.products import router as products_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
 from app.exceptions import UpstreamUnavailableError
+from app.middleware.request_context import RequestContextMiddleware
 from app.scrapers.http_client import create_http_client
 
 
@@ -35,6 +36,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 def create_app() -> FastAPI:
     app = FastAPI(lifespan=lifespan)
     app.include_router(products_router)
+    # Added last so it stays the outermost middleware (spec 003 plan-D6).
+    app.add_middleware(RequestContextMiddleware)
 
     @app.exception_handler(UpstreamUnavailableError)
     async def upstream_unavailable_handler(

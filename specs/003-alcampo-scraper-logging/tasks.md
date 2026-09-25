@@ -50,7 +50,8 @@ Formato de commit: `<tipo>(003-alcampo-scraper-logging): <descripción en inglé
 - **RF:** RF-1
 - **Hecho cuando:** pasa y **toda la suite de integración de las specs 001 y 002 sigue en verde** (plan §6).
 
-### [ ] T4 — Middleware: request id, inicio/fin y `X-Request-ID`
+### [x] T4 — Middleware: request id, inicio/fin y `X-Request-ID`
+> **Ajuste (2026-09-25):** se descartó el caso "fuera de una petición, `request_id_var.get() == '-'`". `TestClient` ejecuta la app en otro hilo, así que en el hilo del test el `ContextVar` vale `-` con o sin middleware: el test no podría fallar nunca. El valor `-` fuera de petición ya lo cubre T2.
 - **RED:** en `tests/integration/test_logging_integration.py`, con la búsqueda mockeada por `respx`:
   - `GET /api/v1/products?…` → registros `request started` (método, ruta y parámetros) y `request finished` (status `200` y `duration_ms`), con el **mismo** `request_id` de 32 hex;
   - la respuesta lleva `X-Request-ID` igual a ese id;
