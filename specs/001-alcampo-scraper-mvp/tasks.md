@@ -231,7 +231,7 @@ Formato de commit: `<tipo>(001-alcampo-scraper-mvp): <descripción en inglés> (
 - **RF:** RF-2, RF-5, RF-13, RF-16, RF-17, RF-18
 - **Hecho cuando:** todos los casos pasan.
 
-### [ ] T20 — Docs vivas
+### [x] T20 — Docs vivas
 - **RED:** `tests/api/test_openapi.py`: `/openapi.json` contiene los schemas `ProductSearchResponse`, `Product` y `SearchMetadata`, y la ruta `/api/v1/products` con los parámetros `postal_code` y `term`.
 - **GREEN:** ajustar `response_model` y los metadatos de la ruta si hace falta. Actualizar `README.md` con: uso del endpoint, ejemplo de respuesta, la limitación de la región por defecto (plan R1), `502` ante el WAF y la tabla de variables. Crear o actualizar `.env.example`: **está bloqueado por los permisos del agente (plan R6); se pedirá al usuario**.
 - **Depende:** T19
