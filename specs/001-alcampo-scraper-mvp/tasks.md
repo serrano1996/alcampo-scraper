@@ -126,7 +126,7 @@ Formato de commit: `<tipo>(001-alcampo-scraper-mvp): <descripción en inglés> (
 - **RF:** RF-15
 - **Hecho cuando:** todos los casos pasan sin esperas reales (la suite no tarda más por esto).
 
-### [ ] T11 — Fallos definitivos y challenge del WAF
+### [x] T11 — Fallos definitivos y challenge del WAF
 - **RED:** en el mismo fichero:
   - `404` → 1 llamada y `UpstreamUnavailableError`;
   - `503 × 3` con `max_attempts=3` → `UpstreamUnavailableError`, 3 llamadas y 2 esperas;

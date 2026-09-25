@@ -9,7 +9,15 @@ from collections.abc import Awaitable, Callable
 
 import httpx
 
+from app.exceptions import UpstreamUnavailableError
+
 Sleep = Callable[[float], Awaitable[None]]
+
+WAF_CHALLENGE_HEADER = "x-amzn-waf-action"
+
+
+def _is_waf_challenge(response: httpx.Response) -> bool:
+    return WAF_CHALLENGE_HEADER in response.headers
 
 
 def _is_retryable(response: httpx.Response) -> bool:
@@ -25,22 +33,39 @@ async def send_with_retry(
 ) -> httpx.Response:
     """Call `send`, retrying transient failures with exponential backoff.
 
-    Only classifies retryable outcomes (5xx, 429, transport errors) for now.
-    Non-retryable responses and exhausted retries are returned/raised as-is;
-    translating them into `UpstreamUnavailableError` is completed in T11.
+    - 2xx (without a WAF challenge header): returned immediately (RF-3).
+    - 5xx, 429, transport errors: retried up to `max_attempts` (RF-15).
+      Exhausting retries raises `UpstreamUnavailableError` (RF-17).
+    - Any other 4xx: raises immediately, no retry (RF-16).
+    - A WAF challenge (`x-amzn-waf-action` header, arrives as an empty 202)
+      raises immediately, no retry, regardless of status code (RF-18, spec-D5).
+      Checked before status classification: the challenge can arrive as a 2xx.
     """
+    last_transport_error: httpx.TransportError | None = None
+
     for attempt in range(1, max_attempts + 1):
         try:
             response = await send()
-        except httpx.TransportError:
+        except httpx.TransportError as exc:
+            last_transport_error = exc
             if attempt == max_attempts:
-                raise
+                raise UpstreamUnavailableError("transport error, retries exhausted") from exc
             await sleep(base_delay * 2 ** (attempt - 1))
             continue
 
-        if attempt == max_attempts or not _is_retryable(response):
+        if _is_waf_challenge(response):
+            raise UpstreamUnavailableError("WAF challenge")
+
+        if response.is_success:
             return response
+
+        if not _is_retryable(response):
+            raise UpstreamUnavailableError(f"non-retryable upstream status {response.status_code}")
+
+        if attempt == max_attempts:
+            raise UpstreamUnavailableError(f"upstream returned {response.status_code}")
 
         await sleep(base_delay * 2 ** (attempt - 1))
 
-    raise AssertionError("unreachable: loop always returns or raises")
+    # Unreachable: the loop above always returns or raises before completing.
+    raise UpstreamUnavailableError("retries exhausted") from last_transport_error

@@ -1,5 +1,7 @@
 import httpx
+import pytest
 
+from app.exceptions import UpstreamUnavailableError
 from app.scrapers.retry import send_with_retry
 
 
@@ -69,6 +71,56 @@ async def test_retries_on_429() -> None:
 
     assert response.status_code == 200
     assert sleep.calls == [0.5]
+
+
+async def test_non_retryable_4xx_raises_after_a_single_call() -> None:
+    sleep = FakeSleep()
+    send = sequence(make_response(404), make_response(200))
+
+    with pytest.raises(UpstreamUnavailableError):
+        await send_with_retry(send, max_attempts=3, base_delay=0.5, sleep=sleep)
+
+    assert sleep.calls == []
+
+
+async def test_exhausted_5xx_retries_raise_upstream_unavailable() -> None:
+    sleep = FakeSleep()
+    send = sequence(make_response(503), make_response(503), make_response(503))
+
+    with pytest.raises(UpstreamUnavailableError):
+        await send_with_retry(send, max_attempts=3, base_delay=0.5, sleep=sleep)
+
+    assert sleep.calls == [0.5, 1.0]
+
+
+async def test_exhausted_transport_errors_raise_upstream_unavailable_not_httpx() -> None:
+    sleep = FakeSleep()
+    send = sequence(
+        httpx.ConnectError("boom"), httpx.ConnectError("boom"), httpx.ConnectError("boom")
+    )
+
+    with pytest.raises(UpstreamUnavailableError):
+        await send_with_retry(send, max_attempts=3, base_delay=0.5, sleep=sleep)
+
+
+async def test_waf_challenge_raises_without_retry_even_on_202() -> None:
+    sleep = FakeSleep()
+    send = sequence(
+        make_response(202, headers={"x-amzn-waf-action": "challenge"}), make_response(200)
+    )
+
+    with pytest.raises(UpstreamUnavailableError):
+        await send_with_retry(send, max_attempts=3, base_delay=0.5, sleep=sleep)
+
+    assert sleep.calls == []
+
+
+async def test_waf_challenge_header_overrides_a_2xx_status() -> None:
+    sleep = FakeSleep()
+    send = sequence(make_response(200, headers={"x-amzn-waf-action": "challenge"}))
+
+    with pytest.raises(UpstreamUnavailableError):
+        await send_with_retry(send, max_attempts=3, base_delay=0.5, sleep=sleep)
 
 
 async def test_retries_on_transport_error() -> None:
