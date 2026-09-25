@@ -197,7 +197,7 @@ Formato de commit: `<tipo>(001-alcampo-scraper-mvp): <descripción en inglés> (
 - **RF:** RF-11, RF-13, RF-14
 - **Hecho cuando:** todos los casos pasan.
 
-### [ ] T17 — Ruta, providers, `lifespan` y handler `502`
+### [x] T17 — Ruta, providers, `lifespan` y handler `502`
 - **RED:** `tests/api/test_products_route.py`, con `app.dependency_overrides[get_product_service]` apuntando a un servicio falso:
   - `GET /api/v1/products?postal_code=28001&term=leche` → `200` con el body del servicio;
   - sin `term` → `422`;
