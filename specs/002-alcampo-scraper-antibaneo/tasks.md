@@ -117,7 +117,7 @@ Formato de commit: `<tipo>(002-alcampo-scraper-antibaneo): <descripción en ingl
 - **RF:** RF-19 (configuración)
 - **Hecho cuando:** los 4 casos pasan.
 
-### [ ] T10 — `WafCooldownRepository`
+### [x] T10 — `WafCooldownRepository`
 - **RED:** `tests/services/test_waf_cooldown.py`, con un `FakeAsyncRedis()` nuevo por test:
   - `is_active()` sin marca → `False`;
   - `activate(180)` → `is_active()` es `True` y la clave `waf:cooldown` tiene TTL 180 (±1 s);
