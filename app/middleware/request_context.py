@@ -10,7 +10,7 @@ import uuid
 
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
-from starlette.responses import Response
+from starlette.responses import JSONResponse, Response
 
 from app.core.logging import request_id_var
 
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 class RequestContextMiddleware(BaseHTTPMiddleware):
-    """Spec 003 RF-3, RF-5, RF-5b, RF-18."""
+    """Spec 003 RF-3, RF-5, RF-5b, RF-6, RF-18."""
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         # Always generated here: a client-supplied X-Request-ID is ignored, so
@@ -36,7 +36,14 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
             dict(request.query_params),
         )
         try:
-            response = await call_next(request)
+            try:
+                response = await call_next(request)
+            except Exception:
+                # Handled here, not with app.exception_handler(Exception): that
+                # one runs outside this middleware, after the request id is gone
+                # and without X-Request-ID on the response (plan §2, plan-D2).
+                logger.exception("unhandled error")
+                response = JSONResponse({"detail": "Internal server error"}, status_code=500)
             response.headers[REQUEST_ID_HEADER] = request_id
             logger.info(
                 "request finished status=%d duration_ms=%.1f",

@@ -81,3 +81,26 @@ def test_each_request_gets_a_new_request_id(client: TestClient, respx_mock) -> N
     second = client.get("/api/v1/products", params=SEARCH)
 
     assert first.headers["X-Request-ID"] != second.headers["X-Request-ID"]
+
+
+def test_unhandled_exception_returns_500_logged_with_traceback(
+    integration_env: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    caplog.set_level(logging.INFO)
+    app = create_app()
+
+    @app.get("/boom")
+    async def boom() -> None:
+        raise RuntimeError("secret detail")
+
+    with TestClient(app, raise_server_exceptions=False) as client:
+        response = client.get("/boom")
+
+    assert response.status_code == 500
+    assert response.json() == {"detail": "Internal server error"}
+    assert "secret detail" not in response.text
+    [error] = [r for r in caplog.records if r.levelno == logging.ERROR]
+    assert error.exc_info is not None
+    assert error.request_id == response.headers["X-Request-ID"]
+    [finished] = request_records(caplog, "request finished")
+    assert "status=500" in finished.getMessage()

@@ -64,7 +64,7 @@ Formato de commit: `<tipo>(003-alcampo-scraper-logging): <descripción en inglé
 - **RF:** RF-3, RF-4, RF-5, RF-5b, RF-18 (parámetros de la petición)
 - **Hecho cuando:** todos los casos pasan y la suite completa sigue en verde.
 
-### [ ] T5 — `500` controlado desde el middleware
+### [x] T5 — `500` controlado desde el middleware
 - **RED:** en `tests/integration/test_logging_integration.py`, añadiendo al app de test una ruta `/boom` que lanza `RuntimeError("secret detail")`:
   - respuesta `500 {"detail": "Internal server error"}` con `X-Request-ID`;
   - un registro `ERROR` con `exc_info` (traceback) y el mismo `request_id` que la cabecera;
