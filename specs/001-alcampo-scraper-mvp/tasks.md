@@ -208,7 +208,7 @@ Formato de commit: `<tipo>(001-alcampo-scraper-mvp): <descripción en inglés> (
 - **RF:** RF-1, RF-2, RF-17 (plan-D10)
 - **Hecho cuando:** todos los casos pasan y `uvicorn app.main:app` arranca con un `.env` válido (comprobación manual, sin llamar a la ruta).
 
-### [ ] T18 — Harness de integración + miss/hit end-to-end
+### [x] T18 — Harness de integración + miss/hit end-to-end
 - **RED:** `tests/integration/conftest.py`:
   - fixture `client`: `TestClient(create_app())` como context manager, con variables de entorno de test (`ALCAMPO_BASE_URL=https://alcampo.test`, `RETRY_BASE_DELAY=0`) y `create_redis` parcheado para devolver un `FakeAsyncRedis()` nuevo;
   - helper `mock_alcampo_search(respx_mock, json=..., status=..., headers=...)`.
