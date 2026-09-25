@@ -41,7 +41,7 @@ Formato de commit: `<tipo>(002-alcampo-scraper-antibaneo): <descripción en ingl
 - **RF:** RF-1, RF-2
 - **Hecho cuando:** todos los casos pasan y ya no existe `USER_AGENT` en el código.
 
-### [ ] T3 — `Referer`, `ecom-request-source` y sin `Origin`
+### [x] T3 — `Referer`, `ecom-request-source` y sin `Origin`
 - **RED:** en `tests/scrapers/test_http_client.py`:
   - cabeceras del cliente: `Referer == "https://www.compraonline.alcampo.es/"` y `ecom-request-source == "web"`, **también** cuando `ALCAMPO_BASE_URL` es `https://alcampo.test` (plan-D11);
   - con `respx`, una petición real del cliente lleva `Referer` y **no** lleva `Origin`.

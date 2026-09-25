@@ -19,6 +19,11 @@ from app.core.config import Settings
 
 REQUEST_TIMEOUT_SECONDS = 10.0
 
+# Constant on purpose (plan-D11): it imitates the real browser, not our config.
+# Deriving it from ALCAMPO_BASE_URL would leak a fake Referer if the base URL
+# pointed to a proxy. No `Origin`: browsers do not send it on same-origin GETs.
+ALCAMPO_REFERER = "https://www.compraonline.alcampo.es/"
+
 USER_AGENTS: tuple[str, ...] = (
     # Chrome 155 / Windows
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -53,5 +58,8 @@ def create_http_client(
             "User-Agent": choose(USER_AGENTS),
             "Accept": "application/json",
             "Accept-Language": "es-ES,es;q=0.9",
+            "Referer": ALCAMPO_REFERER,
+            # Sent by Alcampo's own web client on every API call (Fase 0, bundle).
+            "ecom-request-source": "web",
         },
     )

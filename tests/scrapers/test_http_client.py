@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 
 import httpx
+import respx
 
 from app.core.config import Settings
 from app.scrapers.http_client import USER_AGENTS, create_http_client
@@ -81,3 +82,26 @@ async def test_default_user_agent_belongs_to_the_pool() -> None:
         assert client.headers["User-Agent"] in USER_AGENTS
     finally:
         await client.aclose()
+
+
+async def test_client_sends_browser_context_headers_independent_of_base_url() -> None:
+    client = create_http_client(make_settings(), choose=RecordingChoice(0))
+    try:
+        assert client.headers["Referer"] == "https://www.compraonline.alcampo.es/"
+        assert client.headers["ecom-request-source"] == "web"
+    finally:
+        await client.aclose()
+
+
+@respx.mock
+async def test_outgoing_request_has_referer_and_no_origin() -> None:
+    route = respx.get("https://alcampo.test/ping").mock(return_value=httpx.Response(200))
+    client = create_http_client(make_settings(), choose=RecordingChoice(0))
+    try:
+        await client.get("/ping")
+    finally:
+        await client.aclose()
+
+    request = route.calls.last.request
+    assert request.headers["Referer"] == "https://www.compraonline.alcampo.es/"
+    assert "Origin" not in request.headers
