@@ -61,7 +61,7 @@ Formato de commit: `<tipo>(002-alcampo-scraper-antibaneo): <descripción en ingl
 - **RF:** RF-5 (formatos), RF-6, RF-7
 - **Hecho cuando:** todos los casos pasan.
 
-### [ ] T5 — Jitter en esperas por `5xx` y transporte
+### [x] T5 — Jitter en esperas por `5xx` y transporte
 - **RED:** en `test_retry.py`, con `uniform` falso que devuelve `0.2` y registra sus argumentos:
   - `503, 200` con `jitter_max=0.3` → esperas `[0.7]`;
   - `ConnectTimeout, 200` → esperas `[0.7]`;

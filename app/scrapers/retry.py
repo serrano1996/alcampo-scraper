@@ -5,6 +5,7 @@ injectable `sleep`, so tests never wait for real time (plan-D3).
 """
 
 import asyncio
+import random
 import re
 from collections.abc import Awaitable, Callable
 from datetime import UTC, datetime
@@ -15,6 +16,7 @@ import httpx
 from app.exceptions import UpstreamUnavailableError
 
 Sleep = Callable[[float], Awaitable[None]]
+Uniform = Callable[[float, float], float]
 
 WAF_CHALLENGE_HEADER = "x-amzn-waf-action"
 
@@ -55,7 +57,9 @@ async def send_with_retry(
     *,
     max_attempts: int,
     base_delay: float,
+    jitter_max: float = 0.0,
     sleep: Sleep = asyncio.sleep,
+    uniform: Uniform = random.uniform,
 ) -> httpx.Response:
     """Call `send`, retrying transient failures with exponential backoff.
 
@@ -66,7 +70,14 @@ async def send_with_retry(
     - A WAF challenge (`x-amzn-waf-action` header, arrives as an empty 202)
       raises immediately, no retry, regardless of status code (RF-18, spec-D5).
       Checked before status classification: the challenge can arrive as a 2xx.
+
+    Every wait adds a random jitter in `[0, jitter_max]` (spec 002 RF-9,
+    plan-D6). `jitter_max=0.0` keeps the exact backoff of spec 001 (plan-D9).
     """
+
+    def backoff(attempt: int) -> float:
+        return base_delay * 2 ** (attempt - 1) + uniform(0, jitter_max)
+
     last_transport_error: httpx.TransportError | None = None
 
     for attempt in range(1, max_attempts + 1):
@@ -76,7 +87,7 @@ async def send_with_retry(
             last_transport_error = exc
             if attempt == max_attempts:
                 raise UpstreamUnavailableError("transport error, retries exhausted") from exc
-            await sleep(base_delay * 2 ** (attempt - 1))
+            await sleep(backoff(attempt))
             continue
 
         if _is_waf_challenge(response):
@@ -91,7 +102,7 @@ async def send_with_retry(
         if attempt == max_attempts:
             raise UpstreamUnavailableError(f"upstream returned {response.status_code}")
 
-        await sleep(base_delay * 2 ** (attempt - 1))
+        await sleep(backoff(attempt))
 
     # Unreachable: the loop above always returns or raises before completing.
     raise UpstreamUnavailableError("retries exhausted") from last_transport_error

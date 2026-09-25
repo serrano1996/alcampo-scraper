@@ -157,3 +157,64 @@ def test_parse_retry_after_valid_values(value: str, expected: float) -> None:
 @pytest.mark.parametrize("value", [None, "", "abc", "-5", "1.5"])
 def test_parse_retry_after_invalid_values_return_none(value: str | None) -> None:
     assert parse_retry_after(value, now=NOW) is None
+
+
+class FakeUniform:
+    """Fake `random.uniform` that returns a fixed value and records its bounds."""
+
+    def __init__(self, value: float) -> None:
+        self.value = value
+        self.calls: list[tuple[float, float]] = []
+
+    def __call__(self, low: float, high: float) -> float:
+        self.calls.append((low, high))
+        # Stay within bounds like the real `random.uniform` would.
+        return min(max(self.value, low), high)
+
+
+async def test_jitter_is_added_to_5xx_backoff() -> None:
+    sleep = FakeSleep()
+    uniform = FakeUniform(0.2)
+
+    await send_with_retry(
+        sequence(make_response(503), make_response(200)),
+        max_attempts=3,
+        base_delay=0.5,
+        jitter_max=0.3,
+        sleep=sleep,
+        uniform=uniform,
+    )
+
+    assert sleep.calls == [0.7]
+    assert uniform.calls == [(0, 0.3)]
+
+
+async def test_jitter_is_added_to_transport_error_backoff() -> None:
+    sleep = FakeSleep()
+
+    await send_with_retry(
+        sequence(httpx.ConnectTimeout("boom"), make_response(200)),
+        max_attempts=3,
+        base_delay=0.5,
+        jitter_max=0.3,
+        sleep=sleep,
+        uniform=FakeUniform(0.2),
+    )
+
+    assert sleep.calls == [0.7]
+
+
+async def test_without_jitter_max_waits_are_exact() -> None:
+    sleep = FakeSleep()
+    uniform = FakeUniform(0.2)
+
+    await send_with_retry(
+        sequence(make_response(503), make_response(503), make_response(200)),
+        max_attempts=3,
+        base_delay=0.5,
+        sleep=sleep,
+        uniform=uniform,
+    )
+
+    assert sleep.calls == [0.5, 1.0]
+    assert all(high == 0.0 for _, high in uniform.calls)
