@@ -148,7 +148,7 @@ Formato de commit: `<tipo>(001-alcampo-scraper-mvp): <descripción en inglés> (
 - **RF:** RF-3
 - **Hecho cuando:** todos los casos pasan.
 
-### [ ] T13 — Scraper de búsqueda: cuerpos inválidos y traducción de errores
+### [x] T13 — Scraper de búsqueda: cuerpos inválidos y traducción de errores
 - **RED:**
   - `200` con HTML → `UpstreamUnavailableError`;
   - `200` con `{"foo": 1}` → `UpstreamUnavailableError`;

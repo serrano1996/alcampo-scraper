@@ -1,8 +1,12 @@
 """Client for Alcampo's product search endpoint (webproductpagews v6)."""
 
+import json
+
 import httpx
+from pydantic import ValidationError
 
 from app.core.config import Settings
+from app.exceptions import UpstreamUnavailableError
 from app.models.alcampo import AlcampoSearchResponse
 from app.scrapers.retry import send_with_retry
 
@@ -41,4 +45,9 @@ class AlcampoSearchScraper:
             max_attempts=self._settings.retry_max_attempts,
             base_delay=self._settings.retry_base_delay,
         )
-        return AlcampoSearchResponse.model_validate(response.json())
+
+        try:
+            body = response.json()
+            return AlcampoSearchResponse.model_validate(body)
+        except (json.JSONDecodeError, ValidationError) as exc:
+            raise UpstreamUnavailableError("unexpected search response shape") from exc
