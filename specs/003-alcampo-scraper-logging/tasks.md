@@ -117,7 +117,7 @@ Formato de commit: `<tipo>(003-alcampo-scraper-logging): <descripción en inglé
 - **RF:** RF-13
 - **Hecho cuando:** todos los casos pasan.
 
-### [ ] T9 — Servicio: challenge del WAF y enfriamiento
+### [x] T9 — Servicio: challenge del WAF y enfriamiento
 - **RED:** en `tests/services/test_product_service.py`, con `caplog`:
   - el scraper lanza `UpstreamBlockedError` → 1 `ERROR` que dice que la IP está bloqueada y que empieza un enfriamiento de `180` s;
   - con `waf_cooldown_seconds=0` → el `ERROR` dice que el enfriamiento está desactivado;

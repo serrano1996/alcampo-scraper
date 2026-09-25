@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Callable
 from datetime import UTC, datetime
 
@@ -55,11 +56,13 @@ def make_service(
     redis: fakeredis.FakeAsyncRedis,
     *,
     clock: Callable[[], datetime] = lambda: FIXED_NOW,
+    waf_cooldown_seconds: int = 180,
 ) -> tuple[ProductService, SearchCacheRepository]:
     settings = Settings(
         _env_file=None,
         alcampo_base_url="https://alcampo.test",
         redis_url="redis://localhost:6379/0",
+        waf_cooldown_seconds=waf_cooldown_seconds,
     )
     cache = SearchCacheRepository(redis)
     service = ProductService(
@@ -240,3 +243,47 @@ async def test_active_cooldown_raises_cooldown_active_error(
 
     with pytest.raises(CooldownActiveError):
         await service.search(ProductQuery(postal_code="28001", term="leche"))
+
+
+def service_records(caplog: pytest.LogCaptureFixture) -> list[logging.LogRecord]:
+    return [r for r in caplog.records if r.name == "app.services.product_service"]
+
+
+async def test_waf_block_logs_an_error_with_the_cooldown(
+    redis: fakeredis.FakeAsyncRedis, caplog: pytest.LogCaptureFixture
+) -> None:
+    service, _ = make_service(FailingScraper(UpstreamBlockedError("WAF challenge")), redis)
+
+    with pytest.raises(UpstreamBlockedError):
+        await service.search(ProductQuery(postal_code="28001", term="leche"))
+
+    [record] = service_records(caplog)
+    assert record.levelno == logging.ERROR
+    assert "blocked" in record.getMessage()
+    assert "cooldown_s=180" in record.getMessage()
+
+
+async def test_waf_block_with_cooldown_disabled_says_so(
+    redis: fakeredis.FakeAsyncRedis, caplog: pytest.LogCaptureFixture
+) -> None:
+    service, _ = make_service(
+        FailingScraper(UpstreamBlockedError("WAF challenge")), redis, waf_cooldown_seconds=0
+    )
+
+    with pytest.raises(UpstreamBlockedError):
+        await service.search(ProductQuery(postal_code="28001", term="leche"))
+
+    [record] = service_records(caplog)
+    assert record.levelno == logging.ERROR
+    assert "cooldown disabled" in record.getMessage()
+
+
+async def test_plain_upstream_error_is_not_logged_by_the_service(
+    redis: fakeredis.FakeAsyncRedis, caplog: pytest.LogCaptureFixture
+) -> None:
+    service, _ = make_service(FailingScraper(UpstreamUnavailableError("503")), redis)
+
+    with pytest.raises(UpstreamUnavailableError):
+        await service.search(ProductQuery(postal_code="28001", term="leche"))
+
+    assert service_records(caplog) == []
