@@ -83,7 +83,7 @@ Formato de commit: `<tipo>(001-alcampo-scraper-mvp): <descripción en inglés> (
 - **RF:** RF-7, RF-8 (spec-D8, spec-D9)
 - **Hecho cuando:** todos los casos pasan.
 
-### [ ] T7 — Mapeo de un producto
+### [x] T7 — Mapeo de un producto
 - **RED:** `test_map_product_*`:
   - el 1.er producto de la fixture real → `Product(id="54180", price=5.28, price_format="0.88 €/L", category="Leche semidesnatada", image_url=<image.src>)`;
   - `categoryPath=[]` → `category=None`;

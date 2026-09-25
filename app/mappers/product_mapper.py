@@ -6,7 +6,8 @@ and PER_METER are inferred from the web bundle's translation keys
 Any other unit name degrades to `price_format: None` (RF-8) instead of failing.
 """
 
-from app.models.alcampo import AlcampoUnitPrice
+from app.models.alcampo import AlcampoProduct, AlcampoUnitPrice
+from app.models.product import Product
 
 UNIT_SUFFIXES: dict[str, str] = {
     "PER_LITRE": "L",
@@ -26,3 +27,15 @@ def format_unit_price(unit_price: AlcampoUnitPrice | None) -> str | None:
         return None
 
     return f"{unit_price.price.amount} €/{suffix}"
+
+
+def map_product(raw: AlcampoProduct) -> Product:
+    """Map a validated raw Alcampo product to the public API schema (RF-6)."""
+    return Product(
+        id=raw.retailer_product_id,
+        name=raw.name,
+        price=float(raw.price.amount),
+        price_format=format_unit_price(raw.unit_price),
+        image_url=raw.image.src if raw.image else None,
+        category=raw.category_path[-1] if raw.category_path else None,
+    )
