@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 
 from app.api.v1.products import router as products_router
 from app.core.config import get_settings
+from app.core.logging import configure_logging
 from app.exceptions import UpstreamUnavailableError
 from app.scrapers.http_client import create_http_client
 
@@ -20,6 +21,7 @@ def create_redis(redis_url: str) -> redis.Redis:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
+    configure_logging(settings.log_level)
     app.state.settings = settings
     app.state.http_client = create_http_client(settings)
     app.state.redis = create_redis(settings.redis_url)

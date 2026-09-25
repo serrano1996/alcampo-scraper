@@ -6,6 +6,8 @@ it were talking to a real Redis instance.
 """
 
 import json
+import logging
+from collections.abc import Iterator
 from pathlib import Path
 
 import fakeredis
@@ -15,6 +17,7 @@ import respx
 from fastapi.testclient import TestClient
 
 import app.main as main_module
+from app.core.config import get_settings
 from app.main import create_app
 
 ALCAMPO_BASE_URL = "https://alcampo.test"
@@ -27,13 +30,31 @@ def load_fixture(name: str) -> dict:
 
 
 @pytest.fixture
-def client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
+def integration_env(monkeypatch: pytest.MonkeyPatch) -> Iterator[pytest.MonkeyPatch]:
+    """Test environment for the real app. Tests may tweak it before starting a client.
+
+    Clears the cached `Settings` (so env changes are seen) and restores the root
+    logger afterwards, since the `lifespan` configures logging (spec 003).
+    """
     monkeypatch.setenv("ALCAMPO_BASE_URL", ALCAMPO_BASE_URL)
     monkeypatch.setenv("REDIS_URL", "redis://localhost:6379/0")
     monkeypatch.setenv("RETRY_BASE_DELAY", "0")
     monkeypatch.setenv("RETRY_JITTER_MAX_S", "0")
     monkeypatch.setattr(main_module, "create_redis", lambda _url: fakeredis.FakeAsyncRedis())
+    get_settings.cache_clear()
 
+    root = logging.getLogger()
+    handlers, level = list(root.handlers), root.level
+    factory = logging.getLogRecordFactory()
+    yield monkeypatch
+    root.handlers[:] = handlers
+    root.setLevel(level)
+    logging.setLogRecordFactory(factory)
+    get_settings.cache_clear()
+
+
+@pytest.fixture
+def client(integration_env: pytest.MonkeyPatch) -> Iterator[TestClient]:
     with TestClient(create_app()) as test_client:
         yield test_client
 

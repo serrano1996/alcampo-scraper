@@ -42,7 +42,8 @@ Formato de commit: `<tipo>(003-alcampo-scraper-logging): <descripción en inglé
 - **RF:** RF-1, RF-4
 - **Hecho cuando:** todos los casos pasan y la suite completa sigue en verde.
 
-### [ ] T3 — `configure_logging` en el `lifespan`
+### [x] T3 — `configure_logging` en el `lifespan`
+> **Ajustes durante la implementación (2026-09-25):** (1) se prueba con `ERROR` y `DEBUG`, no con `WARNING`: el logger raíz ya está en `WARNING` por defecto y el test habría pasado sin implementar nada. (2) El conftest de integración se dividió en `integration_env` (entorno, `get_settings.cache_clear()` y restauración del logging) y `client`: `get_settings()` está cacheado, y sin limpiar la cache un cambio de `LOG_LEVEL` no se vería y se filtraría a otros tests.
 - **RED:** en `tests/integration/test_logging_integration.py` (nuevo): con `LOG_LEVEL=WARNING`, al arrancar la app (`with TestClient(...)`) el logger raíz queda en `WARNING`; con `LOG_LEVEL=DEBUG`, en `DEBUG`.
 - **GREEN:** llamar a `configure_logging(settings.log_level)` al principio del `lifespan`.
 - **Depende:** T1, T2
