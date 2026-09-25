@@ -1,9 +1,11 @@
+from collections.abc import Callable
 from datetime import UTC, datetime
 
 import fakeredis
 import pytest
 
 from app.core.config import Settings
+from app.exceptions import UpstreamUnavailableError
 from app.models.alcampo import AlcampoSearchResponse
 from app.models.product import ProductQuery
 from app.services.product_service import ProductService
@@ -30,6 +32,16 @@ class FakeScraper:
         return self.response
 
 
+class FailingScraper:
+    def __init__(self, error: Exception) -> None:
+        self.error = error
+        self.calls: list[str] = []
+
+    async def search(self, term: str) -> AlcampoSearchResponse:
+        self.calls.append(term)
+        raise self.error
+
+
 def make_raw_response(*, has_products: bool) -> AlcampoSearchResponse:
     products = [RAW_PRODUCT] if has_products else []
     return AlcampoSearchResponse.model_validate(
@@ -38,7 +50,10 @@ def make_raw_response(*, has_products: bool) -> AlcampoSearchResponse:
 
 
 def make_service(
-    scraper: FakeScraper, redis: fakeredis.FakeAsyncRedis
+    scraper: FakeScraper | FailingScraper,
+    redis: fakeredis.FakeAsyncRedis,
+    *,
+    clock: Callable[[], datetime] = lambda: FIXED_NOW,
 ) -> tuple[ProductService, SearchCacheRepository]:
     settings = Settings(
         _env_file=None,
@@ -46,9 +61,7 @@ def make_service(
         redis_url="redis://localhost:6379/0",
     )
     cache = SearchCacheRepository(redis)
-    service = ProductService(
-        scraper=scraper, cache=cache, settings=settings, clock=lambda: FIXED_NOW
-    )
+    service = ProductService(scraper=scraper, cache=cache, settings=settings, clock=clock)
     return service, cache
 
 
@@ -104,3 +117,51 @@ async def test_empty_search_returns_empty_products_and_is_cached(
     assert result.search.total_results == 0
     cached = await cache.get(warehouse="5", term="xqzwvkjhgf")
     assert cached is not None
+
+
+async def test_cache_hit_does_not_call_the_scraper(redis: fakeredis.FakeAsyncRedis) -> None:
+    scraper = FakeScraper(make_raw_response(has_products=True))
+    service, _ = make_service(scraper, redis)
+    await service.search(ProductQuery(postal_code="28001", term="leche"))
+    scraper.calls.clear()
+
+    await service.search(ProductQuery(postal_code="28001", term="leche"))
+
+    assert scraper.calls == []
+
+
+async def test_cache_hit_rewrites_the_requested_postal_code(
+    redis: fakeredis.FakeAsyncRedis,
+) -> None:
+    scraper = FakeScraper(make_raw_response(has_products=True))
+    service, _ = make_service(scraper, redis)
+    await service.search(ProductQuery(postal_code="28001", term="leche"))
+
+    result = await service.search(ProductQuery(postal_code="08001", term="leche"))
+
+    assert result.search.postal_code == "08001"
+
+
+async def test_cache_hit_keeps_the_original_scraped_at(redis: fakeredis.FakeAsyncRedis) -> None:
+    scraper = FakeScraper(make_raw_response(has_products=True))
+    clock_values = iter(
+        [datetime(2026, 9, 24, 10, 0, 0, tzinfo=UTC), datetime(2026, 9, 24, 11, 0, 0, tzinfo=UTC)]
+    )
+    service, _ = make_service(scraper, redis, clock=lambda: next(clock_values))
+    first = await service.search(ProductQuery(postal_code="28001", term="leche"))
+
+    second = await service.search(ProductQuery(postal_code="28001", term="leche"))
+
+    assert second.search.scraped_at == first.search.scraped_at
+
+
+async def test_scraper_error_propagates_and_nothing_is_cached(
+    redis: fakeredis.FakeAsyncRedis,
+) -> None:
+    scraper = FailingScraper(UpstreamUnavailableError("boom"))
+    service, cache = make_service(scraper, redis)
+
+    with pytest.raises(UpstreamUnavailableError):
+        await service.search(ProductQuery(postal_code="28001", term="leche"))
+
+    assert await cache.get(warehouse="5", term="leche") is None

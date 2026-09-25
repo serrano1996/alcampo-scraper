@@ -39,7 +39,17 @@ class ProductService:
         self._clock = clock
 
     async def search(self, query: ProductQuery) -> ProductSearchResponse:
-        """Search Alcampo (or the cache) for `query.term` (RF-1, RF-5, RF-10, RF-12)."""
+        """Search Alcampo (or the cache) for `query.term` (RF-1, RF-5, RF-10, RF-11, RF-12)."""
+        cached = await self._cache.get(warehouse=DEFAULT_WAREHOUSE, term=query.term)
+        if cached is not None:
+            return cached.model_copy(
+                update={
+                    "search": cached.search.model_copy(
+                        update={"postal_code": query.postal_code, "term": query.term}
+                    )
+                }
+            )
+
         raw = await self._scraper.search(query.term)
         products = map_search(raw)
         response = ProductSearchResponse(

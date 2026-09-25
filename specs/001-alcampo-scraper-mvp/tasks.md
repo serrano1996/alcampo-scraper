@@ -186,7 +186,7 @@ Formato de commit: `<tipo>(001-alcampo-scraper-mvp): <descripción en inglés> (
 - **RF:** RF-5, RF-10, RF-12
 - **Hecho cuando:** todos los casos pasan.
 
-### [ ] T16 — Servicio: acierto de cache y errores
+### [x] T16 — Servicio: acierto de cache y errores
 - **RED:**
   - hit → 0 llamadas al scraper;
   - hit guardado con `postal_code="28001"` y pedido con `"08001"` → la respuesta lleva `"08001"`;
