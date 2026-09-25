@@ -20,7 +20,13 @@ Uniform = Callable[[float, float], float]
 
 WAF_CHALLENGE_HEADER = "x-amzn-waf-action"
 
+MAX_RETRY_AFTER_WAIT_SECONDS = 60.0
+
 _RETRY_AFTER_SECONDS = re.compile(r"^[0-9]+$")
+
+
+def _utc_now() -> datetime:
+    return datetime.now(UTC)
 
 
 def parse_retry_after(value: str | None, *, now: datetime) -> float | None:
@@ -60,6 +66,7 @@ async def send_with_retry(
     jitter_max: float = 0.0,
     sleep: Sleep = asyncio.sleep,
     uniform: Uniform = random.uniform,
+    now: Callable[[], datetime] = _utc_now,
 ) -> httpx.Response:
     """Call `send`, retrying transient failures with exponential backoff.
 
@@ -73,10 +80,22 @@ async def send_with_retry(
 
     Every wait adds a random jitter in `[0, jitter_max]` (spec 002 RF-9,
     plan-D6). `jitter_max=0.0` keeps the exact backoff of spec 001 (plan-D9).
+
+    On a 429, `Retry-After` (seconds or HTTP date) replaces the backoff, and the
+    final wait, jitter included, is capped at 60 s (spec 002 RF-5..RF-8,
+    plan-D8). `Retry-After` is ignored on any other status (spec-D4).
     """
 
     def backoff(attempt: int) -> float:
         return base_delay * 2 ** (attempt - 1) + uniform(0, jitter_max)
+
+    def rate_limited_wait(response: httpx.Response, attempt: int) -> float:
+        retry_after = parse_retry_after(response.headers.get("Retry-After"), now=now())
+        if retry_after is None:
+            wait = backoff(attempt)
+        else:
+            wait = retry_after + uniform(0, jitter_max)
+        return min(wait, MAX_RETRY_AFTER_WAIT_SECONDS)
 
     last_transport_error: httpx.TransportError | None = None
 
@@ -102,7 +121,10 @@ async def send_with_retry(
         if attempt == max_attempts:
             raise UpstreamUnavailableError(f"upstream returned {response.status_code}")
 
-        await sleep(backoff(attempt))
+        if response.status_code == 429:
+            await sleep(rate_limited_wait(response, attempt))
+        else:
+            await sleep(backoff(attempt))
 
     # Unreachable: the loop above always returns or raises before completing.
     raise UpstreamUnavailableError("retries exhausted") from last_transport_error

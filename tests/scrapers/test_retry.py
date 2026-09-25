@@ -218,3 +218,76 @@ async def test_without_jitter_max_waits_are_exact() -> None:
 
     assert sleep.calls == [0.5, 1.0]
     assert all(high == 0.0 for _, high in uniform.calls)
+
+
+async def retry_waits(*responses: httpx.Response) -> list[float]:
+    """Run `send_with_retry` with jitter fixed at 0.3 and `now` fixed; return the waits."""
+    sleep = FakeSleep()
+    await send_with_retry(
+        sequence(*responses),
+        max_attempts=3,
+        base_delay=0.5,
+        jitter_max=0.3,
+        sleep=sleep,
+        uniform=FakeUniform(0.3),
+        now=lambda: NOW,
+    )
+    return sleep.calls
+
+
+def too_many_requests(retry_after: str | None = None) -> httpx.Response:
+    headers = {"Retry-After": retry_after} if retry_after is not None else None
+    return make_response(429, headers=headers)
+
+
+async def test_429_waits_for_retry_after_seconds_plus_jitter() -> None:
+    waits = await retry_waits(too_many_requests("2"), make_response(200))
+
+    assert waits == [pytest.approx(2.3)]
+
+
+async def test_429_retry_after_is_capped_at_60_seconds() -> None:
+    waits = await retry_waits(too_many_requests("3600"), make_response(200))
+
+    assert waits == [60.0]
+
+
+async def test_429_cap_includes_the_jitter() -> None:
+    waits = await retry_waits(too_many_requests("60"), make_response(200))
+
+    assert waits == [60.0]
+
+
+async def test_429_retry_after_http_date() -> None:
+    waits = await retry_waits(
+        too_many_requests("Wed, 24 Sep 2026 10:00:10 GMT"), make_response(200)
+    )
+
+    assert waits == [pytest.approx(10.3)]
+
+
+async def test_429_without_retry_after_falls_back_to_backoff() -> None:
+    waits = await retry_waits(too_many_requests(), make_response(200))
+
+    assert waits == [pytest.approx(0.8)]
+
+
+async def test_retry_after_on_503_is_ignored() -> None:
+    waits = await retry_waits(make_response(503, headers={"Retry-After": "30"}), make_response(200))
+
+    assert waits == [pytest.approx(0.8)]
+
+
+async def test_persistent_429_raises_upstream_unavailable() -> None:
+    sleep = FakeSleep()
+
+    with pytest.raises(UpstreamUnavailableError):
+        await send_with_retry(
+            sequence(too_many_requests("1"), too_many_requests("1"), too_many_requests("1")),
+            max_attempts=3,
+            base_delay=0.5,
+            sleep=sleep,
+            now=lambda: NOW,
+        )
+
+    assert len(sleep.calls) == 2

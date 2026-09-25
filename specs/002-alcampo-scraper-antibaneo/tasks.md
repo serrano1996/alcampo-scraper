@@ -72,11 +72,11 @@ Formato de commit: `<tipo>(002-alcampo-scraper-antibaneo): <descripción en ingl
 - **RF:** RF-9
 - **Hecho cuando:** los casos nuevos pasan **y los 9 tests de la 001 en `test_retry.py` siguen en verde sin modificarlos**.
 
-### [ ] T6 — `429` con `Retry-After` y tope de 60 s
+### [x] T6 — `429` con `Retry-After` y tope de 60 s
 - **RED:** en `test_retry.py`, con `uniform` fijo en `0.3` y `now` fijo:
   - `429` + `Retry-After: 2`, luego `200` → espera `[2.3]`;
   - `429` + `Retry-After: 3600` → espera `[60.0]`;
-  - `429` + `Retry-After: 59` → espera `[60.0]`, no `59.3`;
+  - `429` + `Retry-After: 60` → espera `[60.0]`, no `60.3` (el tope se aplica después de sumar el jitter);
   - `429` + fecha HTTP 10 s en el futuro → `[10.3]`;
   - `429` sin cabecera → backoff + jitter (`[0.8]`);
   - `503` + `Retry-After: 30` → backoff + jitter (`[0.8]`), **no** 30 (spec-D4);

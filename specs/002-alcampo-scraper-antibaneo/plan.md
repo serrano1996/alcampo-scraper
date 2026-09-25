@@ -128,7 +128,7 @@ Los tests de `test_retry.py` no se rompen gracias a D9. El test `retry` de WAF (
 | RF-5 | `parse_retry_after("120")` → `120.0`; fecha HTTP 30 s en el futuro (con `now` fijo) → `30.0`; `429` + `Retry-After: 2` → espera registrada `2 + jitter` | U |
 | RF-6 | `"abc"`, `""`, `"-5"`, `"1.5"`, `None` → `None`; `429` sin cabecera → backoff | U |
 | RF-7 | fecha pasada → `0.0` | U |
-| RF-8 | `Retry-After: 3600` → espera `60.0`; `Retry-After: 59` con jitter 0.3 → `60.0`, no `59.3` | U |
+| RF-8 | `Retry-After: 3600` → espera `60.0`; `Retry-After: 60` con jitter 0.3 → `60.0`, no `60.3` | U |
 | D4 | `503` + `Retry-After: 30` → espera = backoff, no 30 | U |
 | RF-9 | `503, 200` con `uniform` fijo en `0.2` → espera `0.5 + 0.2`; transporte igual; `uniform` recibe `(0, jitter_max)` | U |
 | RF-9 | el scraper pasa `settings.retry_jitter_max_s` a `send_with_retry` | U |
