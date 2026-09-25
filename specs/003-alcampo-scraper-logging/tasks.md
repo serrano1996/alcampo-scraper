@@ -106,7 +106,7 @@ Formato de commit: `<tipo>(003-alcampo-scraper-logging): <descripción en inglé
 - **RF:** RF-8, RF-9, RF-10
 - **Hecho cuando:** los casos nuevos pasan y los tests existentes de `test_retry.py` siguen en verde sin tocarlos.
 
-### [ ] T8 — Scraper: URL a los reintentos y cuerpo inválido
+### [x] T8 — Scraper: URL a los reintentos y cuerpo inválido
 - **RED:** en `tests/scrapers/test_alcampo_search.py`:
   - el scraper pasa a `send_with_retry` una `url` que contiene la ruta de búsqueda y `q=leche`;
   - `200` con HTML → `ERROR` que menciona JSON inválido y la URL;

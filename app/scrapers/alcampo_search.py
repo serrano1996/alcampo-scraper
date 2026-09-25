@@ -1,6 +1,7 @@
 """Client for Alcampo's product search endpoint (webproductpagews v6)."""
 
 import json
+import logging
 
 import httpx
 from pydantic import ValidationError
@@ -18,6 +19,8 @@ PAGE_SIZE = 50
 # fase-0-alcampo.md and spec-D1. Real localization arrives in spec 007.
 DEFAULT_WAREHOUSE = "5"
 
+logger = logging.getLogger(__name__)
+
 
 class AlcampoSearchScraper:
     """Searches Alcampo's product catalog by free text (RF-3)."""
@@ -28,27 +31,35 @@ class AlcampoSearchScraper:
 
     async def search(self, term: str) -> AlcampoSearchResponse:
         """Return the raw, validated search envelope for `term` (a single page)."""
+        params = {
+            "q": term,
+            "tag": "web",
+            "maxPageSize": PAGE_SIZE,
+            "maxProductsToDecorate": PAGE_SIZE,
+        }
+        # Relative URL for logs only (spec 003 plan-D7); contains the term, so it
+        # is always logged with %r (RF-18).
+        url = str(httpx.URL(SEARCH_PATH, params=params))
 
         async def send() -> httpx.Response:
-            return await self._client.get(
-                SEARCH_PATH,
-                params={
-                    "q": term,
-                    "tag": "web",
-                    "maxPageSize": PAGE_SIZE,
-                    "maxProductsToDecorate": PAGE_SIZE,
-                },
-            )
+            return await self._client.get(SEARCH_PATH, params=params)
 
         response = await send_with_retry(
             send,
             max_attempts=self._settings.retry_max_attempts,
             base_delay=self._settings.retry_base_delay,
             jitter_max=self._settings.retry_jitter_max_s,
+            url=url,
         )
 
+        # The body is never logged: it is Alcampo's, not ours (spec 003 RF-17).
         try:
             body = response.json()
+        except json.JSONDecodeError as exc:
+            logger.error("invalid JSON from Alcampo url=%r", url)
+            raise UpstreamUnavailableError("unexpected search response shape") from exc
+        try:
             return AlcampoSearchResponse.model_validate(body)
-        except (json.JSONDecodeError, ValidationError) as exc:
+        except ValidationError as exc:
+            logger.error("unexpected schema from Alcampo url=%r", url)
             raise UpstreamUnavailableError("unexpected search response shape") from exc

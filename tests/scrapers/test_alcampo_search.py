@@ -1,4 +1,5 @@
 import json
+import logging
 from pathlib import Path
 
 import httpx
@@ -8,7 +9,7 @@ import respx
 from app.core.config import Settings
 from app.exceptions import UpstreamUnavailableError
 from app.models.alcampo import AlcampoSearchResponse
-from app.scrapers.alcampo_search import DEFAULT_WAREHOUSE, AlcampoSearchScraper
+from app.scrapers.alcampo_search import DEFAULT_WAREHOUSE, SEARCH_PATH, AlcampoSearchScraper
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
 SEARCH_URL = "https://alcampo.test/api/webproductpagews/v6/product-pages/search"
@@ -124,10 +125,10 @@ async def test_search_raises_on_persistent_transport_error_not_httpx() -> None:
 async def test_search_passes_the_configured_jitter_to_retries(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    captured: dict[str, float] = {}
+    captured: dict[str, object] = {}
 
-    async def fake_send_with_retry(send, *, max_attempts, base_delay, jitter_max):
-        captured["jitter_max"] = jitter_max
+    async def fake_send_with_retry(send, **kwargs):
+        captured.update(kwargs)
         return httpx.Response(200, json=load_fixture("alcampo_search_leche.json"))
 
     monkeypatch.setattr("app.scrapers.alcampo_search.send_with_retry", fake_send_with_retry)
@@ -140,4 +141,48 @@ async def test_search_passes_the_configured_jitter_to_retries(
     async with httpx.AsyncClient(base_url=settings.alcampo_base_url) as client:
         await AlcampoSearchScraper(client=client, settings=settings).search("leche")
 
-    assert captured == {"jitter_max": 0.25}
+    assert captured["jitter_max"] == 0.25
+    assert SEARCH_PATH in captured["url"]
+    assert "q=leche" in captured["url"]
+
+
+def scraper_errors(caplog: pytest.LogCaptureFixture) -> list[logging.LogRecord]:
+    return [
+        r
+        for r in caplog.records
+        if r.name == "app.scrapers.alcampo_search" and r.levelno == logging.ERROR
+    ]
+
+
+@respx.mock
+async def test_non_json_body_is_logged_as_invalid_json(caplog: pytest.LogCaptureFixture) -> None:
+    respx.get(SEARCH_URL).mock(return_value=httpx.Response(200, html="<html>not json</html>"))
+    scraper, client = make_scraper()
+
+    try:
+        with pytest.raises(UpstreamUnavailableError):
+            await scraper.search("leche")
+    finally:
+        await client.aclose()
+
+    [error] = scraper_errors(caplog)
+    assert "invalid JSON" in error.getMessage()
+    assert SEARCH_PATH in error.getMessage()
+
+
+@respx.mock
+async def test_unexpected_shape_is_logged_as_unexpected_schema(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    respx.get(SEARCH_URL).mock(return_value=httpx.Response(200, json={"foo": 1}))
+    scraper, client = make_scraper()
+
+    try:
+        with pytest.raises(UpstreamUnavailableError):
+            await scraper.search("leche")
+    finally:
+        await client.aclose()
+
+    [error] = scraper_errors(caplog)
+    assert "unexpected schema" in error.getMessage()
+    assert SEARCH_PATH in error.getMessage()
