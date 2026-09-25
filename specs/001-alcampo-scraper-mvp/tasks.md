@@ -138,7 +138,7 @@ Formato de commit: `<tipo>(001-alcampo-scraper-mvp): <descripción en inglés> (
 - **RF:** RF-16, RF-17, RF-18, RF-20 (spec-D5)
 - **Hecho cuando:** todos los casos pasan.
 
-### [ ] T12 — Scraper de búsqueda: petición y respuesta correctas
+### [x] T12 — Scraper de búsqueda: petición y respuesta correctas
 - **RED:** `tests/scrapers/test_alcampo_search.py`, con `respx` sobre `https://alcampo.test`:
   - `search("leche")` hace **exactamente 1** `GET` a `/api/webproductpagews/v6/product-pages/search` con `q=leche`, `tag=web`, `maxPageSize=50` y `maxProductsToDecorate=50`;
   - con la fixture real como respuesta, devuelve un `AlcampoSearchResponse` con 3 productos crudos;
