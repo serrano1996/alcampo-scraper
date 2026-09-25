@@ -1,5 +1,8 @@
 import json
+import logging
 from pathlib import Path
+
+import pytest
 
 from app.mappers.product_mapper import map_search
 from app.models.alcampo import AlcampoSearchResponse
@@ -65,3 +68,54 @@ def test_map_search_discards_malformed_products_and_keeps_the_rest() -> None:
     products = map_search(raw)
 
     assert [p.id for p in products] == [good["retailerProductId"]]
+
+
+def mapper_records(caplog: pytest.LogCaptureFixture) -> list[logging.LogRecord]:
+    return [r for r in caplog.records if r.name == "app.mappers.product_mapper"]
+
+
+def envelope(*products: dict) -> AlcampoSearchResponse:
+    return AlcampoSearchResponse.model_validate(
+        {"productGroups": [{"decoratedProducts": list(products)}]}
+    )
+
+
+def test_partial_discard_logs_one_warning_with_count_and_ids(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    good = first_raw_product()
+    broken = {**first_raw_product(), "retailerProductId": "1", "name": ""}
+    other = {**first_raw_product(), "retailerProductId": "2"}
+
+    map_search(envelope(good, broken, other))
+
+    [record] = mapper_records(caplog)
+    assert record.levelno == logging.WARNING
+    assert "discarded=1" in record.getMessage()
+    assert "'1'" in record.getMessage()
+
+
+def test_discarding_every_product_is_an_error(caplog: pytest.LogCaptureFixture) -> None:
+    broken_a = {**first_raw_product(), "name": ""}
+    broken_b = {**first_raw_product(), "retailerProductId": "2", "price": {"amount": "abc"}}
+
+    assert map_search(envelope(broken_a, broken_b)) == []
+
+    [record] = mapper_records(caplog)
+    assert record.levelno == logging.ERROR
+    assert "discarded=2" in record.getMessage()
+
+
+def test_duplicates_are_not_counted_as_discarded(caplog: pytest.LogCaptureFixture) -> None:
+    product = first_raw_product()
+
+    map_search(envelope(product, product))
+
+    assert mapper_records(caplog) == []
+
+
+def test_clean_searches_log_nothing(caplog: pytest.LogCaptureFixture) -> None:
+    map_search(AlcampoSearchResponse.model_validate(load_fixture("alcampo_search_leche.json")))
+    map_search(AlcampoSearchResponse.model_validate(load_fixture("alcampo_search_no_results.json")))
+
+    assert mapper_records(caplog) == []

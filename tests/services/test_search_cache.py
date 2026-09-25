@@ -1,3 +1,4 @@
+import logging
 from datetime import UTC, datetime
 
 import fakeredis
@@ -77,3 +78,15 @@ async def test_corrupted_value_is_treated_as_a_miss(redis: fakeredis.FakeAsyncRe
     result = await repo.get(warehouse="5", term="leche")
 
     assert result is None
+
+
+async def test_corrupted_value_logs_a_warning_with_the_key(
+    redis: fakeredis.FakeAsyncRedis, caplog: pytest.LogCaptureFixture
+) -> None:
+    await redis.set("search:5:leche", "not json")
+
+    await SearchCacheRepository(redis).get(warehouse="5", term="leche")
+
+    [record] = [r for r in caplog.records if r.name == "app.services.search_cache"]
+    assert record.levelno == logging.WARNING
+    assert "'search:5:leche'" in record.getMessage()

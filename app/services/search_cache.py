@@ -5,9 +5,13 @@ resolving to the same region share a cache entry. That resolution arrives in
 spec 007; today every request uses `DEFAULT_WAREHOUSE`.
 """
 
+import logging
+
 from redis.asyncio import Redis
 
 from app.models.product import ProductSearchResponse
+
+logger = logging.getLogger(__name__)
 
 
 def _cache_key(*, warehouse: str, term: str) -> str:
@@ -22,12 +26,15 @@ class SearchCacheRepository:
 
     async def get(self, *, warehouse: str, term: str) -> ProductSearchResponse | None:
         """Return the cached response, or `None` on a miss or corrupted value (plan-D8)."""
-        raw = await self._redis.get(_cache_key(warehouse=warehouse, term=term))
+        key = _cache_key(warehouse=warehouse, term=term)
+        raw = await self._redis.get(key)
         if raw is None:
             return None
         try:
             return ProductSearchResponse.model_validate_json(raw)
         except ValueError:
+            # The key contains the client's term: logged with %r (spec 003 RF-16, RF-18).
+            logger.warning("corrupted cache entry treated as a miss key=%r", key)
             return None
 
     async def set(

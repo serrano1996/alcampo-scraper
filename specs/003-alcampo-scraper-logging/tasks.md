@@ -127,7 +127,7 @@ Formato de commit: `<tipo>(003-alcampo-scraper-logging): <descripción en inglé
 - **RF:** RF-11
 - **Hecho cuando:** todos los casos pasan.
 
-### [ ] T10 — Mapper y cache
+### [x] T10 — Mapper y cache
 - **RED:**
   - `tests/mappers/test_map_search.py`, con `caplog`:
     - 3 productos, 1 sin `name` (`retailerProductId="1"`) → 1 `WARNING` con `discarded=1` y `'1'`;
