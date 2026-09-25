@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 import httpx
 import pytest
 
-from app.exceptions import UpstreamUnavailableError
+from app.exceptions import UpstreamBlockedError, UpstreamUnavailableError
 from app.scrapers.retry import parse_retry_after, send_with_retry
 
 NOW = datetime(2026, 9, 24, 10, 0, 0, tzinfo=UTC)
@@ -291,3 +291,18 @@ async def test_persistent_429_raises_upstream_unavailable() -> None:
         )
 
     assert len(sleep.calls) == 2
+
+
+async def test_waf_challenge_raises_upstream_blocked_error_after_one_call() -> None:
+    sleep = FakeSleep()
+    calls: list[int] = []
+
+    async def send() -> httpx.Response:
+        calls.append(1)
+        return make_response(202, headers={"x-amzn-waf-action": "challenge"})
+
+    with pytest.raises(UpstreamBlockedError):
+        await send_with_retry(send, max_attempts=3, base_delay=0.5, jitter_max=0.3, sleep=sleep)
+
+    assert len(calls) == 1
+    assert sleep.calls == []

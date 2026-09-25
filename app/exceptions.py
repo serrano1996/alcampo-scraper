@@ -16,3 +16,12 @@ class UpstreamUnavailableError(AlcampoScraperError):
     def __init__(self, reason: str) -> None:
         super().__init__(reason)
         self.reason = reason
+
+
+class UpstreamBlockedError(UpstreamUnavailableError):
+    """Raised when Alcampo's AWS WAF answers with a challenge.
+
+    The egress IP stays blocked for minutes (Fase 0 §5), so callers use this
+    subtype to start a cooldown (spec 002 RF-15). Being a subclass, it still
+    maps to the standard 502 through the `UpstreamUnavailableError` handler.
+    """

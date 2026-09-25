@@ -100,7 +100,7 @@ Formato de commit: `<tipo>(002-alcampo-scraper-antibaneo): <descripción en ingl
 
 ## PR2 — Enfriamiento tras challenge del WAF y docs
 
-### [ ] T8 — `UpstreamBlockedError`
+### [x] T8 — `UpstreamBlockedError`
 - **RED:**
   - `tests/test_exceptions.py`: `UpstreamBlockedError` es subclase de `UpstreamUnavailableError`;
   - `test_retry.py`: el challenge del WAF lanza `UpstreamBlockedError` (no solo la clase base), con 0 esperas y 1 llamada;

@@ -13,7 +13,7 @@ from email.utils import parsedate_to_datetime
 
 import httpx
 
-from app.exceptions import UpstreamUnavailableError
+from app.exceptions import UpstreamBlockedError, UpstreamUnavailableError
 
 Sleep = Callable[[float], Awaitable[None]]
 Uniform = Callable[[float, float], float]
@@ -110,7 +110,7 @@ async def send_with_retry(
             continue
 
         if _is_waf_challenge(response):
-            raise UpstreamUnavailableError("WAF challenge")
+            raise UpstreamBlockedError("WAF challenge")
 
         if response.is_success:
             return response

@@ -3,7 +3,7 @@ from datetime import UTC, datetime
 from fastapi.testclient import TestClient
 
 from app.core.dependencies import get_product_service
-from app.exceptions import UpstreamUnavailableError
+from app.exceptions import UpstreamBlockedError, UpstreamUnavailableError
 from app.main import create_app
 from app.models.product import Product, ProductQuery, ProductSearchResponse, SearchMetadata
 
@@ -85,3 +85,13 @@ def test_upstream_error_returns_502_without_leaking_the_reason() -> None:
     assert response.status_code == 502
     assert response.json() == {"detail": "Upstream service unavailable"}
     assert "secret" not in response.text
+
+
+def test_upstream_blocked_error_returns_the_standard_502() -> None:
+    client = make_client(FakeService(error=UpstreamBlockedError("waf")))
+
+    response = client.get("/api/v1/products", params={"postal_code": "28001", "term": "leche"})
+
+    assert response.status_code == 502
+    assert response.json() == {"detail": "Upstream service unavailable"}
+    assert "waf" not in response.text
