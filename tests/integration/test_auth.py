@@ -115,3 +115,16 @@ def test_starting_with_keys_does_not_warn(
         pass
 
     assert startup_warnings(caplog) == []
+
+
+def test_key_sent_in_the_url_is_redacted_from_app_logs(
+    anon_client: TestClient, caplog: pytest.LogCaptureFixture
+) -> None:
+    caplog.set_level(logging.INFO)
+
+    anon_client.get("/api/v1/products", params={**SEARCH, "api_key": "secret-in-url"})
+
+    # Only the app's own records: the test client's httpx logs its own request URL.
+    app_text = "\n".join(r.getMessage() for r in caplog.records if r.name.startswith("app."))
+    assert "secret-in-url" not in app_text
+    assert "'api_key': '***'" in app_text

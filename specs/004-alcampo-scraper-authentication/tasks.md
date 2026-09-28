@@ -74,7 +74,8 @@ Formato de commit: `<tipo>(004-alcampo-scraper-authentication): <descripción en
 - **RF:** RF-9, RF-10, RF-12
 - **Hecho cuando:** todos los casos pasan.
 
-### [ ] T5 — Ocultar parámetros con nombre de secreto
+### [x] T5 — Ocultar parámetros con nombre de secreto
+> **Ajuste (2026-09-28):** el test de integración comprueba solo los registros `app.*`, no todo `caplog.text`. `TestClient` usa httpx, que registra la URL que **pide el cliente de test** (`secret-in-url` incluido); se comprobó que tras el GREEN ese es el único registro con el secreto. En producción ese log sería del cliente, no nuestro. RED real antes del GREEN: la línea de inicio de la app sí contenía `secret-in-url`.
 - **RED:**
   - `tests/middleware/test_request_context.py` (nuevo): `redact_params({"api_key": "s", "Token": "t", "KEY": "k", "x-api-key": "x", "apikey": "a", "term": "token", "postal_code": "28001"})` → los 5 primeros como `"***"` y `term` y `postal_code` intactos;
   - `tests/integration/test_auth.py`: `GET /api/v1/products?…&api_key=secret-in-url` → `secret-in-url` no aparece en `caplog.text`, y la línea de inicio contiene `'api_key': '***'`.

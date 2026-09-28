@@ -7,6 +7,7 @@ Registered as the outermost middleware (plan-D6), so every request, including
 import logging
 import time
 import uuid
+from collections.abc import Mapping
 
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
@@ -16,7 +17,21 @@ from app.core.logging import request_id_var
 
 REQUEST_ID_HEADER = "X-Request-ID"
 
+# Query params whose value is hidden in the start line, matched by name and
+# case-insensitively: a client sending its key in the URL by mistake must not
+# leak it into our logs (spec 004 RF-14, plan-D7). Values are never inspected.
+SECRET_PARAM_NAMES = frozenset({"api_key", "apikey", "x-api-key", "key", "token"})
+REDACTED = "***"
+
 logger = logging.getLogger(__name__)
+
+
+def redact_params(params: Mapping[str, str]) -> dict[str, str]:
+    """Copy of `params` with secret-named values replaced by `***`."""
+    return {
+        name: REDACTED if name.lower() in SECRET_PARAM_NAMES else value
+        for name, value in params.items()
+    }
 
 
 class RequestContextMiddleware(BaseHTTPMiddleware):
@@ -33,7 +48,7 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
             "request started method=%s path=%r params=%r",
             request.method,
             request.url.path,
-            dict(request.query_params),
+            redact_params(request.query_params),
         )
         try:
             try:
