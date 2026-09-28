@@ -1,10 +1,12 @@
 import logging
 from collections.abc import Iterator
+from datetime import UTC, datetime
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.main import create_app
+from app.models.product import ProductSearchResponse, SearchMetadata
 from tests.integration.conftest import TEST_API_KEY, load_fixture, mock_alcampo_search
 
 VALID_KEY = TEST_API_KEY
@@ -128,3 +130,68 @@ def test_key_sent_in_the_url_is_redacted_from_app_logs(
     app_text = "\n".join(r.getMessage() for r in caplog.records if r.name.startswith("app."))
     assert "secret-in-url" not in app_text
     assert "'api_key': '***'" in app_text
+
+
+CACHED_RESPONSE = ProductSearchResponse(
+    search=SearchMetadata(
+        postal_code="28001",
+        term="leche",
+        warehouse="5",
+        strategy_used="api",
+        scraped_at=datetime(2026, 9, 24, 10, 0, 0, tzinfo=UTC),
+        total_results=0,
+    ),
+    products=[],
+)
+
+
+async def test_rejection_happens_before_cache_cooldown_and_alcampo(
+    anon_client: TestClient, respx_mock
+) -> None:
+    route = mock_alcampo_search(respx_mock, json_body=load_fixture("alcampo_search_leche.json"))
+    redis = anon_client.app.state.redis
+    await redis.set("search:5:leche", CACHED_RESPONSE.model_dump_json())
+    await redis.set("waf:cooldown", "1")
+
+    response = anon_client.get("/api/v1/products", params=SEARCH)
+
+    assert response.status_code == 401  # not 200 from cache, not 502 from cooldown
+    assert response.json() == UNAUTHORIZED
+    assert route.call_count == 0
+
+
+def test_rejection_takes_precedence_over_validation(anon_client: TestClient) -> None:
+    response = anon_client.get(
+        "/api/v1/products",
+        params={"postal_code": "28001", "term": "   "},
+        headers={"X-API-Key": "x"},
+    )
+
+    assert response.status_code == 401  # not 422
+
+
+def test_rejections_are_traced_like_any_request(
+    anon_client: TestClient, caplog: pytest.LogCaptureFixture
+) -> None:
+    caplog.set_level(logging.INFO)
+
+    response = anon_client.get("/api/v1/products", params=SEARCH)
+
+    request_id = response.headers["X-Request-ID"]
+    lines = [
+        r.getMessage()
+        for r in caplog.records
+        if r.name == "app.middleware.request_context" and r.request_id == request_id
+    ]
+    assert any(line.startswith("request started") for line in lines)
+    assert any(line.startswith("request finished status=401") for line in lines)
+
+
+def test_openapi_declares_the_api_key_requirement(anon_client: TestClient) -> None:
+    schema = anon_client.get("/openapi.json").json()
+
+    schemes = schema["components"]["securitySchemes"].values()
+    assert {"type": "apiKey", "in": "header", "name": "X-API-Key"} in [
+        {k: s[k] for k in ("type", "in", "name")} for s in schemes
+    ]
+    assert schema["paths"]["/api/v1/products"]["get"]["security"]

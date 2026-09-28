@@ -84,7 +84,8 @@ Formato de commit: `<tipo>(004-alcampo-scraper-authentication): <descripción en
 - **RF:** RF-14
 - **Hecho cuando:** todos los casos pasan y los tests de logging de la 003 siguen en verde.
 
-### [ ] T6 — Integración transversal
+### [x] T6 — Integración transversal
+> **Verificación por mutación (2026-09-28):** sin `dependencies=[Security(require_api_key)]` en el router fallan 10 tests de `test_auth.py`, incluidos los 4 nuevos (antes de cache/enfriamiento/Alcampo, precedencia sobre `422`, trazabilidad y OpenAPI); restaurado, 17 pasan. Los casos "cache presente" y "enfriamiento activo" se cubren en un mismo test: con los dos sembrados en Redis, la respuesta es `401` y no el `200` cacheado ni el `502`.
 - **RED:** en `tests/integration/test_auth.py`:
   - **nada antes de la auth:** petición sin token, con la ruta de Alcampo mockeada, una entrada en cache para esa búsqueda y la marca de enfriamiento activa → `401`, la ruta de respx con **0** llamadas, y la respuesta no es la cacheada;
   - **precedencia:** token inválido + `term="   "` → `401`, no `422`; token inválido con el enfriamiento activo → `401`, no `502`;
