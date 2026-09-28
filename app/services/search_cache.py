@@ -8,6 +8,7 @@ spec 007; today every request uses `DEFAULT_WAREHOUSE`.
 import logging
 
 from redis.asyncio import Redis
+from redis.exceptions import RedisError
 
 from app.models.product import ProductSearchResponse
 
@@ -37,7 +38,12 @@ class SearchCacheRepository:
     async def get(self, *, warehouse: str, term: str) -> ProductSearchResponse | None:
         """Return the cached response, or `None` on a miss or corrupted value (plan-D8)."""
         key = _cache_key(warehouse=warehouse, term=term)
-        raw = await self._redis.get(key)
+        try:
+            raw = await self._redis.get(key)
+        except RedisError:
+            # Degrade to Alcampo instead of a 500 (spec 007 RF-15, plan-D10).
+            logger.warning("redis unavailable op=cache.get, degraded")
+            return None
         if raw is None:
             return None
         try:
@@ -55,8 +61,12 @@ class SearchCacheRepository:
         response: ProductSearchResponse,
         ttl_seconds: int,
     ) -> None:
-        await self._redis.set(
-            _cache_key(warehouse=warehouse, term=term),
-            response.model_dump_json(),
-            ex=ttl_seconds,
-        )
+        try:
+            await self._redis.set(
+                _cache_key(warehouse=warehouse, term=term),
+                response.model_dump_json(),
+                ex=ttl_seconds,
+            )
+        except RedisError:
+            # The response is still returned; it just is not cached (spec 007 RF-15).
+            logger.warning("redis unavailable op=cache.set, degraded")

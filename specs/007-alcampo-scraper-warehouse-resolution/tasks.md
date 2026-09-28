@@ -47,7 +47,8 @@ Formato de commit: `<tipo>(007-alcampo-scraper-warehouse-resolution): <descripci
 - **Depende:** T1
 - **RF:** RF-15
 
-### [ ] T4 — Cache que se salta sin Redis
+### [x] T4 — Cache que se salta sin Redis
+> **Nota (2026-09-28):** RED real: con Redis caído o colgado la búsqueda daba `500` y el repositorio dejaba pasar `ConnectionError`/`TimeoutError`. GREEN: `get` y `set` capturan `RedisError` con un `WARNING` cada uno. La integración comprueba `200` con productos, 1 petición a Alcampo, `/health` `200`, el `WARNING` y **ningún** `ERROR`. El caso "colgado" se simula con un `TimeoutError` inmediato: que el cliente real corte a los `REDIS_TIMEOUT_SECONDS` lo garantiza T2 y se comprueba de verdad en la verificación manual de T13. **Fin del PR 1.**
 - **RED:**
   - `tests/services/test_search_cache.py`: con Redis caído, `get` → `None` y `set` no lanza; un `WARNING` por operación.
   - Integración (`tests/integration/test_redis_degradation.py`): con un Redis que falla en todo, `GET /api/v1/products` → `200` con productos (Alcampo con respx), `WARNING` en el log y **ningún `500`**; con un Redis que tarda más que `REDIS_TIMEOUT_SECONDS`, simulado con un cliente que lanza `TimeoutError`, lo mismo. `/health` → `200`.

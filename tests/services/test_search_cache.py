@@ -6,6 +6,7 @@ import pytest
 
 from app.models.product import Product, ProductSearchResponse, SearchMetadata
 from app.services.search_cache import SearchCacheRepository, normalize_term
+from tests.services.redis_doubles import DOWN, HUNG, BrokenRedis
 
 
 @pytest.fixture
@@ -117,3 +118,20 @@ async def test_case_and_spacing_variants_share_one_entry(redis: fakeredis.FakeAs
 
     assert await repo.get(warehouse="5", term="LECHE") == response
     assert await redis.keys("search:*") == [b"search:5:leche"]
+
+
+# --- spec 007 RF-15: the cache is skipped without Redis ------------------------
+
+
+@pytest.mark.parametrize("error", [DOWN, HUNG], ids=["down", "hung"])
+async def test_without_redis_get_is_a_miss_and_set_is_skipped(
+    caplog: pytest.LogCaptureFixture, error: Exception
+) -> None:
+    repo = SearchCacheRepository(BrokenRedis(error))
+
+    assert await repo.get(warehouse="5", term="leche") is None
+    await repo.set(warehouse="5", term="leche", response=make_response(), ttl_seconds=3600)
+
+    warnings = [r.getMessage() for r in caplog.records if r.levelno == logging.WARNING]
+    assert len(warnings) == 2
+    assert all("redis unavailable" in message for message in warnings)
