@@ -10,6 +10,7 @@ from app.core.config import Settings
 from app.exceptions import UpstreamUnavailableError
 from app.models.alcampo import AlcampoSearchResponse
 from app.scrapers.retry import send_with_retry
+from app.services.rate_limiter import OutboundRateLimiter
 
 SEARCH_PATH = "/api/webproductpagews/v6/product-pages/search"
 PAGE_SIZE = 50
@@ -25,9 +26,16 @@ logger = logging.getLogger(__name__)
 class AlcampoSearchScraper:
     """Searches Alcampo's product catalog by free text (RF-3)."""
 
-    def __init__(self, *, client: httpx.AsyncClient, settings: Settings) -> None:
+    def __init__(
+        self,
+        *,
+        client: httpx.AsyncClient,
+        settings: Settings,
+        rate_limiter: OutboundRateLimiter,
+    ) -> None:
         self._client = client
         self._settings = settings
+        self._rate_limiter = rate_limiter
 
     async def search(self, term: str) -> AlcampoSearchResponse:
         """Return the raw, validated search envelope for `term` (a single page)."""
@@ -42,6 +50,10 @@ class AlcampoSearchScraper:
         url = str(httpx.URL(SEARCH_PATH, params=params))
 
         async def send() -> httpx.Response:
+            # One slot per real request, retries included (spec 008 RF-3). An
+            # exhausted limit raises OutboundRateLimitedError, which
+            # send_with_retry does not catch, so the retries stop (RF-5, plan-D4).
+            await self._rate_limiter.acquire()
             return await self._client.get(SEARCH_PATH, params=params)
 
         response = await send_with_retry(

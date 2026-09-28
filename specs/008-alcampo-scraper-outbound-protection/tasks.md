@@ -78,7 +78,8 @@ Formato de commit: `<tipo>(008-alcampo-scraper-outbound-protection): <descripci�
 
 ## PR 2 — Cableado
 
-### [ ] T5 — Límite en el scraper y degradación prevista
+### [x] T5 — Límite en el scraper y degradación prevista
+> **Nota (2026-09-28):** RED real (`ImportError` de `UpstreamThrottledError`, `TypeError` por `rate_limiter` en 11 tests del scraper, el handler sin `WARNING` y la integración con `200` en vez de `502`). **Regresión no prevista en plan §6:** `test_persistent_5xx_returns_502_after_retry_max_attempts_calls` y `test_alcampo_404_returns_502_with_a_single_call` comprobaban "no se cachea nada" con `dbsize() == 0`, y ahora existe la clave legítima `ratelimit:alcampo`. Se cambió la aserción por `keys("search:*") == []`, que es lo que pretendían, con un comentario; el test del `422` mantiene `dbsize() == 0` porque ahí no se toca Redis. **Cambio de texto del log:** el `WARNING` del enfriamiento pasa de `search rejected during WAF cooldown …` a `search throttled reason='WAF cooldown active' …`, común a toda la familia; ningún test dependía del texto antiguo. El README se actualiza en T9.
 - **RED:**
   - `tests/test_exceptions.py`: `CooldownActiveError` y `OutboundRateLimitedError` son `UpstreamThrottledError`, que es `UpstreamUnavailableError`.
   - `tests/scrapers/test_alcampo_search.py`: con límite agotado, `search` lanza `OutboundRateLimitedError` y la ruta respx tiene **0** llamadas; con límite 1 y Alcampo devolviendo `503`, sale 1 petición y el reintento se corta con `OutboundRateLimitedError` (RF-5).

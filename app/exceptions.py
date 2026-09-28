@@ -27,7 +27,16 @@ class UpstreamBlockedError(UpstreamUnavailableError):
     """
 
 
-class CooldownActiveError(UpstreamUnavailableError):
+class UpstreamThrottledError(UpstreamUnavailableError):
+    """Parent of the foreseen, managed degradations: we chose not to call Alcampo.
+
+    The 502 handler logs the whole family as a WARNING, not an ERROR, so a
+    cooldown or an exhausted rate limit does not flood the logs (spec 003 RF-12,
+    spec 008 plan-D5). The actionable ERROR is the challenge that caused them.
+    """
+
+
+class CooldownActiveError(UpstreamThrottledError):
     """Raised when a search is rejected because the WAF cooldown is active.
 
     A foreseen, managed degradation: the 502 handler logs it as a WARNING, not an
@@ -35,7 +44,7 @@ class CooldownActiveError(UpstreamUnavailableError):
     """
 
 
-class OutboundRateLimitedError(UpstreamUnavailableError):
+class OutboundRateLimitedError(UpstreamThrottledError):
     """Raised when the global outbound rate limit towards Alcampo is exhausted.
 
     No request is sent: staying under the limit is what avoids a WAF block that

@@ -2,7 +2,9 @@ import app.exceptions
 from app.exceptions import (
     AlcampoScraperError,
     CooldownActiveError,
+    OutboundRateLimitedError,
     UpstreamBlockedError,
+    UpstreamThrottledError,
     UpstreamUnavailableError,
 )
 
@@ -27,3 +29,11 @@ def test_upstream_blocked_error_is_an_upstream_unavailable_error() -> None:
 
 def test_cooldown_active_error_is_an_upstream_unavailable_error() -> None:
     assert isinstance(CooldownActiveError("cooldown"), UpstreamUnavailableError)
+
+
+def test_foreseen_degradations_share_a_throttled_parent() -> None:
+    # One family logged as WARNING by the 502 handler (spec 008 plan-D5).
+    assert issubclass(UpstreamThrottledError, UpstreamUnavailableError)
+    assert issubclass(CooldownActiveError, UpstreamThrottledError)
+    assert issubclass(OutboundRateLimitedError, UpstreamThrottledError)
+    assert not issubclass(UpstreamBlockedError, UpstreamThrottledError)

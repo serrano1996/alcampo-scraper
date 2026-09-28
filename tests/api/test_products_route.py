@@ -6,7 +6,12 @@ from fastapi.testclient import TestClient
 
 from app.core.dependencies import get_product_service
 from app.core.security import require_api_key
-from app.exceptions import CooldownActiveError, UpstreamBlockedError, UpstreamUnavailableError
+from app.exceptions import (
+    CooldownActiveError,
+    OutboundRateLimitedError,
+    UpstreamBlockedError,
+    UpstreamUnavailableError,
+)
 from app.main import create_app
 from app.models.product import Product, ProductQuery, ProductSearchResponse, SearchMetadata
 
@@ -132,6 +137,20 @@ def test_cooldown_502_is_only_a_warning(caplog: pytest.LogCaptureFixture) -> Non
     assert response.status_code == 502
     assert response.json() == {"detail": "Upstream service unavailable"}
     assert len(records_at(caplog, logging.WARNING)) == 1
+    assert records_at(caplog, logging.ERROR) == []
+
+
+def test_rate_limited_502_is_only_a_warning_with_its_reason(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    client = make_client(FakeService(error=OutboundRateLimitedError("outbound rate limit reached")))
+
+    response = client.get("/api/v1/products", params=SEARCH)
+
+    assert response.status_code == 502
+    assert response.json() == {"detail": "Upstream service unavailable"}
+    [warning] = records_at(caplog, logging.WARNING)
+    assert "outbound rate limit reached" in warning.getMessage()
     assert records_at(caplog, logging.ERROR) == []
 
 

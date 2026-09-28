@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 from app.api.v1.products import router as products_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
-from app.exceptions import CooldownActiveError, UpstreamUnavailableError
+from app.exceptions import UpstreamThrottledError, UpstreamUnavailableError
 from app.middleware.request_context import RequestContextMiddleware
 from app.scrapers.http_client import create_http_client
 
@@ -52,11 +52,15 @@ def create_app() -> FastAPI:
     ) -> JSONResponse:
         postal_code = request.query_params.get("postal_code")
         term = request.query_params.get("term")
-        if isinstance(exc, CooldownActiveError):
-            # Foreseen and managed: the actionable ERROR was the challenge itself
-            # (spec 003 RF-11); one per rejected search would flood the logs (RF-12).
+        if isinstance(exc, UpstreamThrottledError):
+            # Foreseen and managed (WAF cooldown, outbound rate limit): the
+            # actionable ERROR was the challenge itself (spec 003 RF-11); one per
+            # rejected search would flood the logs (RF-12, spec 008 plan-D5).
             logger.warning(
-                "search rejected during WAF cooldown postal_code=%r term=%r", postal_code, term
+                "search throttled reason=%r postal_code=%r term=%r",
+                exc.reason,
+                postal_code,
+                term,
             )
         else:
             logger.error(

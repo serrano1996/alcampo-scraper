@@ -1,7 +1,15 @@
+import logging
+
 import httpx
 from fastapi.testclient import TestClient
 
-from tests.integration.conftest import SEARCH_URL, load_fixture, mock_alcampo_search
+from app.main import create_app
+from tests.integration.conftest import (
+    SEARCH_URL,
+    TEST_API_KEY,
+    load_fixture,
+    mock_alcampo_search,
+)
 
 
 def test_miss_then_hit(client: TestClient, respx_mock) -> None:
@@ -48,7 +56,9 @@ async def test_persistent_5xx_returns_502_after_retry_max_attempts_calls(
 
     assert response.status_code == 502
     assert route.call_count == client.app.state.settings.retry_max_attempts
-    assert await client.app.state.redis.dbsize() == 0
+    # Nothing cached. Not dbsize() == 0: the outbound rate limiter now keeps
+    # its own key for every request sent (spec 008 T5).
+    assert await client.app.state.redis.keys("search:*") == []
 
 
 async def test_alcampo_404_returns_502_with_a_single_call(client: TestClient, respx_mock) -> None:
@@ -58,7 +68,9 @@ async def test_alcampo_404_returns_502_with_a_single_call(client: TestClient, re
 
     assert response.status_code == 502
     assert route.call_count == 1
-    assert await client.app.state.redis.dbsize() == 0
+    # Nothing cached. Not dbsize() == 0: the outbound rate limiter now keeps
+    # its own key for every request sent (spec 008 T5).
+    assert await client.app.state.redis.keys("search:*") == []
 
 
 async def test_waf_challenge_returns_502_with_a_single_call(client: TestClient, respx_mock) -> None:
@@ -96,3 +108,25 @@ async def test_waf_cooldown_end_to_end(client: TestClient, respx_mock) -> None:
 
     assert search("leche") == 200  # cached during cooldown: still served
     assert leche.call_count == 1
+
+
+# --- spec 008: outbound rate limit ---------------------------------------------
+
+
+def test_exhausted_rate_limit_rejects_new_searches_but_serves_the_cache(
+    integration_env, respx_mock, caplog
+) -> None:
+    integration_env.setenv("ALCAMPO_RATE_LIMIT", "1")
+    route = mock_alcampo_search(respx_mock, json_body=load_fixture("alcampo_search_leche.json"))
+    with TestClient(create_app(), headers={"X-API-Key": TEST_API_KEY}) as client:
+        first = client.get("/api/v1/products", params={"postal_code": "28001", "term": "leche"})
+        other = client.get("/api/v1/products", params={"postal_code": "28001", "term": "agua"})
+        again = client.get("/api/v1/products", params={"postal_code": "28001", "term": "leche"})
+
+    assert first.status_code == 200
+    assert other.status_code == 502
+    assert other.json() == {"detail": "Upstream service unavailable"}
+    assert again.status_code == 200  # cached: the limit never blocks the cache
+    assert route.call_count == 1
+    warnings = [r for r in caplog.records if r.name == "app.main" and r.levelno == logging.WARNING]
+    assert any("outbound rate limit reached" in r.getMessage() for r in warnings)

@@ -2,14 +2,16 @@ import json
 import logging
 from pathlib import Path
 
+import fakeredis
 import httpx
 import pytest
 import respx
 
 from app.core.config import Settings
-from app.exceptions import UpstreamUnavailableError
+from app.exceptions import OutboundRateLimitedError, UpstreamUnavailableError
 from app.models.alcampo import AlcampoSearchResponse
 from app.scrapers.alcampo_search import DEFAULT_WAREHOUSE, SEARCH_PATH, AlcampoSearchScraper
+from app.services.rate_limiter import OutboundRateLimiter
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
 SEARCH_URL = "https://alcampo.test/api/webproductpagews/v6/product-pages/search"
@@ -19,7 +21,13 @@ def load_fixture(name: str) -> dict:
     return json.loads((FIXTURES / name).read_text(encoding="utf-8"))
 
 
-def make_scraper(*, max_attempts: int = 3) -> tuple[AlcampoSearchScraper, httpx.AsyncClient]:
+def disabled_limiter() -> OutboundRateLimiter:
+    return OutboundRateLimiter(fakeredis.FakeAsyncRedis(), limit=0, window_seconds=60)
+
+
+def make_scraper(
+    *, max_attempts: int = 3, rate_limiter: OutboundRateLimiter | None = None
+) -> tuple[AlcampoSearchScraper, httpx.AsyncClient]:
     settings = Settings(
         _env_file=None,
         alcampo_base_url="https://alcampo.test",
@@ -29,7 +37,9 @@ def make_scraper(*, max_attempts: int = 3) -> tuple[AlcampoSearchScraper, httpx.
         retry_jitter_max_s=0,
     )
     client = httpx.AsyncClient(base_url=settings.alcampo_base_url)
-    scraper = AlcampoSearchScraper(client=client, settings=settings)
+    scraper = AlcampoSearchScraper(
+        client=client, settings=settings, rate_limiter=rate_limiter or disabled_limiter()
+    )
     return scraper, client
 
 
@@ -139,7 +149,9 @@ async def test_search_passes_the_configured_jitter_to_retries(
         retry_jitter_max_s=0.25,
     )
     async with httpx.AsyncClient(base_url=settings.alcampo_base_url) as client:
-        await AlcampoSearchScraper(client=client, settings=settings).search("leche")
+        await AlcampoSearchScraper(
+            client=client, settings=settings, rate_limiter=disabled_limiter()
+        ).search("leche")
 
     assert captured["jitter_max"] == 0.25
     assert SEARCH_PATH in captured["url"]
@@ -186,3 +198,34 @@ async def test_unexpected_shape_is_logged_as_unexpected_schema(
     [error] = scraper_errors(caplog)
     assert "unexpected schema" in error.getMessage()
     assert SEARCH_PATH in error.getMessage()
+
+
+# --- spec 008: outbound rate limit ---------------------------------------------
+
+
+@respx.mock
+async def test_exhausted_limit_sends_nothing_to_alcampo() -> None:
+    route = respx.get(SEARCH_URL).mock(return_value=httpx.Response(200, json={}))
+    limiter = OutboundRateLimiter(fakeredis.FakeAsyncRedis(), limit=1, window_seconds=60)
+    await limiter.acquire()  # someone else used the only slot
+    scraper, client = make_scraper(rate_limiter=limiter)
+
+    async with client:
+        with pytest.raises(OutboundRateLimitedError):
+            await scraper.search("leche")
+
+    assert route.call_count == 0
+
+
+@respx.mock
+async def test_limit_exhausted_between_attempts_stops_the_retries() -> None:
+    # spec 008 RF-5: every attempt takes a slot; retries stop when none is left.
+    route = respx.get(SEARCH_URL).mock(return_value=httpx.Response(503))
+    limiter = OutboundRateLimiter(fakeredis.FakeAsyncRedis(), limit=1, window_seconds=60)
+    scraper, client = make_scraper(max_attempts=3, rate_limiter=limiter)
+
+    async with client:
+        with pytest.raises(OutboundRateLimitedError):
+            await scraper.search("leche")
+
+    assert route.call_count == 1
