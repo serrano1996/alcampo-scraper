@@ -61,7 +61,8 @@ Formato de commit: `<tipo>(004-alcampo-scraper-authentication): <descripción en
 - **RF:** RF-1, RF-2, RF-3, RF-6, RF-8, RF-15
 - **Hecho cuando:** los casos pasan y **toda la suite de las specs 001–003 sigue en verde**.
 
-### [ ] T4 — Logs de rechazo y aviso de arranque sin tokens
+### [x] T4 — Logs de rechazo y aviso de arranque sin tokens
+> **Verificación por mutación (2026-09-28):** metiendo el valor recibido en el mensaje de rechazo, `test_invalid_key_is_logged_without_its_value` falla (`'wrong-secret-value'` aparece en `caplog.text`); restaurado, pasa. El test de secretos arranca la app con `LOG_LEVEL=DEBUG`: con `caplog.set_level(DEBUG)` solo no bastaría, porque el `lifespan` vuelve a fijar el nivel del raíz.
 - **RED:** en `tests/integration/test_auth.py`, con `caplog`:
   - sin cabecera → 1 `WARNING` con `reason=missing` y la ruta `'/api/v1/products'`;
   - `X-API-Key: wrong-secret-value` → 1 `WARNING` con `reason=invalid`;

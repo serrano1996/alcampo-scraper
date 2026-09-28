@@ -1,5 +1,6 @@
 """API key authentication for `/api/v1` (spec 004)."""
 
+import logging
 import secrets
 from typing import Annotated
 
@@ -8,6 +9,8 @@ from fastapi.security import APIKeyHeader
 
 API_KEY_HEADER = "X-API-Key"
 UNAUTHORIZED_DETAIL = "Invalid or missing API key"
+
+logger = logging.getLogger(__name__)
 
 # auto_error=False: we build the 401 ourselves so the body is identical for a
 # missing and an invalid key and carries WWW-Authenticate (plan-D4, RF-3, RF-15).
@@ -42,6 +45,12 @@ def require_api_key(
     Keys come from the settings stored by the lifespan (plan-D5).
     """
     if not is_valid_api_key(api_key, request.app.state.settings.api_keys):
+        # Never the received value, valid or not (spec 004 RF-10, RF-12, plan-D8).
+        logger.warning(
+            "rejected request: API key reason=%s path=%r",
+            "missing" if not api_key else "invalid",
+            request.url.path,
+        )
         raise HTTPException(
             status_code=401,
             detail=UNAUTHORIZED_DETAIL,

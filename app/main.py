@@ -26,6 +26,10 @@ def create_redis(redis_url: str) -> redis.Redis:
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
     configure_logging(settings.log_level)
+    if not settings.api_keys:
+        # Fail closed, but loudly: otherwise "everything returns 401" is a mystery
+        # after a deploy (spec 004 RF-8, RF-9, plan-D6).
+        logger.warning("no API_KEYS configured: every request to /api/v1 will be rejected")
     app.state.settings = settings
     app.state.http_client = create_http_client(settings)
     app.state.redis = create_redis(settings.redis_url)

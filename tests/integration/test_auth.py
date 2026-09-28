@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Iterator
 
 import pytest
@@ -56,3 +57,61 @@ def test_no_configured_keys_rejects_everyone(integration_env: pytest.MonkeyPatch
         response = client.get("/api/v1/products", params=SEARCH, headers={"X-API-Key": VALID_KEY})
 
     assert response.status_code == 401
+
+
+def auth_warnings(caplog: pytest.LogCaptureFixture) -> list[logging.LogRecord]:
+    return [
+        r for r in caplog.records if r.name == "app.core.security" and r.levelno == logging.WARNING
+    ]
+
+
+def test_missing_key_is_logged_with_the_path(
+    anon_client: TestClient, caplog: pytest.LogCaptureFixture
+) -> None:
+    anon_client.get("/api/v1/products", params=SEARCH)
+
+    [record] = auth_warnings(caplog)
+    assert "reason=missing" in record.getMessage()
+    assert "'/api/v1/products'" in record.getMessage()
+
+
+def test_invalid_key_is_logged_without_its_value(
+    integration_env: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    # DEBUG everywhere: no level may ever carry a key (spec 004 RF-12).
+    integration_env.setenv("LOG_LEVEL", "DEBUG")
+    caplog.set_level(logging.DEBUG)
+    with start_client(integration_env, VALID_KEY) as client:
+        client.get("/api/v1/products", params=SEARCH, headers={"X-API-Key": "wrong-secret-value"})
+
+    [record] = auth_warnings(caplog)
+    assert "reason=invalid" in record.getMessage()
+    assert "wrong-secret-value" not in caplog.text
+    assert VALID_KEY not in caplog.text
+
+
+def startup_warnings(caplog: pytest.LogCaptureFixture) -> list[logging.LogRecord]:
+    return [
+        r
+        for r in caplog.records
+        if r.name == "app.main" and r.levelno == logging.WARNING and "API_KEYS" in r.getMessage()
+    ]
+
+
+def test_starting_without_keys_warns_that_everything_will_be_rejected(
+    integration_env: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    with start_client(integration_env, " , "):
+        pass
+
+    [record] = startup_warnings(caplog)
+    assert "/api/v1" in record.getMessage()
+
+
+def test_starting_with_keys_does_not_warn(
+    integration_env: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    with start_client(integration_env, VALID_KEY):
+        pass
+
+    assert startup_warnings(caplog) == []
