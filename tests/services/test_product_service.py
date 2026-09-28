@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from collections.abc import Callable
 from datetime import UTC, datetime
@@ -51,18 +52,35 @@ def make_raw_response(*, has_products: bool) -> AlcampoSearchResponse:
     )
 
 
+class HangingScraper:
+    """Alcampo that never answers; records whether the wait was cancelled."""
+
+    def __init__(self) -> None:
+        self.cancelled = False
+
+    async def search(self, term: str) -> AlcampoSearchResponse:
+        try:
+            await asyncio.Event().wait()
+        except asyncio.CancelledError:
+            self.cancelled = True
+            raise
+        raise AssertionError("unreachable")
+
+
 def make_service(
-    scraper: FakeScraper | FailingScraper,
+    scraper: FakeScraper | FailingScraper | HangingScraper,
     redis: fakeredis.FakeAsyncRedis,
     *,
     clock: Callable[[], datetime] = lambda: FIXED_NOW,
     waf_cooldown_seconds: int = 180,
+    search_timeout_seconds: float = 15,
 ) -> tuple[ProductService, SearchCacheRepository]:
     settings = Settings(
         _env_file=None,
         alcampo_base_url="https://alcampo.test",
         redis_url="redis://localhost:6379/0",
         waf_cooldown_seconds=waf_cooldown_seconds,
+        search_timeout_seconds=search_timeout_seconds,
     )
     cache = SearchCacheRepository(redis)
     service = ProductService(
@@ -332,3 +350,23 @@ async def test_miss_sends_the_normalized_term_and_keeps_the_client_term(
 
     assert scraper.calls == ["leche entera"]
     assert response.search.term == "LECHE   entera"
+
+
+# --- spec 008 RF-7: search timeout ---------------------------------------------
+
+
+async def test_search_that_exceeds_the_timeout_fails_and_is_cancelled(
+    redis: fakeredis.FakeAsyncRedis,
+) -> None:
+    scraper = HangingScraper()
+    service, cache = make_service(scraper, redis, search_timeout_seconds=0.05)
+
+    # Safety net so a missing timeout fails the test instead of hanging it.
+    async with asyncio.timeout(2):
+        with pytest.raises(UpstreamUnavailableError) as exc_info:
+            await service.search(ProductQuery(postal_code="28001", term="leche"))
+
+    assert exc_info.value.reason == "search timeout"
+    assert not isinstance(exc_info.value, UpstreamBlockedError)
+    assert scraper.cancelled is True
+    assert await cache.get(warehouse="5", term="leche") is None

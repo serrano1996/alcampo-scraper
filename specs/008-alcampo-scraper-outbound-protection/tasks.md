@@ -90,7 +90,8 @@ Formato de commit: `<tipo>(008-alcampo-scraper-outbound-protection): <descripci�
 - **RF:** RF-3, RF-4, RF-5
 - **Hecho cuando:** los casos pasan y el log del enfriamiento no ha cambiado.
 
-### [ ] T6 — Tiempo máximo por búsqueda
+### [x] T6 — Tiempo máximo por búsqueda
+> **Nota (2026-09-28):** el primer intento de RED **colgó** los tests: sin tiempo máximo, un scraper que nunca responde espera para siempre, que es justo el defecto. Se añadió una red de seguridad: `asyncio.timeout(2)` en el test del servicio (RED → `TimeoutError`) y, en la integración, un Alcampo falso que responde **bien pero a los 2 s** (RED → `200` en vez de `502`). GREEN: `_search_within_timeout` en el servicio; el test de integración tarda 0,39 s (corta a los 0,1 s configurados). El `TimeoutError` capturado es el de `asyncio.timeout`; los timeouts de httpx son `TransportError` y siguen yendo a los reintentos.
 - **RED:**
   - `tests/services/test_product_service.py`: un scraper que espera un `asyncio.Event` que nunca se activa y `search_timeout_seconds=0.05` → `UpstreamUnavailableError` con `reason == "search timeout"`; el scraper queda cancelado.
   - Integración: la misma situación con respx (un `side_effect` que espera) → `502` y `ERROR` con `reason='search timeout'`.

@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 import httpx
@@ -130,3 +131,25 @@ def test_exhausted_rate_limit_rejects_new_searches_but_serves_the_cache(
     assert route.call_count == 1
     warnings = [r for r in caplog.records if r.name == "app.main" and r.levelno == logging.WARNING]
     assert any("outbound rate limit reached" in r.getMessage() for r in warnings)
+
+
+# --- spec 008 RF-7: search timeout ---------------------------------------------
+
+
+def test_slow_alcampo_gets_a_502_within_the_search_timeout(
+    integration_env, respx_mock, caplog
+) -> None:
+    async def never_answers(request: httpx.Request) -> httpx.Response:
+        # Valid but late: without a search timeout this would be a 200.
+        await asyncio.sleep(2)
+        return httpx.Response(200, json=load_fixture("alcampo_search_leche.json"))
+
+    integration_env.setenv("SEARCH_TIMEOUT_SECONDS", "0.1")
+    respx_mock.get(SEARCH_URL).mock(side_effect=never_answers)
+    with TestClient(create_app(), headers={"X-API-Key": TEST_API_KEY}) as client:
+        response = client.get("/api/v1/products", params={"postal_code": "28001", "term": "leche"})
+
+    assert response.status_code == 502
+    assert response.json() == {"detail": "Upstream service unavailable"}
+    errors = [r for r in caplog.records if r.name == "app.main" and r.levelno == logging.ERROR]
+    assert any("'search timeout'" in r.getMessage() for r in errors)

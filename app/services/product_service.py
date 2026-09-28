@@ -1,12 +1,13 @@
 """Orchestrates cache, scraper and mapper for `GET /api/v1/products` (RF-1)."""
 
+import asyncio
 import logging
 from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Protocol
 
 from app.core.config import Settings
-from app.exceptions import CooldownActiveError, UpstreamBlockedError
+from app.exceptions import CooldownActiveError, UpstreamBlockedError, UpstreamUnavailableError
 from app.mappers.product_mapper import map_search
 from app.models.alcampo import AlcampoSearchResponse
 from app.models.product import ProductQuery, ProductSearchResponse, SearchMetadata
@@ -66,7 +67,7 @@ class ProductService:
         try:
             # The normalized term, so the request does not depend on the client's
             # spelling (spec 008 RF-2, plan-D1); the response keeps query.term.
-            raw = await self._scraper.search(normalize_term(query.term))
+            raw = await self._search_within_timeout(normalize_term(query.term))
         except UpstreamBlockedError:
             # The WAF blocked the egress IP: stop hitting Alcampo for a while
             # (spec 002 RF-15). Plain upstream errors do not start a cooldown.
@@ -101,3 +102,16 @@ class ProductService:
             ttl_seconds=self._settings.cache_ttl_seconds,
         )
         return response
+
+    async def _search_within_timeout(self, term: str) -> AlcampoSearchResponse:
+        """Call the scraper with a total budget: attempts and waits included.
+
+        httpx's timeout bounds each attempt, not their sum (~30 s worst case), so
+        the whole call is capped here (spec 008 RF-7, plan-D6). The in-flight
+        request is cancelled. The 502 handler logs the ERROR with this reason.
+        """
+        try:
+            async with asyncio.timeout(self._settings.search_timeout_seconds):
+                return await self._scraper.search(term)
+        except TimeoutError as exc:
+            raise UpstreamUnavailableError("search timeout") from exc
