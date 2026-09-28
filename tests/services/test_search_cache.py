@@ -5,7 +5,7 @@ import fakeredis
 import pytest
 
 from app.models.product import Product, ProductSearchResponse, SearchMetadata
-from app.services.search_cache import SearchCacheRepository
+from app.services.search_cache import SearchCacheRepository, normalize_term
 
 
 @pytest.fixture
@@ -90,3 +90,30 @@ async def test_corrupted_value_logs_a_warning_with_the_key(
     [record] = [r for r in caplog.records if r.name == "app.services.search_cache"]
     assert record.levelno == logging.WARNING
     assert "'search:5:leche'" in record.getMessage()
+
+
+# --- spec 008 RF-2: normalized term -------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("Leche", "leche"),
+        ("LECHE", "leche"),
+        ("leche   entera", "leche entera"),
+        ("leche	entera", "leche entera"),
+        (" leche ", "leche"),
+    ],
+)
+def test_normalize_term(raw: str, expected: str) -> None:
+    assert normalize_term(raw) == expected
+
+
+async def test_case_and_spacing_variants_share_one_entry(redis: fakeredis.FakeAsyncRedis) -> None:
+    repo = SearchCacheRepository(redis)
+    response = make_response()
+
+    await repo.set(warehouse="5", term="Leche", response=response, ttl_seconds=3600)
+
+    assert await repo.get(warehouse="5", term="LECHE") == response
+    assert await redis.keys("search:*") == [b"search:5:leche"]

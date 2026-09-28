@@ -35,7 +35,8 @@ Formato de commit: `<tipo>(008-alcampo-scraper-outbound-protection): <descripci�
 - **RF:** RF-6, RF-7 (validación), RF-10 (validación)
 - **Hecho cuando:** los casos pasan y el test de `.env.example` está en verde.
 
-### [ ] T2 — Término normalizado
+### [x] T2 — Término normalizado
+> **Nota (2026-09-28):** RED real: `ImportError` de `normalize_term` en el repositorio; en el servicio, `Leche` iba a Alcampo (`['Leche'] == []`) y el término viajaba sin normalizar (`['LECHE   entera']`). La normalización vive en `_cache_key`, así que `get` y `set` la aplican siempre sin que el llamante lo recuerde; el servicio solo la usa para el término que envía a Alcampo. Sin regresiones: las claves literales de los tests ya estaban en minúsculas.
 - **RED:**
   - `tests/services/test_search_cache.py`: `normalize_term("Leche") == "leche"`, `"LECHE"` → `"leche"`, `"leche   entera"` → `"leche entera"`, `"leche\tentera"` → `"leche entera"`, `" leche "` → `"leche"`; `set` con `Leche` y `get` con `LECHE` encuentran la misma entrada (`search:5:leche`).
   - `tests/services/test_product_service.py`: con `leche` en cache, `search(term="Leche")` → acierto, 0 llamadas al scraper, `search.term == "Leche"`; sin cache, `search(term="LECHE")` → el scraper recibe `"leche"` y la respuesta dice `search.term == "LECHE"`.

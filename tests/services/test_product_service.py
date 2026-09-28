@@ -287,3 +287,32 @@ async def test_plain_upstream_error_is_not_logged_by_the_service(
         await service.search(ProductQuery(postal_code="28001", term="leche"))
 
     assert service_records(caplog) == []
+
+
+# --- spec 008 RF-2: normalized term -------------------------------------------
+
+
+async def test_other_case_hits_the_cache_and_keeps_the_client_term(
+    redis: fakeredis.FakeAsyncRedis,
+) -> None:
+    scraper = FakeScraper(make_raw_response(has_products=True))
+    service, _ = make_service(scraper, redis)
+    await service.search(ProductQuery(postal_code="28001", term="leche"))
+    scraper.calls.clear()
+
+    response = await service.search(ProductQuery(postal_code="28001", term="Leche"))
+
+    assert scraper.calls == []
+    assert response.search.term == "Leche"
+
+
+async def test_miss_sends_the_normalized_term_and_keeps_the_client_term(
+    redis: fakeredis.FakeAsyncRedis,
+) -> None:
+    scraper = FakeScraper(make_raw_response(has_products=True))
+    service, _ = make_service(scraper, redis)
+
+    response = await service.search(ProductQuery(postal_code="28001", term="LECHE   entera"))
+
+    assert scraper.calls == ["leche entera"]
+    assert response.search.term == "LECHE   entera"

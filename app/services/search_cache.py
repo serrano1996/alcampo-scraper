@@ -14,8 +14,18 @@ from app.models.product import ProductSearchResponse
 logger = logging.getLogger(__name__)
 
 
+def normalize_term(term: str) -> str:
+    """Canonical form of a search term: casefolded, whitespace runs collapsed to one space.
+
+    Verified live on 2026-09-28 (spec 008 plan §2): Alcampo returns identical
+    results for `leche`/`Leche`/`LECHE` and for `leche entera`/`leche   entera`,
+    so variants can share one cache entry and one upstream request (RF-2, plan-D1).
+    """
+    return " ".join(term.split()).casefold()
+
+
 def _cache_key(*, warehouse: str, term: str) -> str:
-    return f"search:{warehouse}:{term}"
+    return f"search:{warehouse}:{normalize_term(term)}"
 
 
 class SearchCacheRepository:

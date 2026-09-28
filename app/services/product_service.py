@@ -11,7 +11,7 @@ from app.mappers.product_mapper import map_search
 from app.models.alcampo import AlcampoSearchResponse
 from app.models.product import ProductQuery, ProductSearchResponse, SearchMetadata
 from app.scrapers.alcampo_search import DEFAULT_WAREHOUSE
-from app.services.search_cache import SearchCacheRepository
+from app.services.search_cache import SearchCacheRepository, normalize_term
 from app.services.waf_cooldown import WafCooldownRepository
 
 Clock = Callable[[], datetime]
@@ -64,7 +64,9 @@ class ProductService:
             raise CooldownActiveError("WAF cooldown active")
 
         try:
-            raw = await self._scraper.search(query.term)
+            # The normalized term, so the request does not depend on the client's
+            # spelling (spec 008 RF-2, plan-D1); the response keeps query.term.
+            raw = await self._scraper.search(normalize_term(query.term))
         except UpstreamBlockedError:
             # The WAF blocked the egress IP: stop hitting Alcampo for a while
             # (spec 002 RF-15). Plain upstream errors do not start a cooldown.
