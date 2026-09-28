@@ -1,6 +1,6 @@
 # Plan 008 — Protección de salida hacia Alcampo
 
-- **Estado:** borrador, pendiente de aprobación
+- **Estado:** aprobado (2026-09-28). Entrega: 2 PRs encadenados (D10)
 - **Fecha:** 2026-09-28
 - **Spec:** [spec.md](spec.md) (aprobada). Sus decisiones se citan como **spec-D1…spec-D6**; las de specs anteriores como **002-plan-Dn**, etc. Las decisiones de este plan son **D1…**
 
