@@ -17,7 +17,8 @@ Formato de commit: `<tipo>(004-alcampo-scraper-authentication): <descripción en
 
 ---
 
-### [ ] T1 — `API_KEYS` en `Settings`
+### [x] T1 — `API_KEYS` en `Settings`
+> **Nota (2026-09-28):** la regla global `Read(.env.*)`/`Edit(.env.*)` de `~/.claude/settings.json` bloquea ahora también la lectura y escritura de `.env.example` por Bash. El usuario añadió `API_KEYS` a mano (opción elegida para no debilitar la regla global); el test de sincronización confirma el cambio. T7 necesitará lo mismo. Verificación por mutación: sin `repr=False`, `test_api_keys_are_hidden_from_repr` falla.
 - **RED:** en `tests/core/test_config.py`:
   - `API_KEYS=" a , ,b "` → `api_keys == frozenset({"a", "b"})`;
   - sin la variable → `frozenset()`;

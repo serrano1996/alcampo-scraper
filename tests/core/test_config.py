@@ -14,6 +14,7 @@ OPTIONAL = [
     "RETRY_JITTER_MAX_S",
     "WAF_COOLDOWN_SECONDS",
     "LOG_LEVEL",
+    "API_KEYS",
 ]
 
 
@@ -144,3 +145,36 @@ def test_log_level_defaults_to_info(monkeypatch: pytest.MonkeyPatch) -> None:
     set_required(monkeypatch)
 
     assert Settings(_env_file=None).log_level == "INFO"
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        (" a , ,b ", frozenset({"a", "b"})),
+        (" , ,", frozenset()),
+        ("single", frozenset({"single"})),
+    ],
+)
+def test_api_keys_are_split_trimmed_and_cleaned(
+    monkeypatch: pytest.MonkeyPatch, raw: str, expected: frozenset[str]
+) -> None:
+    set_required(monkeypatch)
+    monkeypatch.setenv("API_KEYS", raw)
+
+    assert Settings(_env_file=None).api_keys == expected
+
+
+def test_api_keys_default_to_empty(monkeypatch: pytest.MonkeyPatch) -> None:
+    set_required(monkeypatch)
+
+    assert Settings(_env_file=None).api_keys == frozenset()
+
+
+def test_api_keys_are_hidden_from_repr(monkeypatch: pytest.MonkeyPatch) -> None:
+    set_required(monkeypatch)
+    monkeypatch.setenv("API_KEYS", "secret-one,secret-two")
+
+    rendered = repr(Settings(_env_file=None))
+
+    assert "secret-one" not in rendered
+    assert "secret-two" not in rendered
