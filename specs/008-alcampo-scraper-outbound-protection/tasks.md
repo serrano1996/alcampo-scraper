@@ -1,6 +1,6 @@
 # Tasks 008 — Protección de salida hacia Alcampo
 
-- **Estado:** borrador, pendiente de revisión
+- **Estado:** aprobado (2026-09-28)
 - **Spec:** [spec.md](spec.md) · **Plan:** [plan.md](plan.md) (decisiones citadas como plan-Dn)
 - **Entrega:** 2 PRs encadenados (plan-D10): **PR 1** = T1–T4 (~330 líneas), **PR 2** = T5–T9 (~390 líneas).
 
@@ -20,7 +20,8 @@ Formato de commit: `<tipo>(008-alcampo-scraper-outbound-protection): <descripci�
 
 ## PR 1 — Piezas aisladas
 
-### [ ] T1 — Variables nuevas en `Settings`
+### [x] T1 — Variables nuevas en `Settings`
+> **Nota (2026-09-28):** RED real (11 tests: `AttributeError` por los campos inexistentes y `DID NOT RAISE` en las validaciones). Añadidos dos casos no previstos: `max == base` es válido y el mensaje de error nombra `WAF_COOLDOWN_MAX_SECONDS`. Ningún test existente usaba un enfriamiento > 900, así que la validación cruzada no rompió nada. **`.env.example`:** el usuario añadió las 4 variables a mano (regla global de permisos); el test de sincronización lo confirma.
 - **RED:** en `tests/core/test_config.py`:
   - valores por defecto: `alcampo_rate_limit == 20`, `alcampo_rate_window_seconds == 60`, `search_timeout_seconds == 15`, `waf_cooldown_max_seconds == 900`;
   - `ALCAMPO_RATE_LIMIT=0` es válido; `-1` → `ValidationError`;

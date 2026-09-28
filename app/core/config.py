@@ -1,9 +1,9 @@
 """Application settings loaded from environment variables (and an optional `.env` file)."""
 
 from functools import lru_cache
-from typing import Annotated
+from typing import Annotated, Self
 
-from pydantic import Field, field_validator
+from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 LOG_LEVELS = frozenset({"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"})
@@ -21,6 +21,14 @@ class Settings(BaseSettings):
     retry_base_delay: float = 0.5
     retry_jitter_max_s: float = Field(default=0.3, ge=0)
     waf_cooldown_seconds: int = Field(default=180, ge=0)
+    # Outbound protection (spec 008). The rate-limit default is an estimate: the
+    # WAF threshold for search is unknown (Fase 0 saw blocks on another endpoint).
+    # 0 disables the limit (RF-6).
+    alcampo_rate_limit: int = Field(default=20, ge=0)
+    alcampo_rate_window_seconds: int = Field(default=60, ge=1)
+    search_timeout_seconds: float = Field(default=15, gt=0)
+    # Cap of the growing cooldown, and how long a challenge counts as "recent" (RF-8).
+    waf_cooldown_max_seconds: int = Field(default=900, ge=0)
     log_level: str = "INFO"
     # Comma-separated in the environment. `NoDecode` stops pydantic-settings from
     # parsing it as JSON (a plain frozenset raises SettingsError on "a,b"), and
@@ -44,6 +52,16 @@ class Settings(BaseSettings):
         if isinstance(value, str):
             return frozenset(key.strip() for key in value.split(",") if key.strip())
         return value
+
+    @model_validator(mode="after")
+    def _check_cooldown_bounds(self) -> Self:
+        """The growing cooldown can never start above its own cap (spec 008 RF-10)."""
+        if self.waf_cooldown_max_seconds < self.waf_cooldown_seconds:
+            raise ValueError(
+                "WAF_COOLDOWN_MAX_SECONDS must be >= WAF_COOLDOWN_SECONDS, got "
+                f"{self.waf_cooldown_max_seconds} < {self.waf_cooldown_seconds}"
+            )
+        return self
 
 
 @lru_cache

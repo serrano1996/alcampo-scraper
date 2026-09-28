@@ -15,6 +15,10 @@ OPTIONAL = [
     "WAF_COOLDOWN_SECONDS",
     "LOG_LEVEL",
     "API_KEYS",
+    "ALCAMPO_RATE_LIMIT",
+    "ALCAMPO_RATE_WINDOW_SECONDS",
+    "SEARCH_TIMEOUT_SECONDS",
+    "WAF_COOLDOWN_MAX_SECONDS",
 ]
 
 
@@ -178,3 +182,74 @@ def test_api_keys_are_hidden_from_repr(monkeypatch: pytest.MonkeyPatch) -> None:
 
     assert "secret-one" not in rendered
     assert "secret-two" not in rendered
+
+
+# --- spec 008: outbound protection -------------------------------------------
+
+
+def test_outbound_protection_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
+    set_required(monkeypatch)
+
+    settings = Settings(_env_file=None)
+
+    assert settings.alcampo_rate_limit == 20
+    assert settings.alcampo_rate_window_seconds == 60
+    assert settings.search_timeout_seconds == 15
+    assert settings.waf_cooldown_max_seconds == 900
+
+
+def test_rate_limit_zero_disables_it(monkeypatch: pytest.MonkeyPatch) -> None:
+    set_required(monkeypatch)
+    monkeypatch.setenv("ALCAMPO_RATE_LIMIT", "0")
+
+    assert Settings(_env_file=None).alcampo_rate_limit == 0
+
+
+@pytest.mark.parametrize(
+    ("name", "raw"),
+    [
+        ("ALCAMPO_RATE_LIMIT", "-1"),
+        ("ALCAMPO_RATE_WINDOW_SECONDS", "0"),
+        ("SEARCH_TIMEOUT_SECONDS", "0"),
+        ("SEARCH_TIMEOUT_SECONDS", "-1"),
+        ("WAF_COOLDOWN_MAX_SECONDS", "-1"),
+    ],
+)
+def test_invalid_outbound_protection_values_fail(
+    monkeypatch: pytest.MonkeyPatch, name: str, raw: str
+) -> None:
+    set_required(monkeypatch)
+    monkeypatch.setenv(name, raw)
+
+    with pytest.raises(ValidationError) as exc_info:
+        Settings(_env_file=None)
+
+    assert name.lower() in str(exc_info.value)
+
+
+def test_cooldown_max_below_base_fails(monkeypatch: pytest.MonkeyPatch) -> None:
+    set_required(monkeypatch)
+    monkeypatch.setenv("WAF_COOLDOWN_SECONDS", "180")
+    monkeypatch.setenv("WAF_COOLDOWN_MAX_SECONDS", "100")
+
+    with pytest.raises(ValidationError) as exc_info:
+        Settings(_env_file=None)
+
+    assert "WAF_COOLDOWN_MAX_SECONDS" in str(exc_info.value)
+
+
+@pytest.mark.parametrize("maximum", ["0", "900"])
+def test_disabled_cooldown_accepts_any_max(monkeypatch: pytest.MonkeyPatch, maximum: str) -> None:
+    set_required(monkeypatch)
+    monkeypatch.setenv("WAF_COOLDOWN_SECONDS", "0")
+    monkeypatch.setenv("WAF_COOLDOWN_MAX_SECONDS", maximum)
+
+    assert Settings(_env_file=None).waf_cooldown_max_seconds == int(maximum)
+
+
+def test_cooldown_max_equal_to_base_is_valid(monkeypatch: pytest.MonkeyPatch) -> None:
+    set_required(monkeypatch)
+    monkeypatch.setenv("WAF_COOLDOWN_SECONDS", "300")
+    monkeypatch.setenv("WAF_COOLDOWN_MAX_SECONDS", "300")
+
+    assert Settings(_env_file=None).waf_cooldown_max_seconds == 300
