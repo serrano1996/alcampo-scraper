@@ -153,3 +153,18 @@ def test_slow_alcampo_gets_a_502_within_the_search_timeout(
     assert response.json() == {"detail": "Upstream service unavailable"}
     errors = [r for r in caplog.records if r.name == "app.main" and r.levelno == logging.ERROR]
     assert any("'search timeout'" in r.getMessage() for r in errors)
+
+
+# --- spec 007 RF-1: invalid postal code ----------------------------------------
+
+
+async def test_invalid_postal_code_returns_422_without_touching_alcampo_or_redis(
+    client: TestClient, respx_mock
+) -> None:
+    route = mock_alcampo_search(respx_mock, json_body=load_fixture("alcampo_search_leche.json"))
+
+    response = client.get("/api/v1/products", params={"postal_code": "2800", "term": "leche"})
+
+    assert response.status_code == 422
+    assert route.call_count == 0
+    assert await client.app.state.redis.dbsize() == 0

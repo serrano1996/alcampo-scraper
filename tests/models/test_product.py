@@ -66,3 +66,21 @@ def test_search_response_serializes_scraped_at_with_z_suffix() -> None:
     payload = response.model_dump(mode="json")
 
     assert payload["search"]["scraped_at"] == "2026-09-24T10:00:00Z"
+
+
+# --- spec 007 RF-1: postal codes are exactly 5 digits --------------------------
+
+# Unicode digits that `\d` would accept: only ASCII 0-9 are valid.
+FULLWIDTH_28001 = "".join(chr(0xFF10 + int(digit)) for digit in "28001")
+
+
+@pytest.mark.parametrize(
+    "postal_code", ["2800", "280011", "abcde", "28 01", "2800a", FULLWIDTH_28001]
+)
+def test_postal_code_that_is_not_5_digits_raises(postal_code: str) -> None:
+    with pytest.raises(ValidationError):
+        ProductQuery(postal_code=postal_code, term="leche")
+
+
+def test_postal_code_is_stripped_before_validation() -> None:
+    assert ProductQuery(postal_code=" 28001 ", term="leche").postal_code == "28001"

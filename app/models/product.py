@@ -9,7 +9,9 @@ SearchTerm = Annotated[
     str,
     StringConstraints(strip_whitespace=True, min_length=1, max_length=50),
 ]
-PostalCode = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+# Exactly 5 ASCII digits (spec 007 RF-1, plan-D7). `[0-9]`, not `\d`: `\d` also
+# matches other Unicode digits, such as fullwidth ones (U+FF10..U+FF19).
+PostalCode = Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^[0-9]{5}$")]
 
 
 class ProductQuery(BaseModel):

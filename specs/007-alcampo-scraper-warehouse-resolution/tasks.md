@@ -60,7 +60,8 @@ Formato de commit: `<tipo>(007-alcampo-scraper-warehouse-resolution): <descripci
 
 ## PR 2a — Validación, `404` y cliente de la cadena
 
-### [ ] T5 — `postal_code` de 5 dígitos
+### [x] T5 — `postal_code` de 5 dígitos
+> **Nota (2026-09-28):** RED real (7 fallos: los 6 formatos inválidos pasaban la validación y la integración daba `200`). Caso añadido: **dígitos de ancho completo** (U+FF10..U+FF19), que `\d` aceptaría por ser dígitos Unicode; el patrón usa `[0-9]`. Como ruff (`RUF001`/`RUF003`) marca esos caracteres como ambiguos, el test los construye con `chr()` y el código fuente queda en ASCII. Sin regresiones: todos los códigos postales de los tests existentes (`28001`, `08001`) ya eran válidos.
 - **RED:** `tests/models/…` y `tests/api/test_products_route.py`: `2800`, `abcde`, `280011`, `28 01` → `422`; ` 28001 ` → válido (`"28001"`). Integración: `422` sin tocar Redis ni Alcampo.
 - **GREEN:** `PostalCode` con `pattern=r"^[0-9]{5}$"` (plan-D7).
 - **Regresión:** buscar tests que usen códigos postales no válidos y ajustarlos, anotándolo.
