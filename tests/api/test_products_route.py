@@ -5,6 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.core.dependencies import get_product_service
+from app.core.security import require_api_key
 from app.exceptions import CooldownActiveError, UpstreamBlockedError, UpstreamUnavailableError
 from app.main import create_app
 from app.models.product import Product, ProductQuery, ProductSearchResponse, SearchMetadata
@@ -50,6 +51,8 @@ def make_response() -> ProductSearchResponse:
 def make_client(service: FakeService) -> TestClient:
     app = create_app()
     app.dependency_overrides[get_product_service] = lambda: service
+    # These tests exercise the route, not auth (covered in tests/integration/test_auth.py).
+    app.dependency_overrides[require_api_key] = lambda: None
     return TestClient(app)
 
 

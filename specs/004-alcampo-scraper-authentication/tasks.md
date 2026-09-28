@@ -44,7 +44,8 @@ Formato de commit: `<tipo>(004-alcampo-scraper-authentication): <descripción en
 - **RF:** RF-4, RF-5
 - **Hecho cuando:** todos los casos pasan.
 
-### [ ] T3 — Dependencia `require_api_key` y router protegido
+### [x] T3 — Dependencia `require_api_key` y router protegido
+> **Regresiones (2026-09-28):** al proteger el router fallaron 18 tests, exactamente en los 3 ficheros previstos en el plan §6 (7 en `test_products_route.py`, 7 en `test_products_endpoint.py`, 4 en `test_logging_integration.py`). Corregidas aquí: `integration_env` fija `API_KEYS=test-key` (constante `TEST_API_KEY`) y `client` la envía por defecto; `make_client` anula `require_api_key`.
 - **RED:** `tests/integration/test_auth.py` (nuevo), con un `TestClient` **sin** cabecera por defecto:
   - sin `X-API-Key` → `401 {"detail": "Invalid or missing API key"}` con `WWW-Authenticate: ApiKey`;
   - `X-API-Key: ` (vacía) → el mismo `401`;

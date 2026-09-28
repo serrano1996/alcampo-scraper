@@ -22,6 +22,8 @@ from app.main import create_app
 
 ALCAMPO_BASE_URL = "https://alcampo.test"
 SEARCH_URL = f"{ALCAMPO_BASE_URL}/api/webproductpagews/v6/product-pages/search"
+# Synthetic key (constitution #12): configured in the env and sent by `client`.
+TEST_API_KEY = "test-key"
 FIXTURES = Path(__file__).parents[1] / "fixtures"
 
 
@@ -40,6 +42,7 @@ def integration_env(monkeypatch: pytest.MonkeyPatch) -> Iterator[pytest.MonkeyPa
     monkeypatch.setenv("REDIS_URL", "redis://localhost:6379/0")
     monkeypatch.setenv("RETRY_BASE_DELAY", "0")
     monkeypatch.setenv("RETRY_JITTER_MAX_S", "0")
+    monkeypatch.setenv("API_KEYS", TEST_API_KEY)
     monkeypatch.setattr(main_module, "create_redis", lambda _url: fakeredis.FakeAsyncRedis())
     get_settings.cache_clear()
 
@@ -55,7 +58,8 @@ def integration_env(monkeypatch: pytest.MonkeyPatch) -> Iterator[pytest.MonkeyPa
 
 @pytest.fixture
 def client(integration_env: pytest.MonkeyPatch) -> Iterator[TestClient]:
-    with TestClient(create_app()) as test_client:
+    """Authenticated client: sends the test X-API-Key on every request (spec 004)."""
+    with TestClient(create_app(), headers={"X-API-Key": TEST_API_KEY}) as test_client:
         yield test_client
 
 
