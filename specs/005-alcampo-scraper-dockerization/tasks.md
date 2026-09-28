@@ -42,7 +42,8 @@ Formato de commit: `<tipo>(005-alcampo-scraper-dockerization): <descripción en 
 - **RF:** RF-5, RNF-3
 - **Hecho cuando:** los casos pasan.
 
-### [ ] T3 — `Dockerfile`
+### [x] T3 — `Dockerfile`
+> **Nota (2026-09-28):** RED real (6 tests con `FileNotFoundError`). En GREEN, la comprobación de `[dev]` sobre el texto completo saltó por un **comentario** del `Dockerfile`; se corrigió el test para que mire solo las instrucciones `RUN` con `pip install` (un comentario no instala nada). La de secretos sigue mirando el texto completo, comentarios incluidos. **Mutaciones:** `.[dev]` en el install, `USER root`, `--reload` en el `CMD`, sonda contra `localhost` y runtime en `python:3.13-slim` → cada una hace fallar su test; restaurado. El build real queda para T5.
 - **RED:** `tests/infra/test_dockerfile.py`. Lee el `Dockerfile` (uniendo las líneas continuadas con `\`) y comprueba:
   - hay exactamente dos `FROM`, ambos `python:3.11-slim`, el primero `AS builder` (spec-D1, plan-D1);
   - la instalación es `pip install … .` sin `[dev]` (RF-2);
