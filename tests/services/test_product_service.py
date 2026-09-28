@@ -205,7 +205,7 @@ async def test_active_cooldown_on_a_miss_fails_without_calling_alcampo(
 ) -> None:
     scraper = FakeScraper(make_raw_response(has_products=True))
     service, _ = make_service(scraper, redis)
-    await WafCooldownRepository(redis).activate(ttl_seconds=180)
+    await WafCooldownRepository(redis).activate(base_seconds=180, max_seconds=900)
 
     with pytest.raises(UpstreamUnavailableError):
         await service.search(ProductQuery(postal_code="28001", term="leche"))
@@ -218,7 +218,7 @@ async def test_active_cooldown_still_serves_cache_hits(redis: fakeredis.FakeAsyn
     service, _ = make_service(scraper, redis)
     first = await service.search(ProductQuery(postal_code="28001", term="leche"))
     scraper.calls.clear()
-    await WafCooldownRepository(redis).activate(ttl_seconds=180)
+    await WafCooldownRepository(redis).activate(base_seconds=180, max_seconds=900)
 
     second = await service.search(ProductQuery(postal_code="28001", term="leche"))
 
@@ -239,7 +239,7 @@ async def test_active_cooldown_raises_cooldown_active_error(
     redis: fakeredis.FakeAsyncRedis,
 ) -> None:
     service, _ = make_service(FakeScraper(make_raw_response(has_products=True)), redis)
-    await WafCooldownRepository(redis).activate(ttl_seconds=180)
+    await WafCooldownRepository(redis).activate(base_seconds=180, max_seconds=900)
 
     with pytest.raises(CooldownActiveError):
         await service.search(ProductQuery(postal_code="28001", term="leche"))
@@ -287,6 +287,22 @@ async def test_plain_upstream_error_is_not_logged_by_the_service(
         await service.search(ProductQuery(postal_code="28001", term="leche"))
 
     assert service_records(caplog) == []
+
+
+async def test_recent_second_waf_block_logs_the_doubled_cooldown(
+    redis: fakeredis.FakeAsyncRedis, caplog: pytest.LogCaptureFixture
+) -> None:
+    # spec 008 RF-8, RF-9: the ERROR states the duration actually applied.
+    service, _ = make_service(FailingScraper(UpstreamBlockedError("WAF challenge")), redis)
+    for _ in range(2):
+        await redis.delete(WAF_COOLDOWN_KEY)  # let the second search reach Alcampo
+        with pytest.raises(UpstreamBlockedError):
+            await service.search(ProductQuery(postal_code="28001", term="leche"))
+
+    first, second = service_records(caplog)
+    assert "cooldown_s=180" in first.getMessage()
+    assert "cooldown_s=360" in second.getMessage()
+    assert 359 <= await redis.ttl(WAF_COOLDOWN_KEY) <= 360
 
 
 # --- spec 008 RF-2: normalized term -------------------------------------------

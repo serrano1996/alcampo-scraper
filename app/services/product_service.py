@@ -70,13 +70,17 @@ class ProductService:
         except UpstreamBlockedError:
             # The WAF blocked the egress IP: stop hitting Alcampo for a while
             # (spec 002 RF-15). Plain upstream errors do not start a cooldown.
-            # Logged here, the only layer that knows the cooldown (spec 003 RF-11).
-            cooldown_s = self._settings.waf_cooldown_seconds
+            # Logged here, the only layer that knows the cooldown (spec 003 RF-11),
+            # with the duration actually applied, which grows on repeated
+            # challenges (spec 008 RF-8, RF-9).
+            cooldown_s = await self._cooldown.activate(
+                base_seconds=self._settings.waf_cooldown_seconds,
+                max_seconds=self._settings.waf_cooldown_max_seconds,
+            )
             if cooldown_s > 0:
                 logger.error("egress IP blocked by Alcampo WAF, cooldown_s=%d", cooldown_s)
             else:
                 logger.error("egress IP blocked by Alcampo WAF, cooldown disabled")
-            await self._cooldown.activate(ttl_seconds=cooldown_s)
             raise
         products = map_search(raw)
         response = ProductSearchResponse(

@@ -45,7 +45,8 @@ Formato de commit: `<tipo>(008-alcampo-scraper-outbound-protection): <descripci�
 - **RF:** RF-2
 - **Hecho cuando:** los casos pasan y la suite sigue en verde.
 
-### [ ] T3 — Enfriamiento creciente
+### [x] T3 — Enfriamiento creciente
+> **Nota (2026-09-28):** RED real (`ImportError` de `WAF_COOLDOWN_LAST_KEY`, `TypeError` por `base_seconds` y el log sin `cooldown_s=360`). **Test sustituido:** `test_activate_renews_the_ttl` (spec 002: 180 y después 60 → TTL 60) pasa a `test_recent_second_challenge_doubles_the_cooldown` (180 y después → 360), con un comentario que lo explica; los otros 4 de `test_waf_cooldown.py` se reescriben con la nueva firma sin cambiar lo que comprueban. **Cambio de orden:** el servicio activa el enfriamiento **antes** de registrar el `ERROR`, porque el log necesita la duración aplicada; si Redis fallara en ese momento, se pierde esa línea, pero la petición acaba en `500` igualmente (Redis caído, spec 007).
 - **RED:** en `tests/services/test_waf_cooldown.py` (con la nueva firma `activate(base_seconds=…, max_seconds=…) -> int`):
   - sin challenge previo → devuelve 180, `waf:cooldown` con TTL 180 y `waf:cooldown:last == "180"` con TTL 900;
   - con `waf:cooldown:last = 180` → devuelve 360;
