@@ -1,8 +1,11 @@
+import logging
+
 import fakeredis
 import pytest
 
 from app.exceptions import OutboundRateLimitedError, UpstreamUnavailableError
-from app.services.rate_limiter import RATE_LIMIT_KEY, OutboundRateLimiter
+from app.services.rate_limiter import RATE_LIMIT_KEY, LocalRateLimiter, OutboundRateLimiter
+from tests.services.redis_doubles import DOWN, HUNG, BrokenRedis
 
 
 class FakeClock:
@@ -107,3 +110,74 @@ async def test_the_key_expires_with_the_window(
 
     assert RATE_LIMIT_KEY == "ratelimit:alcampo"
     assert 59 <= await redis.ttl(RATE_LIMIT_KEY) <= 60
+
+
+# --- spec 007: configurable key and local fallback without Redis ---------------
+
+
+async def test_limiters_with_different_keys_do_not_share_quota(
+    redis: fakeredis.FakeAsyncRedis, clock: FakeClock
+) -> None:
+    searches = OutboundRateLimiter(redis, limit=1, window_seconds=60, now=clock)
+    resolutions = OutboundRateLimiter(
+        redis, limit=1, window_seconds=60, now=clock, key="ratelimit:alcampo:region-resolutions"
+    )
+    await searches.acquire()
+
+    await resolutions.acquire()  # its own quota
+
+    with pytest.raises(OutboundRateLimitedError):
+        await searches.acquire()
+
+
+@pytest.mark.parametrize("error", [DOWN, HUNG], ids=["down", "hung"])
+async def test_without_redis_the_local_fallback_keeps_limiting(
+    clock: FakeClock, caplog: pytest.LogCaptureFixture, error: Exception
+) -> None:
+    limiter = OutboundRateLimiter(
+        BrokenRedis(error), limit=2, window_seconds=60, now=clock, fallback=LocalRateLimiter()
+    )
+    await limiter.acquire()
+    await limiter.acquire()
+
+    with pytest.raises(OutboundRateLimitedError):
+        await limiter.acquire()
+
+    warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
+    assert warnings
+    assert all("redis unavailable" in r.getMessage() for r in warnings)
+
+
+async def test_the_local_fallback_slides_and_rejections_do_not_consume_quota(
+    clock: FakeClock,
+) -> None:
+    limiter = OutboundRateLimiter(
+        BrokenRedis(DOWN), limit=2, window_seconds=60, now=clock, fallback=LocalRateLimiter()
+    )
+    start = clock.now
+    await limiter.acquire()  # t=0
+    clock.now = start + 59
+    await limiter.acquire()  # t=59
+    with pytest.raises(OutboundRateLimitedError):
+        await limiter.acquire()  # rejected: must not consume quota
+
+    clock.now = start + 61
+    await limiter.acquire()  # t=0 has left the window
+    clock.now = start + 62
+    with pytest.raises(OutboundRateLimitedError):
+        await limiter.acquire()
+
+
+async def test_limiters_sharing_a_fallback_share_its_quota(clock: FakeClock) -> None:
+    # Limiters are built per request: the fallback must live in app.state.
+    fallback = LocalRateLimiter()
+    first = OutboundRateLimiter(
+        BrokenRedis(DOWN), limit=1, window_seconds=60, now=clock, fallback=fallback
+    )
+    second = OutboundRateLimiter(
+        BrokenRedis(DOWN), limit=1, window_seconds=60, now=clock, fallback=fallback
+    )
+    await first.acquire()
+
+    with pytest.raises(OutboundRateLimitedError):
+        await second.acquire()

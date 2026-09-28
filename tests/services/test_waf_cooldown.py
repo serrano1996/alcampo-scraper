@@ -1,11 +1,15 @@
+import logging
+
 import fakeredis
 import pytest
 
 from app.services.waf_cooldown import (
     WAF_COOLDOWN_KEY,
     WAF_COOLDOWN_LAST_KEY,
+    LocalCooldown,
     WafCooldownRepository,
 )
+from tests.services.redis_doubles import DOWN, HUNG, BrokenRedis
 
 BASE = 180
 MAX = 900
@@ -101,4 +105,50 @@ async def test_inactive_once_the_marker_expires(redis: fakeredis.FakeAsyncRedis)
 
     await redis.delete(WAF_COOLDOWN_KEY)  # simulates TTL expiry
 
+    assert await repo.is_active() is False
+
+
+# --- spec 007: local fallback without Redis ------------------------------------
+
+
+class FakeMonotonic:
+    def __init__(self) -> None:
+        self.now = 100.0
+
+    def __call__(self) -> float:
+        return self.now
+
+
+@pytest.mark.parametrize("error", [DOWN, HUNG], ids=["down", "hung"])
+async def test_without_redis_the_local_cooldown_grows_the_same_way(
+    caplog: pytest.LogCaptureFixture, error: Exception
+) -> None:
+    repo = WafCooldownRepository(BrokenRedis(error), fallback=LocalCooldown())
+
+    applied = [await activate(repo) for _ in range(5)]
+
+    assert applied == [180, 360, 720, 900, 900]
+    assert await repo.is_active() is True
+    warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
+    assert warnings
+    assert all("redis unavailable" in r.getMessage() for r in warnings)
+
+
+async def test_local_cooldown_expires_and_forgets_old_challenges() -> None:
+    clock = FakeMonotonic()
+    repo = WafCooldownRepository(BrokenRedis(DOWN), fallback=LocalCooldown(now=clock))
+    assert await activate(repo) == 180
+
+    clock.now += 181
+    assert await repo.is_active() is False
+    assert await activate(repo) == 360  # 181 s later: still a recent challenge
+
+    clock.now += 901
+    assert await activate(repo) == 180  # more than MAX later: from the base again
+
+
+async def test_local_cooldown_with_zero_base_stays_disabled() -> None:
+    repo = WafCooldownRepository(BrokenRedis(DOWN), fallback=LocalCooldown())
+
+    assert await activate(repo, base=0) == 0
     assert await repo.is_active() is False

@@ -37,7 +37,8 @@ Formato de commit: `<tipo>(007-alcampo-scraper-warehouse-resolution): <descripci
 - **Depende:** T1
 - **RF:** RF-14
 
-### [ ] T3 — Límites y enfriamiento con respaldo local
+### [x] T3 — Límites y enfriamiento con respaldo local
+> **Nota (2026-09-28):** RED real (`ImportError` de `LocalRateLimiter` y `LocalCooldown`). Doble compartido `tests/services/redis_doubles.py` (`BrokenRedis` con `ConnectionError` "caído" y `TimeoutError` "colgado"). `LocalRateLimiter` usa el mismo borde que Redis (una entrada con antigüedad exactamente `window` sale); un rechazo no consume cupo. `LocalCooldown` reutiliza la función `_grow` de Redis, así que la secuencia 180 → 360 → 720 → 900 es la misma; "reciente" = menos de `max_seconds` desde el último, igual que el TTL de `waf:cooldown:last`. Los respaldos se crean en el `lifespan` y `get_product_service` los pasa; si no se pasan, cada objeto crea uno privado (útil en tests). **Límite conocido:** si Redis cae con un enfriamiento ya activo **en Redis**, el respaldo local no lo conoce; ese proceso puede volver a llamar a Alcampo hasta el siguiente challenge, que activa el enfriamiento local. Aceptado como parte de la degradación. El `StarletteDeprecationWarning` sigue siendo el único warning de la suite. Fallo de herramienta durante GREEN: un heredoc de bash muy largo no se aplicó (error de sintaxis, ningún fichero tocado); se reescribió como script en el scratchpad.
 - **RED:**
   - `tests/services/test_rate_limiter.py`: con un Redis que lanza `redis.exceptions.ConnectionError` (y otro con `TimeoutError`), `acquire()` usa el limitador local: límite 2 → dos pasan y el tercero lanza `OutboundRateLimitedError`; `WARNING "redis unavailable op=…"`. El respaldo local es un objeto compartido: dos `OutboundRateLimiter` con el mismo respaldo comparten cupo.
   - Clave configurable: dos limitadores con claves distintas no comparten cupo (lo necesita T9).

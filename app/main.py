@@ -15,6 +15,8 @@ from app.exceptions import UpstreamThrottledError, UpstreamUnavailableError
 from app.middleware.request_context import RequestContextMiddleware
 from app.scrapers.http_client import create_http_client
 from app.services.in_flight import InFlightSearches
+from app.services.rate_limiter import LocalRateLimiter
+from app.services.waf_cooldown import LocalCooldown
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +47,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     )
     # Per process, not per request: it must outlive every search (spec 008 plan-D2).
     app.state.in_flight = InFlightSearches()
+    # Local fallbacks while Redis is unavailable: per process, so they outlive
+    # the per-request limiter and repository (spec 007 RF-15, plan-D10).
+    app.state.rate_limit_fallback = LocalRateLimiter()
+    app.state.cooldown_fallback = LocalCooldown()
     try:
         yield
     finally:

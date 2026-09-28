@@ -21,6 +21,7 @@ def get_product_service(request: Request) -> ProductService:
         state.redis,
         limit=settings.alcampo_rate_limit,
         window_seconds=settings.alcampo_rate_window_seconds,
+        fallback=state.rate_limit_fallback,
     )
     scraper = AlcampoSearchScraper(
         client=state.http_client, settings=settings, rate_limiter=rate_limiter
@@ -29,7 +30,7 @@ def get_product_service(request: Request) -> ProductService:
     return ProductService(
         scraper=scraper,
         cache=cache,
-        cooldown=WafCooldownRepository(state.redis),
+        cooldown=WafCooldownRepository(state.redis, fallback=state.cooldown_fallback),
         in_flight=state.in_flight,
         settings=state.settings,
     )
