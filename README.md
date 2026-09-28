@@ -4,7 +4,7 @@ API REST asíncrona (FastAPI) que extrae, procesa y sirve datos de productos de
 [Alcampo online](https://www.compraonline.alcampo.es). Ofrece el mismo contrato que
 `mercadona-scraper` para poder comparar ambos supermercados sin adaptar el consumidor.
 
-> Estado: implementadas `specs/001-alcampo-scraper-mvp` (MVP de búsqueda), `specs/002-alcampo-scraper-antibaneo` (medidas antibaneo), `specs/003-alcampo-scraper-logging` (logging) y `specs/004-alcampo-scraper-authentication` (autenticación). Ver [limitaciones conocidas](#limitaciones-conocidas).
+> Estado: implementadas `specs/001-alcampo-scraper-mvp` (MVP de búsqueda), `specs/002-alcampo-scraper-antibaneo` (medidas antibaneo), `specs/003-alcampo-scraper-logging` (logging), `specs/004-alcampo-scraper-authentication` (autenticación) y `specs/005-alcampo-scraper-dockerization` (Docker). Ver [limitaciones conocidas](#limitaciones-conocidas).
 
 ## Puesta en marcha
 
@@ -16,6 +16,26 @@ uvicorn app.main:app --reload
 ```
 
 Documentación interactiva en `http://127.0.0.1:8000/docs` (botón **Authorize** para probar con tu `X-API-Key`).
+
+## Docker
+
+Levanta la API y un Redis local sin instalar Python ni Redis. Solo hace falta Docker. Detalle en [`specs/005-alcampo-scraper-dockerization`](specs/005-alcampo-scraper-dockerization/spec.md).
+
+```bash
+cp .env.example .env              # rellena ALCAMPO_BASE_URL y API_KEYS
+docker compose up --build         # API en http://127.0.0.1:8000
+docker compose logs -f api        # logs en tiempo real
+docker compose down               # parar y borrar los contenedores
+```
+
+- **Configuración:** la API lee el `.env` (si falta, no arranca y muestra el `ValidationError` de las variables obligatorias). `REDIS_URL` lo fija el compose para apuntar a su Redis, aunque el `.env` diga otra cosa. El puerto del host se cambia con `API_PORT` (por defecto `8000`): `API_PORT=9000 docker compose up`.
+- **Arranque ordenado:** la API no arranca hasta que Redis responde. Hasta la spec 007, una búsqueda sin Redis es un `500`.
+- **Imagen:** `python:3.11-slim`, solo dependencias de producción, usuario sin privilegios (uid `10001`). Solo entran en ella `pyproject.toml` y `app/`: el `.dockerignore` es una lista de permitidos, así que ni el `.env` ni ningún fichero nuevo llegan a la imagen.
+- **Sonda de vida:** `HEALTHCHECK` contra `/health` cada 30 s (`docker compose ps` muestra `healthy`). `/health` no pide token ni toca Redis ni Alcampo. **Docker solo marca el contenedor como `unhealthy`, no lo reinicia:** eso lo hace un orquestador. Cada sonda deja 2 líneas `INFO` en los logs; si molestan, `LOG_LEVEL=WARNING`.
+- **Logs:** en `docker compose logs`, con hora **UTC** (la imagen no define zona horaria). Sin el access log de uvicorn, que duplicaría cada petición sin request id; para reactivarlo, sobrescribe `command` en el compose sin `--no-access-log`.
+- **Redis efímero:** sin volumen. Al recrearlo se pierden la cache **y el [enfriamiento](#medidas-antibaneo) del WAF**. En producción, apunta `REDIS_URL` a otro Redis y no uses el servicio `redis` del compose.
+
+Solo la imagen: `docker build -t alcampo-scraper .` y `docker run -p 8000:8000 --env-file .env alcampo-scraper` (con un `REDIS_URL` alcanzable desde el contenedor).
 
 ## Desarrollo
 
@@ -126,7 +146,7 @@ Qué nivel tiene cada evento:
 
 **Nunca se registran** cookies de Alcampo, cabeceras completas, el cuerpo de las respuestas de Alcampo ni la `X-API-Key` (ni los tokens de `API_KEYS`). Los valores que envía el cliente se registran escapados (`%r`), así que un salto de línea no puede fabricar líneas falsas.
 
-uvicorn sigue emitiendo su propio access log, sin request id. Si molesta, se desactiva al desplegar (`--no-access-log`).
+En local, uvicorn sigue emitiendo su propio access log, sin request id (se desactiva con `--no-access-log`). La imagen Docker ya lo arranca desactivado.
 
 ## Limitaciones conocidas
 
@@ -134,6 +154,8 @@ uvicorn sigue emitiendo su propio access log, sin request id. Si molesta, se des
 - **`price_format` solo está verificado para `PER_LITRE`.** Las unidades `PER_KG`, `PER_EACH` y `PER_METER` se infieren del bundle web de Alcampo, no de una respuesta real observada.
 - Autenticación de servicio a servicio con un secreto compartido: sin cuentas de usuario, OAuth2/JWT ni cuotas por token (fuera de alcance en la spec 004).
 - Logs solo en texto plano: sin JSON ni integración con plataformas de observabilidad (fuera de alcance en la spec 003).
+- **Imagen Docker no reproducible al 100 %:** `pyproject.toml` no fija versiones (no hay lockfile), así que dos builds en fechas distintas pueden instalar versiones distintas de las dependencias.
+- Docker sin orquestador: `Dockerfile` y `docker-compose.yml` locales, sin Kubernetes, CI/CD ni publicación en un registry (fuera de alcance en la spec 005).
 - El enfriamiento no supera el bloqueo del WAF, solo evita insistir. Si el bloqueo dura más que `WAF_COOLDOWN_SECONDS` (se observaron hasta ~4 min), la siguiente búsqueda recibe otro challenge y abre un nuevo enfriamiento.
 
 Detalle completo de lo verificado en vivo: [Fase 0](docs/investigacion/fase-0-alcampo.md).

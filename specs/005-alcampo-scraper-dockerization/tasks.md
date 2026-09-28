@@ -115,7 +115,8 @@ Formato de commit: `<tipo>(005-alcampo-scraper-dockerization): <descripción en 
 - **RF:** RF-6, RF-8, RF-9, RF-13, RF-14
 - **Hecho cuando:** los resultados están anotados aquí, el compose está parado y el override borrado. Commit: solo la anotación en `tasks.md` (`docs`).
 
-### [ ] T7 — Docs
+### [x] T7 — Docs
+> **Nota (2026-09-28):** README con la sección **Docker** (comandos, configuración, `API_PORT`, arranque ordenado, imagen, sonda de vida y aviso de que Docker no reinicia, logs en UTC y sin access log, Redis efímero con pérdida de cache y enfriamiento, uso de la imagen sin compose), línea de "Estado", nota de Logging sobre el access log y dos limitaciones nuevas (sin lockfile; sin orquestador ni CI/CD). `AGENTS.md`: comandos `docker compose up --build`/`down`, que `tests/infra/test_compose.py` necesita el CLI y el aviso de no ejecutar `docker compose config` en la raíz (volcaría el `.env`, hallazgo de T4). `.env.example` sin cambios: no hay variables nuevas en `Settings`.
 - **RED:** ninguno (no hay variables nuevas en `Settings`; el test de `.env.example` no cambia).
 - **GREEN:**
   - README: sección **Docker** con requisitos (Docker + `.env` a partir de `.env.example`), `docker compose up --build`, `API_PORT`, que `REDIS_URL` lo fija el compose, `docker compose logs -f api`, cómo reactivar el access log de uvicorn sobrescribiendo el `command`, y que la sonda de vida es `/health`. Avisos: Docker marca `unhealthy` pero **no reinicia** (plan-D4); el Redis del compose es efímero (se pierden cache y enfriamiento al recrearlo); cada sonda deja 2 líneas `INFO` (spec-D4).
