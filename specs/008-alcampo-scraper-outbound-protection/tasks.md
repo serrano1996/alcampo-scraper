@@ -120,7 +120,8 @@ Formato de commit: `<tipo>(008-alcampo-scraper-outbound-protection): <descripci�
 - **RF:** RF-1, RF-11
 - **Hecho cuando:** los casos pasan.
 
-### [ ] T8 — Integración transversal
+### [x] T8 — Integración transversal
+> **Nota (2026-09-28):** 3 tests en `tests/integration/test_outbound_protection.py`; pasaron a la primera, sin hueco que corregir (no hubo GREEN). El resto de casos límite de la spec ya tenían integración desde T5–T7. **Mutaciones:** sin `asyncio.shield` → falla solo `test_cancelling_one_waiter_does_not_cancel_the_others`; sin el `ZREM` del intento rechazado → falla solo `test_a_rejected_attempt_does_not_consume_quota`. Restaurado: `app/` sin cambios en esta tarea.
 - **RED:** en `tests/integration/test_outbound_protection.py` (app real + `lifespan` + fakeredis + respx), los casos límite de la spec que aún no tengan test de integración:
   - enfriamiento activo y límite agotado → `502` por enfriamiento (se comprueba antes; el `WARNING` lo dice);
   - `hit` con el request id correcto en el log;
