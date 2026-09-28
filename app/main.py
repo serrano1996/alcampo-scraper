@@ -14,6 +14,7 @@ from app.core.logging import configure_logging
 from app.exceptions import UpstreamThrottledError, UpstreamUnavailableError
 from app.middleware.request_context import RequestContextMiddleware
 from app.scrapers.http_client import create_http_client
+from app.services.in_flight import InFlightSearches
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.settings = settings
     app.state.http_client = create_http_client(settings)
     app.state.redis = create_redis(settings.redis_url)
+    # Per process, not per request: it must outlive every search (spec 008 plan-D2).
+    app.state.in_flight = InFlightSearches()
     try:
         yield
     finally:

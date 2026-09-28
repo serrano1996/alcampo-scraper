@@ -100,7 +100,8 @@ Formato de commit: `<tipo>(008-alcampo-scraper-outbound-protection): <descripci�
 - **RF:** RF-7
 - **Hecho cuando:** los casos pasan sin esperas reales de más de ~0,1 s.
 
-### [ ] T7 — Búsquedas iguales simultáneas y log de origen
+### [x] T7 — Búsquedas iguales simultáneas y log de origen
+> **Nota (2026-09-28):** RED real (`ModuleNotFoundError: app.services.in_flight` en los dos ficheros de test). Sin esperas reales: el orden se controla con `asyncio.Event` y una función `settle()` que cede el bucle varias veces. `InFlightSearches` es genérico (`Generic[T]`) para no depender de los modelos, y marca como recuperada la excepción de una tarea cuyos llamantes se cancelaron todos (si no, asyncio avisaría de "Task exception was never retrieved", que la 006 convertirá en error). La clave de agrupación incluye el warehouse (`5:leche`), lista para la 007. **Efecto a conocer:** las líneas de log de la búsqueda compartida (reintentos, challenge) llevan el request id del **primer** llamante, porque la tarea copia su contexto; cada llamante tiene aun así su propia línea `search served source=…`. Añadido un caso: el código postal de cada llamante también se respeta en la respuesta compartida.
 - **RED:**
   - `tests/services/test_in_flight.py`:
     - N `run` simultáneos con la misma clave → `fetch` se ejecuta **1** vez, todos reciben el mismo resultado; el primero es `miss` y el resto `shared`;

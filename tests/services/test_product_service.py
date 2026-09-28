@@ -10,6 +10,7 @@ from app.core.config import Settings
 from app.exceptions import CooldownActiveError, UpstreamBlockedError, UpstreamUnavailableError
 from app.models.alcampo import AlcampoSearchResponse
 from app.models.product import ProductQuery
+from app.services.in_flight import InFlightSearches
 from app.services.product_service import ProductService
 from app.services.search_cache import SearchCacheRepository
 from app.services.waf_cooldown import WAF_COOLDOWN_KEY, WafCooldownRepository
@@ -67,8 +68,25 @@ class HangingScraper:
         raise AssertionError("unreachable")
 
 
+class GatedScraper:
+    """Scraper that answers (or fails) only once `gate` is set."""
+
+    def __init__(self, response: AlcampoSearchResponse, error: Exception | None = None) -> None:
+        self.gate = asyncio.Event()
+        self.response = response
+        self.error = error
+        self.calls: list[str] = []
+
+    async def search(self, term: str) -> AlcampoSearchResponse:
+        self.calls.append(term)
+        await self.gate.wait()
+        if self.error is not None:
+            raise self.error
+        return self.response
+
+
 def make_service(
-    scraper: FakeScraper | FailingScraper | HangingScraper,
+    scraper: FakeScraper | FailingScraper | HangingScraper | GatedScraper,
     redis: fakeredis.FakeAsyncRedis,
     *,
     clock: Callable[[], datetime] = lambda: FIXED_NOW,
@@ -87,6 +105,7 @@ def make_service(
         scraper=scraper,
         cache=cache,
         cooldown=WafCooldownRepository(redis),
+        in_flight=InFlightSearches(),
         settings=settings,
         clock=clock,
     )
@@ -370,3 +389,89 @@ async def test_search_that_exceeds_the_timeout_fails_and_is_cancelled(
     assert not isinstance(exc_info.value, UpstreamBlockedError)
     assert scraper.cancelled is True
     assert await cache.get(warehouse="5", term="leche") is None
+
+
+# --- spec 008 RF-1, RF-11: simultaneous identical searches and origin log -----
+
+
+async def settle() -> None:
+    """Let every pending search reach its first real wait (no wall-clock sleep)."""
+    for _ in range(50):
+        await asyncio.sleep(0)
+
+
+def origins(caplog: pytest.LogCaptureFixture) -> list[str]:
+    return [
+        r.getMessage().removeprefix("search served source=")
+        for r in service_records(caplog)
+        if r.getMessage().startswith("search served")
+    ]
+
+
+async def test_simultaneous_identical_misses_call_alcampo_once(
+    redis: fakeredis.FakeAsyncRedis, caplog: pytest.LogCaptureFixture
+) -> None:
+    caplog.set_level(logging.INFO)
+    scraper = GatedScraper(make_raw_response(has_products=True))
+    service, _ = make_service(scraper, redis)
+    query = ProductQuery(postal_code="28001", term="leche")
+    tasks = [asyncio.create_task(service.search(query)) for _ in range(10)]
+    await settle()
+
+    scraper.gate.set()
+    responses = await asyncio.gather(*tasks)
+
+    assert scraper.calls == ["leche"]
+    assert all(response == responses[0] for response in responses)
+    assert sorted(origins(caplog)) == ["miss"] + ["shared"] * 9
+
+
+async def test_spelling_variants_share_the_request_and_keep_their_own_term(
+    redis: fakeredis.FakeAsyncRedis,
+) -> None:
+    scraper = GatedScraper(make_raw_response(has_products=True))
+    service, _ = make_service(scraper, redis)
+    lower = asyncio.create_task(service.search(ProductQuery(postal_code="28001", term="leche")))
+    upper = asyncio.create_task(service.search(ProductQuery(postal_code="08001", term="Leche")))
+    await settle()
+
+    scraper.gate.set()
+
+    assert scraper.calls == ["leche"]
+    assert (await lower).search.term == "leche"
+    assert (await upper).search.term == "Leche"
+    assert (await upper).search.postal_code == "08001"
+
+
+async def test_a_shared_waf_challenge_starts_a_single_cooldown(
+    redis: fakeredis.FakeAsyncRedis, caplog: pytest.LogCaptureFixture
+) -> None:
+    scraper = GatedScraper(
+        make_raw_response(has_products=True), error=UpstreamBlockedError("WAF challenge")
+    )
+    service, _ = make_service(scraper, redis)
+    query = ProductQuery(postal_code="28001", term="leche")
+    tasks = [asyncio.create_task(service.search(query)) for _ in range(3)]
+    await settle()
+
+    scraper.gate.set()
+    results = await asyncio.gather(*tasks, return_exceptions=True)
+
+    assert all(isinstance(r, UpstreamBlockedError) for r in results)
+    assert len(scraper.calls) == 1
+    blocked = [r for r in service_records(caplog) if "blocked" in r.getMessage()]
+    assert len(blocked) == 1
+    assert await redis.get("waf:cooldown:last") == b"180"  # not doubled by the waiters
+
+
+async def test_a_cache_hit_is_logged_as_hit(
+    redis: fakeredis.FakeAsyncRedis, caplog: pytest.LogCaptureFixture
+) -> None:
+    caplog.set_level(logging.INFO)
+    service, _ = make_service(FakeScraper(make_raw_response(has_products=True)), redis)
+    query = ProductQuery(postal_code="28001", term="leche")
+
+    await service.search(query)
+    await service.search(query)
+
+    assert origins(caplog) == ["miss", "hit"]

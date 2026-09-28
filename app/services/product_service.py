@@ -12,6 +12,7 @@ from app.mappers.product_mapper import map_search
 from app.models.alcampo import AlcampoSearchResponse
 from app.models.product import ProductQuery, ProductSearchResponse, SearchMetadata
 from app.scrapers.alcampo_search import DEFAULT_WAREHOUSE
+from app.services.in_flight import InFlightSearches
 from app.services.search_cache import SearchCacheRepository, normalize_term
 from app.services.waf_cooldown import WafCooldownRepository
 
@@ -37,12 +38,14 @@ class ProductService:
         scraper: SearchScraper,
         cache: SearchCacheRepository,
         cooldown: WafCooldownRepository,
+        in_flight: InFlightSearches[ProductSearchResponse],
         settings: Settings,
         clock: Clock = _default_clock,
     ) -> None:
         self._scraper = scraper
         self._cache = cache
         self._cooldown = cooldown
+        self._in_flight = in_flight
         self._settings = settings
         self._clock = clock
 
@@ -50,14 +53,23 @@ class ProductService:
         """Search Alcampo (or the cache) for `query.term` (RF-1, RF-5, RF-10, RF-11, RF-12)."""
         cached = await self._cache.get(warehouse=DEFAULT_WAREHOUSE, term=query.term)
         if cached is not None:
-            return cached.model_copy(
-                update={
-                    "search": cached.search.model_copy(
-                        update={"postal_code": query.postal_code, "term": query.term}
-                    )
-                }
-            )
+            logger.info("search served source=hit")
+            return _for_query(cached, query)
 
+        # Simultaneous identical searches share one fetch (spec 008 RF-1). The
+        # key is normalized, so `leche` and `Leche` group too (RF-2).
+        key = f"{DEFAULT_WAREHOUSE}:{normalize_term(query.term)}"
+        response, shared = await self._in_flight.run(key, lambda: self._fetch(query))
+        # Origin of every search, to measure how much the cache protects (RF-11).
+        logger.info("search served source=%s", "shared" if shared else "miss")
+        return _for_query(response, query)
+
+    async def _fetch(self, query: ProductQuery) -> ProductSearchResponse:
+        """Cooldown check, Alcampo and cache write: run once per group of searches.
+
+        Runs in a task started by the first caller of the group, so its log
+        lines carry that caller's request id.
+        """
         # Checked after the cache on purpose (plan-D3): cached searches keep
         # working during a cooldown (spec 002 RF-17); misses fail fast without
         # touching Alcampo (RF-16).
@@ -115,3 +127,18 @@ class ProductService:
                 return await self._scraper.search(term)
         except TimeoutError as exc:
             raise UpstreamUnavailableError("search timeout") from exc
+
+
+def _for_query(response: ProductSearchResponse, query: ProductQuery) -> ProductSearchResponse:
+    """The same results, labelled with this caller's postal code and term.
+
+    Cached and shared responses were built for another request; the client
+    still sees what it asked for (spec 001, spec 008 RF-2).
+    """
+    return response.model_copy(
+        update={
+            "search": response.search.model_copy(
+                update={"postal_code": query.postal_code, "term": query.term}
+            )
+        }
+    )

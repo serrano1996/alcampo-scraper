@@ -30,5 +30,6 @@ def get_product_service(request: Request) -> ProductService:
         scraper=scraper,
         cache=cache,
         cooldown=WafCooldownRepository(state.redis),
+        in_flight=state.in_flight,
         settings=state.settings,
     )
