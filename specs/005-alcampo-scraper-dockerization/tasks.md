@@ -18,7 +18,8 @@ Formato de commit: `<tipo>(005-alcampo-scraper-dockerization): <descripción en 
 
 ---
 
-### [ ] T1 — `/health` no toca Redis ni Alcampo
+### [x] T1 — `/health` no toca Redis ni Alcampo
+> **Verificación por mutación (2026-09-28):** con `/health` haciendo `await request.app.state.redis.ping()` → el test falla (`ConnectionError: redis is down (ping)`, `500`); con `/health` llamando a `request.app.state.http_client.get("/")` → falla (`AllMockedAssertionError`, `500`). Restaurado con `git checkout`: `app/` sin cambios. El Redis caído es un `DownRedis` propio (solo `aclose()` funciona, para que el `lifespan` cierre limpio). El `StarletteDeprecationWarning` del test ya aparecía en toda la suite.
 - **RED:** ninguno real: `/health` ya cumple (plan §2). Test nuevo en `tests/integration/test_health.py`, con la app real (`lifespan` + fakeredis + respx) y **sin** `X-API-Key`:
   - `app.state.redis` sustituido por un objeto cuyo cualquier método lanza una excepción (Redis caído);
   - ninguna ruta respx registrada (cualquier salida a Alcampo fallaría);
