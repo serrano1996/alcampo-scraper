@@ -1,6 +1,6 @@
 # Tasks 008 — Protección de salida hacia Alcampo
 
-- **Estado:** aprobado (2026-09-28)
+- **Estado:** completada (2026-09-28): T1–T9
 - **Spec:** [spec.md](spec.md) · **Plan:** [plan.md](plan.md) (decisiones citadas como plan-Dn)
 - **Entrega:** 2 PRs encadenados (plan-D10): **PR 1** = T1–T4 (~330 líneas), **PR 2** = T5–T9 (~390 líneas).
 
@@ -132,7 +132,13 @@ Formato de commit: `<tipo>(008-alcampo-scraper-outbound-protection): <descripci�
 - **RF:** RF-1…RF-11 (transversal)
 - **Hecho cuando:** los casos pasan y las mutaciones quedan anotadas.
 
-### [ ] T9 — Docs y verificación manual
+### [x] T9 — Docs y verificación manual
+> **Verificación manual (2026-09-28T10:28–10:33Z):** Docker 29.6.2, override con token sintético en el scratchpad, 41 min desde la última petición a Alcampo. **2 búsquedas reales** en total, ambas `200`, sin challenge.
+> 1. **10 simultáneas de `yogur`** (curl en paralelo desde Git Bash): **1** petición a Alcampo, 1 `source=miss` y 7 `source=shared`, las 8 en `200` en ~0,5 s. **Solo llegaron 8 de 10**: 2 `curl` se colgaron sin llegar a la app. Repetido con `httpx` y `arroz` (2.ª y última búsqueda real): **1** petición, 1 `miss` + 8 `shared`, y 1 `ReadTimeout` que tampoco llegó a la app.
+> 2. **Investigación de las peticiones perdidas** (sin tráfico a Alcampo, con `arroz` ya cacheado): la app registró 25 inicios de 30 peticiones enviadas en una ráfaga, así que las perdidas **no llegaron a la app**; todas las que llegaron terminaron, sin `ERROR` ni `WARNING`. Tras reiniciar la API en frío: **desde dentro del contenedor**, 60/60 bien en dos arranques; **por el reenvío de puertos de Docker Desktop** en el host, 4 timeouts en 30 en uno de dos arranques. Los aciertos de cache no pasan por la agrupación nueva. **Conclusión:** las pérdidas son de la capa de red de Docker Desktop en Windows ante ráfagas en frío, no de la app. No afecta a RF-1 (la agrupación funcionó en ambas ráfagas).
+> 3. **`YOGUR`** → `200`, `source=hit`, 0 peticiones nuevas.
+> 4. **Límite:** API recreada con `ALCAMPO_RATE_LIMIT=1`. **Desviación:** en vez de gastar una 3.ª búsqueda real para llenar el cupo, se simuló una petición reciente con `ZADD` en `ratelimit:alcampo`. `pan` → `502` en 20 ms, `WARNING search throttled reason='outbound rate limit reached'`, **0** peticiones nuevas a Alcampo; `YOGUR` → `200` (`hit`).
+> 5. Token sintético en los logs: **0** apariciones. `docker compose down`; 0 contenedores; override, token y scripts borrados del scratchpad.
 - **GREEN:**
   - README: en "Medidas antibaneo", las búsquedas iguales simultáneas, el término normalizado, el límite global (qué pasa al agotarlo y que el valor por defecto es una estimación), el tiempo máximo y el enfriamiento creciente; tabla de variables con las 4 nuevas; en "Logging", la línea `search served source=…`; "Estado" y limitaciones (el límite no conoce el umbral real del WAF; la agrupación es por proceso).
   - `.env.example` ya actualizado en T1 (el test de sincronización lo confirma).

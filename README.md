@@ -4,7 +4,7 @@ API REST asíncrona (FastAPI) que extrae, procesa y sirve datos de productos de
 [Alcampo online](https://www.compraonline.alcampo.es). Ofrece el mismo contrato que
 `mercadona-scraper` para poder comparar ambos supermercados sin adaptar el consumidor.
 
-> Estado: implementadas `specs/001-alcampo-scraper-mvp` (MVP de búsqueda), `specs/002-alcampo-scraper-antibaneo` (medidas antibaneo), `specs/003-alcampo-scraper-logging` (logging), `specs/004-alcampo-scraper-authentication` (autenticación) y `specs/005-alcampo-scraper-dockerization` (Docker). Ver [limitaciones conocidas](#limitaciones-conocidas).
+> Estado: implementadas `specs/001-alcampo-scraper-mvp` (MVP de búsqueda), `specs/002-alcampo-scraper-antibaneo` (medidas antibaneo), `specs/003-alcampo-scraper-logging` (logging), `specs/004-alcampo-scraper-authentication` (autenticación), `specs/005-alcampo-scraper-dockerization` (Docker) y `specs/008-alcampo-scraper-outbound-protection` (protección de salida hacia Alcampo). Las specs 006 y 007 están pendientes. Ver [limitaciones conocidas](#limitaciones-conocidas).
 
 ## Puesta en marcha
 
@@ -79,7 +79,7 @@ curl -H "X-API-Key: $ALCAMPO_API_KEY" \
 ```
 
 - `term` sin resultados → `200` con `products: []`, nunca un error.
-- Alcampo no responde (agotados los reintentos, un `4xx` no reintentable, el WAF de Alcampo bloqueando con un challenge, o un [enfriamiento](#medidas-antibaneo) en curso) → `502 {"detail": "Upstream service unavailable"}`.
+- Alcampo no responde (agotados los reintentos, un `4xx` no reintentable, el WAF de Alcampo bloqueando con un challenge, un [enfriamiento](#medidas-antibaneo) en curso, el [límite de peticiones](#medidas-antibaneo) agotado o una búsqueda que supera `SEARCH_TIMEOUT_SECONDS`) → `502 {"detail": "Upstream service unavailable"}`.
 - Parámetros inválidos (`term` vacío o de más de 50 caracteres) → `422`, sin llamar a Alcampo ni a Redis.
 
 ## Autenticación
@@ -108,17 +108,26 @@ Todo lo que cuelga de `/api/v1/` exige la cabecera **`X-API-Key`** con un token 
 
 ## Medidas antibaneo
 
-Invisibles para el consumidor, salvo algo más de latencia en los reintentos. Detalle en [`specs/002-alcampo-scraper-antibaneo`](specs/002-alcampo-scraper-antibaneo/spec.md).
+Invisibles para el consumidor, salvo algo más de latencia en los reintentos y `502` rápidos en los picos. Detalle en [`specs/002-alcampo-scraper-antibaneo`](specs/002-alcampo-scraper-antibaneo/spec.md) y [`specs/008-alcampo-scraper-outbound-protection`](specs/008-alcampo-scraper-outbound-protection/spec.md).
 
 - **Fingerprint de navegador real.** Cada proceso elige al arrancar un User-Agent de un pool de 6 navegadores (Chrome, Firefox, Edge y Safari en Windows, macOS y Linux) y lo mantiene: cambiarlo en cada petición sería más sospechoso. También envía `Referer` y `ecom-request-source: web`, como la web de Alcampo.
 - **Reintentos irregulares.** Cada espera entre reintentos suma un jitter aleatorio de hasta `RETRY_JITTER_MAX_S` segundos.
 - **`429` respetuoso.** Si Alcampo responde `429` con `Retry-After` (en segundos o como fecha), se espera lo que pide, con un tope de 60 s. En la Fase 0 nunca se vio un `429`: es defensa en profundidad.
 - **Enfriamiento tras el WAF.** El bloqueo real de Alcampo es su AWS WAF, que bloquea la IP de salida durante 2–4 minutos. Tras un challenge, el servicio deja de llamar a Alcampo durante `WAF_COOLDOWN_SECONDS` (180 s por defecto): las búsquedas **no cacheadas** responden `502` al instante, y las **cacheadas** siguen respondiendo `200`. La marca es global (una clave en Redis), así que la comparten todas las instancias. `WAF_COOLDOWN_SECONDS=0` lo desactiva.
+- **Enfriamiento creciente.** Si llega otro challenge antes de `WAF_COOLDOWN_MAX_SECONDS` (900 s) desde el anterior, la duración se duplica hasta ese tope: 180 → 360 → 720 → 900 s. Sin challenges recientes, vuelve a 180 s. Así no se repite el ciclo "challenge → espera corta → challenge".
+- **Búsquedas iguales simultáneas → 1 petición.** Si varias búsquedas del mismo término llegan mientras una ya está consultando Alcampo, esperan su resultado en lugar de repetir la petición (verificado con 10 simultáneas: 1 petición a Alcampo). Agrupa dentro de cada proceso; entre instancias protege el límite global.
+- **Término normalizado.** La cache y la petición a Alcampo no distinguen mayúsculas ni espacios repetidos: `Leche`, `LECHE` y `leche  entera` comparten entrada con `leche` y `leche entera`. Verificado en vivo que Alcampo devuelve exactamente lo mismo. La respuesta conserva el término tal como lo envió el cliente.
+- **Límite global de peticiones.** Como mucho `ALCAMPO_RATE_LIMIT` peticiones a Alcampo cada `ALCAMPO_RATE_WINDOW_SECONDS` (20 cada 60 s), contadas en Redis entre todas las instancias y reintentos incluidos (ventana deslizante). Agotado el cupo, las búsquedas **no cacheadas** responden `502` al instante sin salir a Alcampo; las **cacheadas** siguen respondiendo `200`. **El valor por defecto es una estimación prudente**: el umbral real del WAF para la búsqueda es desconocido. `ALCAMPO_RATE_LIMIT=0` lo desactiva.
+- **Tiempo máximo por búsqueda.** Una búsqueda que no termina en `SEARCH_TIMEOUT_SECONDS` (15 s), intentos y esperas incluidos, se cancela y responde `502`. Antes el peor caso rondaba los 30 s.
 
 | Variable | Default | Descripción |
 |---|---|---|
 | `RETRY_JITTER_MAX_S` | `0.3` | Jitter máximo (s) por espera. `0` = sin jitter. Negativo: la app no arranca |
 | `WAF_COOLDOWN_SECONDS` | `180` | Duración del enfriamiento tras un challenge. `0` = desactivado. Negativo: la app no arranca |
+| `WAF_COOLDOWN_MAX_SECONDS` | `900` | Tope del enfriamiento creciente, y ventana en la que un challenge cuenta como reciente. Menor que `WAF_COOLDOWN_SECONDS`: la app no arranca |
+| `ALCAMPO_RATE_LIMIT` | `20` | Peticiones máximas a Alcampo por ventana, entre todas las instancias. `0` = sin límite. Negativo: la app no arranca |
+| `ALCAMPO_RATE_WINDOW_SECONDS` | `60` | Ventana del límite anterior. Menor que `1`: la app no arranca |
+| `SEARCH_TIMEOUT_SECONDS` | `15` | Tiempo máximo total de una búsqueda en Alcampo. `≤ 0`: la app no arranca |
 
 **Mantenimiento:** el pool de User-Agents se verificó el 2026-09-25 contra las fuentes oficiales de cada navegador. Revisarlo cada ~3 meses: un User-Agent desfasado delata al bot. Está en `app/scrapers/http_client.py` y hay que actualizar también su copia en `tests/scrapers/test_http_client.py`.
 
@@ -140,9 +149,9 @@ Qué nivel tiene cada evento:
 
 | Nivel | Eventos |
 |---|---|
-| `ERROR` | error no controlado (con traceback, responde `500`); `502` por Alcampo caído, reintentos agotados o `4xx` no reintentable; challenge del WAF (con la duración del enfriamiento); respuesta de Alcampo con JSON inválido o formato inesperado; **todos** los productos de una respuesta descartados (probable cambio de formato en Alcampo) |
-| `WARNING` | cada reintento; búsqueda rechazada durante el enfriamiento; algunos productos descartados; entrada de cache corrupta |
-| `INFO` | inicio y fin de cada petición |
+| `ERROR` | error no controlado (con traceback, responde `500`); `502` por Alcampo caído, reintentos agotados, `4xx` no reintentable o búsqueda que supera el tiempo máximo (`reason='search timeout'`); challenge del WAF (con la duración del enfriamiento); respuesta de Alcampo con JSON inválido o formato inesperado; **todos** los productos de una respuesta descartados (probable cambio de formato en Alcampo) |
+| `WARNING` | cada reintento; búsqueda rechazada sin llamar a Alcampo (`search throttled reason='WAF cooldown active'` o `'outbound rate limit reached'`); algunos productos descartados; entrada de cache corrupta |
+| `INFO` | inicio y fin de cada petición; origen de cada búsqueda: `search served source=hit` (cache), `miss` (Alcampo) o `shared` (resultado de otra búsqueda simultánea igual) |
 
 **Nunca se registran** cookies de Alcampo, cabeceras completas, el cuerpo de las respuestas de Alcampo ni la `X-API-Key` (ni los tokens de `API_KEYS`). Los valores que envía el cliente se registran escapados (`%r`), así que un salto de línea no puede fabricar líneas falsas.
 
@@ -156,7 +165,10 @@ En local, uvicorn sigue emitiendo su propio access log, sin request id (se desac
 - Logs solo en texto plano: sin JSON ni integración con plataformas de observabilidad (fuera de alcance en la spec 003).
 - **Imagen Docker no reproducible al 100 %:** `pyproject.toml` no fija versiones (no hay lockfile), así que dos builds en fechas distintas pueden instalar versiones distintas de las dependencias.
 - Docker sin orquestador: `Dockerfile` y `docker-compose.yml` locales, sin Kubernetes, CI/CD ni publicación en un registry (fuera de alcance en la spec 005).
-- El enfriamiento no supera el bloqueo del WAF, solo evita insistir. Si el bloqueo dura más que `WAF_COOLDOWN_SECONDS` (se observaron hasta ~4 min), la siguiente búsqueda recibe otro challenge y abre un nuevo enfriamiento.
+- El enfriamiento no supera el bloqueo del WAF, solo evita insistir. Si el bloqueo dura más que el enfriamiento aplicado, la siguiente búsqueda recibe otro challenge y el enfriamiento se duplica (hasta `WAF_COOLDOWN_MAX_SECONDS`).
+- **El límite de peticiones no conoce el umbral real del WAF** (la Fase 0 vio los bloqueos en otro endpoint). Si da `502` innecesarios o no evita bloqueos, ajústalo con los `WARNING` y las líneas `source=` de los logs.
+- **Las búsquedas iguales solo se agrupan dentro de cada proceso.** Con varias instancias, cada una puede hacer su propia petición; las protege el límite global. Las líneas de log de una búsqueda compartida (reintentos, challenge) llevan el request id de la **primera** petición del grupo.
+- **Con varias instancias, sus relojes deben estar sincronizados (NTP):** el límite global usa la hora de cada instancia.
 
 Detalle completo de lo verificado en vivo: [Fase 0](docs/investigacion/fase-0-alcampo.md).
 
