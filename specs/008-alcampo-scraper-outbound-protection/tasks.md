@@ -60,7 +60,8 @@ Formato de commit: `<tipo>(008-alcampo-scraper-outbound-protection): <descripci�
 - **RF:** RF-8, RF-9, RF-10
 - **Hecho cuando:** los casos pasan y la sustitución del test queda anotada.
 
-### [ ] T4 — `OutboundRateLimiter`
+### [x] T4 — `OutboundRateLimiter`
+> **Nota (2026-09-28):** RED real (`ImportError` de `OutboundRateLimitedError` y del módulo). Añadido un caso: la excepción es `UpstreamUnavailableError` (conserva el `502`). **Mutación adelantada de T8:** sin el `ZREM` del intento rechazado, falla `test_a_rejected_attempt_does_not_consume_quota` y solo ese; restaurado. La ventana borra las entradas con antigüedad `>= window` (`ZREMRANGEBYSCORE -inf now-window`). **Fin del PR 1.**
 - **RED:** `tests/services/test_rate_limiter.py`, con `fakeredis` y un reloj falso (`now: Callable[[], float]`):
   - límite 2 / 60 s: dos `acquire()` pasan y el tercero lanza `OutboundRateLimitedError` (se crea la excepción en `app/exceptions.py` como subclase de `UpstreamUnavailableError`; la jerarquía `UpstreamThrottledError` llega en T5);
   - tras avanzar el reloj más de 60 s, vuelve a pasar;

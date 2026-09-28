@@ -33,3 +33,12 @@ class CooldownActiveError(UpstreamUnavailableError):
     A foreseen, managed degradation: the 502 handler logs it as a WARNING, not an
     ERROR, so a cooldown does not flood the logs (spec 003 RF-12, spec-D2).
     """
+
+
+class OutboundRateLimitedError(UpstreamUnavailableError):
+    """Raised when the global outbound rate limit towards Alcampo is exhausted.
+
+    No request is sent: staying under the limit is what avoids a WAF block that
+    would take the whole service down for minutes (spec 008 RF-3, RF-4). Being a
+    subclass, it still maps to the standard 502.
+    """
