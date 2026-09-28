@@ -31,7 +31,8 @@ Formato de commit: `<tipo>(004-alcampo-scraper-authentication): <descripción en
 - **RF:** RF-7, RF-12 (`repr`)
 - **Hecho cuando:** los casos pasan y la suite completa está en verde, incluido el test de `.env.example`.
 
-### [ ] T2 — `is_valid_api_key`
+### [x] T2 — `is_valid_api_key`
+> **Verificación por mutación (2026-09-28):** comparando `str` en vez de bytes, los 2 tests no ASCII fallan con `TypeError`; restaurado, pasan. Añadido un caso no previsto: un token **configurado** no ASCII también funciona.
 - **RED:** `tests/core/test_security.py`:
   - con `{"k1", "k2"}`, `"k1"` y `"k2"` son válidos y `"k3"` no;
   - `" k1"`, `"k1 "` y `"K1"` no son válidos (RF-5);
