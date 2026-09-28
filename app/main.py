@@ -19,8 +19,15 @@ from app.services.in_flight import InFlightSearches
 logger = logging.getLogger(__name__)
 
 
-def create_redis(redis_url: str) -> redis.Redis:
-    return redis.from_url(redis_url)
+def create_redis(redis_url: str, *, timeout_seconds: float) -> redis.Redis:
+    """Redis client with connect and per-operation timeouts (spec 007 RF-14).
+
+    Without them a hung (not down) Redis would hang every request forever,
+    while `/health`, which never touches Redis, kept reporting healthy.
+    """
+    return redis.from_url(
+        redis_url, socket_connect_timeout=timeout_seconds, socket_timeout=timeout_seconds
+    )
 
 
 @asynccontextmanager
@@ -33,7 +40,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         logger.warning("no API_KEYS configured: every request to /api/v1 will be rejected")
     app.state.settings = settings
     app.state.http_client = create_http_client(settings)
-    app.state.redis = create_redis(settings.redis_url)
+    app.state.redis = create_redis(
+        settings.redis_url, timeout_seconds=settings.redis_timeout_seconds
+    )
     # Per process, not per request: it must outlive every search (spec 008 plan-D2).
     app.state.in_flight = InFlightSearches()
     try:

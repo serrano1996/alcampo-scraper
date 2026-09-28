@@ -29,7 +29,8 @@ Formato de commit: `<tipo>(007-alcampo-scraper-warehouse-resolution): <descripci
 - **Depende:** —
 - **RF:** RF-3, RF-4, RF-8, RF-11, RF-14 (configuración)
 
-### [ ] T2 — Timeouts del cliente Redis
+### [x] T2 — Timeouts del cliente Redis
+> **Nota (2026-09-28):** RED real (`TypeError` por `timeout_seconds` en `create_redis` y en el espía del `lifespan`). No existía ningún test de `create_redis`: se crean `tests/test_main.py` (unitario, sin conectar) y `tests/integration/test_redis_client.py` (el `lifespan` pasa `REDIS_TIMEOUT_SECONDS`). Regresión prevista: los dos parches de `create_redis` (`conftest.py` y `test_health.py`) aceptan ahora `**_`.
 - **RED:** `tests/test_main.py` (o donde se pruebe `create_redis`): `create_redis(url, timeout_seconds=2)` deja `socket_timeout == 2` y `socket_connect_timeout == 2` en `connection_pool.connection_kwargs`. Integración: el `lifespan` pasa `REDIS_TIMEOUT_SECONDS` (se comprueba con un `create_redis` espía).
 - **GREEN:** firma nueva de `create_redis` y llamada desde el `lifespan` (plan-D10).
 - **Regresión:** el `create_redis` parcheado de `tests/integration/conftest.py` y el de `test_health.py` aceptan el nuevo argumento.

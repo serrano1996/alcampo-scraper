@@ -43,7 +43,7 @@ def integration_env(monkeypatch: pytest.MonkeyPatch) -> Iterator[pytest.MonkeyPa
     monkeypatch.setenv("RETRY_BASE_DELAY", "0")
     monkeypatch.setenv("RETRY_JITTER_MAX_S", "0")
     monkeypatch.setenv("API_KEYS", TEST_API_KEY)
-    monkeypatch.setattr(main_module, "create_redis", lambda _url: fakeredis.FakeAsyncRedis())
+    monkeypatch.setattr(main_module, "create_redis", lambda _url, **_: fakeredis.FakeAsyncRedis())
     get_settings.cache_clear()
 
     root = logging.getLogger()

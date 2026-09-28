@@ -18,7 +18,7 @@ class DownRedis:
 def test_health_answers_without_key_redis_or_alcampo(integration_env, respx_mock) -> None:
     # The container HEALTHCHECK probes /health every 30 s: it must never touch
     # Redis or Alcampo's WAF, and must stay up when Redis is down (spec 005 RF-12).
-    integration_env.setattr(main_module, "create_redis", lambda _url: DownRedis())
+    integration_env.setattr(main_module, "create_redis", lambda _url, **_: DownRedis())
 
     with TestClient(create_app()) as client:  # no X-API-Key; respx has no routes
         response = client.get("/health")
