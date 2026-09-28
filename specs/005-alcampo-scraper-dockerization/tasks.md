@@ -73,7 +73,14 @@ Formato de commit: `<tipo>(005-alcampo-scraper-dockerization): <descripción en 
 - **RF:** RF-6, RF-8…RF-11, RNF-3
 - **Hecho cuando:** los casos pasan en local (el CLI de Docker está instalado aunque el daemon esté apagado).
 
-### [ ] T5 — Verificación manual: la imagen
+### [x] T5 — Verificación manual: la imagen
+> **Verificación manual (2026-09-28T08:55Z):** Docker 29.6.2. Sin llamadas a Alcampo.
+> 1. `docker build` → exit 0. La única rueda construida es la del propio proyecto (Python puro); `uvloop` y `httptools` llegan precompilados: **sin compilación** (supuesto del plan §2 confirmado). Imagen: **194 MB**. Contexto de build: **42,8 kB** ≈ `app/*.py` + `pyproject.toml` (41,2 kB); no entran los `__pycache__` locales (110 kB con ellos), `tests/` (594 kB) ni `.venv` (88 MB): `*` + `!app/` funciona como se esperaba (nota de T2).
+> 2. `id` → `uid=10001(app) gid=999(app)`; `/app` vacío (el código vive en `/opt/venv/lib/python3.11/site-packages/app`, 26 `.py`); `pip list` sin `pytest`, `ruff`, `respx` ni `fakeredis`; `touch /opt/venv/x` → `Permission denied` (el proceso no puede modificar su código, plan-D2). Los `__pycache__` de la imagen los genera `pip` al instalar, no vienen del contexto.
+> 3. Sin variables → exit **3**, `ValidationError: 2 validation errors for Settings` (`alcampo_base_url`, `redis_url`: `Field required`) y `Application startup failed`.
+> 4. Standalone con `REDIS_URL` a un Redis inexistente y `API_KEYS` sintético: `/health` → `200`, `/docs` → `200` desde el host; `healthy` a los ~3 s, sonda con exit 0 (supuesto del `HEALTHCHECK` confirmado). Logs en `docker logs` en tiempo real con request id; **0** líneas de access log de uvicorn; **0** apariciones del token. Arranque y ejecución en **Python 3.11** correctos.
+> 5. `docker stop` → 0 s, exit 0, `Application shutdown complete` (uvicorn como PID 1 recibe SIGTERM). Contenedor borrado; 0 contenedores `alcampo*`. Se conserva la imagen `alcampo-scraper:dev`.
+> **Observación:** dentro del contenedor la hora de los logs es **UTC** (la imagen no define zona horaria); en local era la hora local (spec 003, T13). Queda pendiente el supuesto de TLS contra Alcampo, que se comprueba en T6.
 - **Requisito:** daemon de Docker arrancado (regla 6).
 - **Pasos:**
   1. `docker build -t alcampo-scraper:dev .` → termina sin error **y sin compilar nada** (supuesto pendiente del plan §2: `uvicorn[standard]` en `slim`). Anotar el tamaño (`docker image ls`).
