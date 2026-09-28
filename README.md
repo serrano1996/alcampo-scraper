@@ -4,18 +4,18 @@ API REST asíncrona (FastAPI) que extrae, procesa y sirve datos de productos de
 [Alcampo online](https://www.compraonline.alcampo.es). Ofrece el mismo contrato que
 `mercadona-scraper` para poder comparar ambos supermercados sin adaptar el consumidor.
 
-> Estado: implementadas `specs/001-alcampo-scraper-mvp` (MVP de búsqueda), `specs/002-alcampo-scraper-antibaneo` (medidas antibaneo) y `specs/003-alcampo-scraper-logging` (logging). Ver [limitaciones conocidas](#limitaciones-conocidas).
+> Estado: implementadas `specs/001-alcampo-scraper-mvp` (MVP de búsqueda), `specs/002-alcampo-scraper-antibaneo` (medidas antibaneo), `specs/003-alcampo-scraper-logging` (logging) y `specs/004-alcampo-scraper-authentication` (autenticación). Ver [limitaciones conocidas](#limitaciones-conocidas).
 
 ## Puesta en marcha
 
 ```bash
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install -e ".[dev]"
-cp .env.example .env
+cp .env.example .env              # y rellena API_KEYS (ver Autenticación)
 uvicorn app.main:app --reload
 ```
 
-Documentación interactiva en `http://127.0.0.1:8000/docs`.
+Documentación interactiva en `http://127.0.0.1:8000/docs` (botón **Authorize** para probar con tu `X-API-Key`).
 
 ## Desarrollo
 
@@ -31,7 +31,8 @@ GET /api/v1/products?postal_code=<5 dígitos>&term=<texto, 1-50 caracteres>
 ```
 
 ```bash
-curl "http://127.0.0.1:8000/api/v1/products?postal_code=28001&term=leche"
+curl -H "X-API-Key: $ALCAMPO_API_KEY" \
+  "http://127.0.0.1:8000/api/v1/products?postal_code=28001&term=leche"
 ```
 
 ```json
@@ -60,6 +61,30 @@ curl "http://127.0.0.1:8000/api/v1/products?postal_code=28001&term=leche"
 - `term` sin resultados → `200` con `products: []`, nunca un error.
 - Alcampo no responde (agotados los reintentos, un `4xx` no reintentable, el WAF de Alcampo bloqueando con un challenge, o un [enfriamiento](#medidas-antibaneo) en curso) → `502 {"detail": "Upstream service unavailable"}`.
 - Parámetros inválidos (`term` vacío o de más de 50 caracteres) → `422`, sin llamar a Alcampo ni a Redis.
+
+## Autenticación
+
+Todo lo que cuelga de `/api/v1/` exige la cabecera **`X-API-Key`** con un token válido. `/health`, `/docs`, `/redoc` y `/openapi.json` son públicos. Detalle en [`specs/004-alcampo-scraper-authentication`](specs/004-alcampo-scraper-authentication/spec.md).
+
+- **Tokens válidos:** variable `API_KEYS`, separados por comas (se ignoran espacios y entradas vacías). Admite varios a la vez, así que se puede **rotar sin cortes**: añade el nuevo, actualiza los clientes y quita el antiguo.
+- **Sin tokens configurados, nadie entra** (falla cerrado): toda petición a `/api/v1/` recibe `401` y al arrancar se registra un `WARNING` que lo avisa.
+- **Genera tokens largos y aleatorios.** La longitud no se valida, así que la fortaleza depende de ti:
+
+  ```bash
+  python -c "import secrets; print(secrets.token_urlsafe(32))"
+  ```
+
+- **Un `401` es igual** tanto si falta la cabecera como si el token es inválido, para no dar pistas:
+
+  ```
+  HTTP/1.1 401 Unauthorized
+  WWW-Authenticate: ApiKey
+
+  {"detail": "Invalid or missing API key"}
+  ```
+
+- El rechazo ocurre **antes** de tocar la cache o Alcampo: una petición sin token no puede provocar tráfico hacia Alcampo ni un bloqueo de su WAF.
+- El token solo se acepta en la cabecera. Nunca se registra en los logs; si se envía por error en la URL (`?api_key=…`, `?token=…`, `?key=…`), aparece como `'***'`.
 
 ## Medidas antibaneo
 
@@ -99,7 +124,7 @@ Qué nivel tiene cada evento:
 | `WARNING` | cada reintento; búsqueda rechazada durante el enfriamiento; algunos productos descartados; entrada de cache corrupta |
 | `INFO` | inicio y fin de cada petición |
 
-**Nunca se registran** cookies de Alcampo, cabeceras completas, el cuerpo de las respuestas de Alcampo ni (a partir de la spec 004) la `X-API-Key`. Los valores que envía el cliente se registran escapados (`%r`), así que un salto de línea no puede fabricar líneas falsas.
+**Nunca se registran** cookies de Alcampo, cabeceras completas, el cuerpo de las respuestas de Alcampo ni la `X-API-Key` (ni los tokens de `API_KEYS`). Los valores que envía el cliente se registran escapados (`%r`), así que un salto de línea no puede fabricar líneas falsas.
 
 uvicorn sigue emitiendo su propio access log, sin request id. Si molesta, se desactiva al desplegar (`--no-access-log`).
 
@@ -107,7 +132,7 @@ uvicorn sigue emitiendo su propio access log, sin request id. Si molesta, se des
 
 - **`postal_code` no influye todavía en el resultado.** La Fase 0 demostró que Alcampo cambia precio y catálogo según la región (tienda/zona), pero resolverla en vivo cuesta ~8 peticiones y roza el rate-limit de su WAF. Esta primera feature busca siempre en la región por defecto de una sesión anónima ("Vaguada", Madrid, `warehouse: "5"`). La resolución real de `postal_code` → región llega en `specs/007-...` (pendiente).
 - **`price_format` solo está verificado para `PER_LITRE`.** Las unidades `PER_KG`, `PER_EACH` y `PER_METER` se infieren del bundle web de Alcampo, no de una respuesta real observada.
-- Sin autenticación todavía: llega en `specs/004`.
+- Autenticación de servicio a servicio con un secreto compartido: sin cuentas de usuario, OAuth2/JWT ni cuotas por token (fuera de alcance en la spec 004).
 - Logs solo en texto plano: sin JSON ni integración con plataformas de observabilidad (fuera de alcance en la spec 003).
 - El enfriamiento no supera el bloqueo del WAF, solo evita insistir. Si el bloqueo dura más que `WAF_COOLDOWN_SECONDS` (se observaron hasta ~4 min), la siguiente búsqueda recibe otro challenge y abre un nuevo enfriamiento.
 
