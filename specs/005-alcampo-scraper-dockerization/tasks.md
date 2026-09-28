@@ -30,7 +30,8 @@ Formato de commit: `<tipo>(005-alcampo-scraper-dockerization): <descripción en 
 - **RF:** RF-12
 - **Hecho cuando:** el test pasa, la mutación queda anotada y `app/` sigue sin cambios.
 
-### [ ] T2 — `.dockerignore`
+### [x] T2 — `.dockerignore`
+> **Nota (2026-09-28):** RED real (los 3 tests fallaban con `FileNotFoundError`). Los tests comprueban el **texto** de las reglas, no cómo las interpreta Docker: que `*` + `!app/` deje pasar el contenido de `app/` y nada más se confirma con el build real de T5 (paso 2).
 - **RED:** `tests/infra/test_dockerignore.py` (sin `__init__.py`, como el resto de carpetas de `tests/`; los nombres de fichero no chocan con ninguno existente). Lee `.dockerignore`, ignora comentarios y líneas vacías, y comprueba:
   - la primera regla es `*` (lista de permitidos, plan-D5);
   - las readmisiones (`!…`) son exactamente `{pyproject.toml, app/}`;
