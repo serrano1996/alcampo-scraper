@@ -19,6 +19,12 @@ OPTIONAL = [
     "ALCAMPO_RATE_WINDOW_SECONDS",
     "SEARCH_TIMEOUT_SECONDS",
     "WAF_COOLDOWN_MAX_SECONDS",
+    "REDIS_TIMEOUT_SECONDS",
+    "REGION_CACHE_TTL_SECONDS",
+    "REGION_NEGATIVE_CACHE_TTL_SECONDS",
+    "REGION_RESOLUTION_LIMIT",
+    "REGION_RESOLUTION_WINDOW_SECONDS",
+    "SESSION_MAX_AGE_SECONDS",
 ]
 
 
@@ -253,3 +259,50 @@ def test_cooldown_max_equal_to_base_is_valid(monkeypatch: pytest.MonkeyPatch) ->
     monkeypatch.setenv("WAF_COOLDOWN_MAX_SECONDS", "300")
 
     assert Settings(_env_file=None).waf_cooldown_max_seconds == 300
+
+
+# --- spec 007: region resolution and Redis -------------------------------------
+
+
+def test_region_and_redis_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
+    set_required(monkeypatch)
+
+    settings = Settings(_env_file=None)
+
+    assert settings.redis_timeout_seconds == 2
+    assert settings.region_cache_ttl_seconds == 604800  # 7 days
+    assert settings.region_negative_cache_ttl_seconds == 3600
+    assert settings.region_resolution_limit == 2
+    assert settings.region_resolution_window_seconds == 600
+    assert settings.session_max_age_seconds == 3000  # below VISITORID's 1 h
+
+
+def test_region_resolution_limit_zero_disables_it(monkeypatch: pytest.MonkeyPatch) -> None:
+    set_required(monkeypatch)
+    monkeypatch.setenv("REGION_RESOLUTION_LIMIT", "0")
+
+    assert Settings(_env_file=None).region_resolution_limit == 0
+
+
+@pytest.mark.parametrize(
+    ("name", "raw"),
+    [
+        ("REDIS_TIMEOUT_SECONDS", "0"),
+        ("REDIS_TIMEOUT_SECONDS", "-1"),
+        ("REGION_CACHE_TTL_SECONDS", "0"),
+        ("REGION_NEGATIVE_CACHE_TTL_SECONDS", "0"),
+        ("REGION_RESOLUTION_LIMIT", "-1"),
+        ("REGION_RESOLUTION_WINDOW_SECONDS", "0"),
+        ("SESSION_MAX_AGE_SECONDS", "0"),
+    ],
+)
+def test_invalid_region_and_redis_values_fail(
+    monkeypatch: pytest.MonkeyPatch, name: str, raw: str
+) -> None:
+    set_required(monkeypatch)
+    monkeypatch.setenv(name, raw)
+
+    with pytest.raises(ValidationError) as exc_info:
+        Settings(_env_file=None)
+
+    assert name.lower() in str(exc_info.value)

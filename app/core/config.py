@@ -29,6 +29,17 @@ class Settings(BaseSettings):
     search_timeout_seconds: float = Field(default=15, gt=0)
     # Cap of the growing cooldown, and how long a challenge counts as "recent" (RF-8).
     waf_cooldown_max_seconds: int = Field(default=900, ge=0)
+    # Redis (spec 007 RF-14): without timeouts a hung Redis hangs every request.
+    redis_timeout_seconds: float = Field(default=2, gt=0)
+    # Postal code -> region (spec 007). Resolving costs ~8 requests, one of them
+    # the most WAF-sensitive (creating a delivery destination), hence the long TTL
+    # and the strict limit on new resolutions; 0 disables the limit (spec-D2..D4).
+    region_cache_ttl_seconds: int = Field(default=604800, ge=1)
+    region_negative_cache_ttl_seconds: int = Field(default=3600, ge=1)
+    region_resolution_limit: int = Field(default=2, ge=0)
+    region_resolution_window_seconds: int = Field(default=600, ge=1)
+    # A region's session is renewed past this age, below VISITORID's 1 h (spec-D6).
+    session_max_age_seconds: int = Field(default=3000, ge=1)
     log_level: str = "INFO"
     # Comma-separated in the environment. `NoDecode` stops pydantic-settings from
     # parsing it as JSON (a plain frozenset raises SettingsError on "a,b"), and

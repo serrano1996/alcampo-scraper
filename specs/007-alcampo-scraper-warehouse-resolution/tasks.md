@@ -1,6 +1,6 @@
 # Tasks 007 — Resolución de región por código postal
 
-- **Estado:** borrador, pendiente de revisión
+- **Estado:** aprobado (2026-09-28)
 - **Spec:** [spec.md](spec.md) · **Plan:** [plan.md](plan.md) (decisiones citadas como plan-Dn)
 - **Entrega:** 4 PRs encadenados (plan-D12): **PR 1** = T1–T4 · **PR 2a** = T5–T7 · **PR 2b** = T8–T9 · **PR 3** = T10–T13.
 
@@ -21,7 +21,8 @@ Formato de commit: `<tipo>(007-alcampo-scraper-warehouse-resolution): <descripci
 
 ## PR 1 — Redis: timeouts y degradación
 
-### [ ] T1 — Variables nuevas en `Settings`
+### [x] T1 — Variables nuevas en `Settings`
+> **Nota (2026-09-28):** RED real (9 tests: `AttributeError` por los campos inexistentes y `DID NOT RAISE` en las validaciones). `redis_timeout_seconds` es `float` (admite fracciones de segundo, como `search_timeout_seconds`); el resto, enteros. **`.env.example`:** el usuario añadió las 6 variables a mano (regla global de permisos); el test de sincronización lo confirma.
 - **RED:** `tests/core/test_config.py`: valores por defecto (`redis_timeout_seconds == 2`, `region_cache_ttl_seconds == 604800`, `region_negative_cache_ttl_seconds == 3600`, `region_resolution_limit == 2`, `region_resolution_window_seconds == 600`, `session_max_age_seconds == 3000`); `REDIS_TIMEOUT_SECONDS=0` → `ValidationError`; `REGION_RESOLUTION_LIMIT=0` válido (desactiva), `-1` no; ventanas, TTLs y edad máxima `< 1` → `ValidationError`. Añadir las 6 a `OPTIONAL`.
 - **GREEN:** los 6 campos con `Field`.
 - **Regresión:** `test_env_example.py` → **parar y pedir al usuario** las 6 variables en `.env.example`.
