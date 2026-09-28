@@ -93,7 +93,14 @@ Formato de commit: `<tipo>(005-alcampo-scraper-dockerization): <descripción en 
 - **RF:** RF-1…RF-4, RF-7, RF-12…RF-14
 - **Hecho cuando:** los resultados están anotados aquí y no queda ningún contenedor corriendo. Commit: solo la anotación en `tasks.md` (`docs`).
 
-### [ ] T6 — Verificación manual: `docker compose`
+### [x] T6 — Verificación manual: `docker compose`
+> **Verificación manual (2026-09-28T08:58Z):** Docker 29.6.2. Override en el scratchpad con `ALCAMPO_BASE_URL` real y un `API_KEYS` sintético (`secrets.token_urlsafe(32)`); el `.env` real no se leyó.
+> 1. `up -d --build` → la salida muestra `redis Started → Waiting → Healthy` y **después** `api Starting` (RF-9); `api` arrancó 5,6 s después que `redis`. `docker compose ps`: ambos `healthy` (RF-13).
+> 2. Sin cabecera → `401`, `www-authenticate: ApiKey`, `x-request-id`, `{"detail":"Invalid or missing API key"}`; log `WARNING … reason=missing`.
+> 3. Con el token → `200`, `total_results: 50`, `warehouse: "5"`, **1 búsqueda real** a Alcampo desde el contenedor en 379 ms: DNS, TLS de la imagen `slim` y fingerprint correctos (último supuesto del plan §2 confirmado). Sin challenge del WAF.
+> 4. Repetida → `200` en 1,9 ms con el mismo `scraped_at`; `redis-cli --scan` → `search:5:leche`, TTL 3590 s; `waf:cooldown` no existe. Los logs muestran **una sola** petición a Alcampo en toda la sesión.
+> 5. `docker compose logs api`: todas las líneas con request id (la búsqueda real: inicio, línea de httpx y fin con el mismo id), **0** líneas de access log de uvicorn, **0** apariciones del token.
+> 6. `docker compose down` → contenedores y red borrados; 0 contenedores `alcampo*`; override, token y ficheros temporales borrados del scratchpad.
 - **Requisito:** daemon de Docker arrancado (regla 6); **≥10 min desde la última petición a Alcampo** (spec-D5).
 - **Preparación:** un fichero de override **en el scratchpad** (fuera del repo) con `ALCAMPO_BASE_URL` y un `API_KEYS` sintético generado para la prueba; se usa con `docker compose -f docker-compose.yml -f <override> …`. No se lee ni se modifica el `.env` real.
 - **Pasos:**
