@@ -57,7 +57,8 @@ Formato de commit: `<tipo>(005-alcampo-scraper-dockerization): <descripción en 
 - **RF:** RF-1…RF-4, RF-13, RF-14, RNF-2…RNF-4
 - **Hecho cuando:** los casos pasan. El build real se comprueba en T5.
 
-### [ ] T4 — `docker-compose.yml`
+### [x] T4 — `docker-compose.yml`
+> **Nota (2026-09-28):** RED real (6 tests con `FileNotFoundError`). **Hallazgo:** `docker compose config` copia el contenido del `env_file` en `environment` y quita la clave `env_file` de la salida, así que la opcionalidad no se puede comprobar leyendo la clave. En su lugar, un test con un `.env` **sintético** junto a la copia (`LOG_LEVEL=DEBUG`, `REDIS_URL=redis://localhost:…`) comprueba que el `.env` se carga y que el `REDIS_URL` del compose le gana (RF-6, RF-8). Esto confirma que ejecutar `config` sobre el repo real volcaría los secretos del `.env` en la salida: la copia en `tmp_path` (plan-D7) es imprescindible. **Mutaciones:** `service_started`, `required: true` (el fixture sin `.env` falla y arrastra 5 tests), `API_KEYS` escrito en `environment` y Redis con puerto publicado → cada una hace fallar su test; restaurado.
 - **RED:** `tests/infra/test_compose.py`, con `pytest.mark.skipif(shutil.which("docker") is None, reason=...)`. Copia `docker-compose.yml` a `tmp_path` (sin `.env` al lado, así nunca lee el real) y ejecuta `docker compose -f <copia> config --format json` (no necesita el daemon, plan-D7). Comprueba:
   - el comando termina con código 0 sin `.env` (RF-11);
   - `services.api.environment.REDIS_URL == "redis://redis:6379/0"` (RF-8);
