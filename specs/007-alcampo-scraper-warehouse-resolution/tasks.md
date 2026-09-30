@@ -1,6 +1,6 @@
 # Tasks 007 — Resolución de región por código postal
 
-- **Estado:** aprobado (2026-09-28)
+- **Estado:** completada (2026-09-30): T1–T13
 - **Spec:** [spec.md](spec.md) · **Plan:** [plan.md](plan.md) (decisiones citadas como plan-Dn)
 - **Entrega:** 5 PRs encadenados (plan-D12): **PR 1** = T1–T4 · **PR 2a** = T5–T7 · **PR 2b** = T8–T9 · **PR 3a** = T10–T11 · **PR 3b** = T12–T13 (PR 3 partido el 2026-09-30 al superar las 400 líneas).
 
@@ -153,8 +153,19 @@ Formato de commit: `<tipo>(007-alcampo-scraper-warehouse-resolution): <descripci
 - **Depende:** T11
 - **RF:** transversal. Primera tarea del **PR 3b**.
 
-### [ ] T13 — Docs y verificación manual
-> **En curso (2026-09-30):** README hecho (sección "Región por código postal", sección "Redis", `422`/`404`, 6 variables, logs nuevos, 5 limitaciones nuevas, "Estado" y el ejemplo de respuesta: `28001` → `warehouse: "11"`, Moratalaz según la Fase 0, no `"5"`). **Pendiente:** la verificación manual, porque el daemon de Docker está apagado. **Observación para la verificación:** la app envía las ~8 peticiones de una resolución seguidas, en pocos segundos (en la verificación en vivo se espaciaron 30 s a mano); se documenta como limitación y las dos resoluciones reales se separarán varios minutos.
+### [x] T13 — Docs y verificación manual
+> **Verificación manual (2026-09-30T09:52–10:02Z):** Docker 29.6.2, override con token sintético en el scratchpad, >40 h desde la última petición a Alcampo. **25 peticiones reales, 2 creaciones de destino, ningún challenge.**
+> 1. `28001` + `agua` → `200`, **`warehouse: "11"` (Moratalaz, como en la Fase 0)**, 10 peticiones en 3,3 s, `region session confirmed … reason=new`. A los 5 min, `35001` + `agua` → `200`, **`warehouse: "32"` (Telde)**, 10 peticiones en 1,2 s. `agua`: 44 productos comunes, **41 con precio distinto** (p. ej. 2,22 € Moratalaz frente a 3,06 € Telde), 5 exclusivos en cada región.
+> 2. `35001` + `leche` → `region resolved … source=cache`, solo 1 petición (la búsqueda).
+> 3. `99999` → `404 "Postal code not served by Alcampo"` con 2 peticiones (portada y áreas); `2800` → `422` (`string_pattern_mismatch`) sin tocar nada.
+> 4. **Redis colgado** (`docker compose pause redis`): `28001` + `pan` → `200` en **9,1 s**, 1 petición a Alcampo, `WARNING redis unavailable op=…` por cada operación. **Redis parado** (`stop`): `28001` + `arroz` → `200` en **9,0 s**. `/health` → `200` en ~8 ms en ambos casos. Redis vuelto a arrancar.
+> 5. Logs: 0 apariciones del token, del CSRF, de `visitorId` y de `Set-Cookie`; 0 líneas de access log. `docker compose down`; 0 contenedores; override, token, scripts y precios borrados del scratchpad.
+>
+> **Hallazgos (no corregidos: fuera del plan, se avisa):**
+> - **Latencia sin Redis ≈ 9 s por búsqueda:** cada una de las ~4 operaciones con Redis espera su timeout de 2 s. RF-14/RF-15 se cumplen (sin cuelgues, `200`), pero es lento. Mejora propuesta: un *circuit breaker* que deje de intentar Redis durante unos segundos tras un fallo.
+> - **`ERROR asyncio: Future exception was never retrieved` (×3) con Redis parado:** el nombre `redis` deja de resolverse en la red de Docker; la consulta DNS (`getaddrinfo`, en un hilo) tarda más que el timeout; redis-py cancela la conexión, pero la consulta termina después con `gaierror` y nadie recoge su resultado. No afecta a la respuesta, pero ensucia los logs con falsos `ERROR`. El mismo *circuit breaker* lo reduciría (menos intentos).
+>
+> **Docs (hechas antes):** README hecho (sección "Región por código postal", sección "Redis", `422`/`404`, 6 variables, logs nuevos, 5 limitaciones nuevas, "Estado" y el ejemplo de respuesta: `28001` → `warehouse: "11"`, Moratalaz según la Fase 0, no `"5"`). **Pendiente:** la verificación manual, porque el daemon de Docker está apagado. **Observación para la verificación:** la app envía las ~8 peticiones de una resolución seguidas, en pocos segundos (en la verificación en vivo se espaciaron 30 s a mano); se documenta como limitación y las dos resoluciones reales se separarán varios minutos.
 - **GREEN:** README: sección de región por código postal (qué se resuelve, `404`, `422`, cache de 7 días, límite de resoluciones, sesión por región renovada cada 50 min), sección Redis (timeouts y degradación), variables nuevas, logs nuevos, limitaciones (vida del destino temporal no verificada; umbral del WAF para crear destinos es una hipótesis; `warehouse` es el `retailerRegionId`); "Estado".
 - **Verificación manual** con `docker compose` y token sintético, ≥10 min desde la última petición a Alcampo, 30 s entre peticiones reales y **como mucho 2 creaciones de destino**:
   1. `28001` y `35001` con `agua` → `warehouse` distinto y precios distintos (p. ej. Bezoya o Font Vella).
