@@ -154,6 +154,7 @@ Formato de commit: `<tipo>(007-alcampo-scraper-warehouse-resolution): <descripci
 - **RF:** transversal. Primera tarea del **PR 3b**.
 
 ### [ ] T13 — Docs y verificación manual
+> **En curso (2026-09-30):** README hecho (sección "Región por código postal", sección "Redis", `422`/`404`, 6 variables, logs nuevos, 5 limitaciones nuevas, "Estado" y el ejemplo de respuesta: `28001` → `warehouse: "11"`, Moratalaz según la Fase 0, no `"5"`). **Pendiente:** la verificación manual, porque el daemon de Docker está apagado. **Observación para la verificación:** la app envía las ~8 peticiones de una resolución seguidas, en pocos segundos (en la verificación en vivo se espaciaron 30 s a mano); se documenta como limitación y las dos resoluciones reales se separarán varios minutos.
 - **GREEN:** README: sección de región por código postal (qué se resuelve, `404`, `422`, cache de 7 días, límite de resoluciones, sesión por región renovada cada 50 min), sección Redis (timeouts y degradación), variables nuevas, logs nuevos, limitaciones (vida del destino temporal no verificada; umbral del WAF para crear destinos es una hipótesis; `warehouse` es el `retailerRegionId`); "Estado".
 - **Verificación manual** con `docker compose` y token sintético, ≥10 min desde la última petición a Alcampo, 30 s entre peticiones reales y **como mucho 2 creaciones de destino**:
   1. `28001` y `35001` con `agua` → `warehouse` distinto y precios distintos (p. ej. Bezoya o Font Vella).

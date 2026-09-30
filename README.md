@@ -4,7 +4,7 @@ API REST asíncrona (FastAPI) que extrae, procesa y sirve datos de productos de
 [Alcampo online](https://www.compraonline.alcampo.es). Ofrece el mismo contrato que
 `mercadona-scraper` para poder comparar ambos supermercados sin adaptar el consumidor.
 
-> Estado: implementadas `specs/001-alcampo-scraper-mvp` (MVP de búsqueda), `specs/002-alcampo-scraper-antibaneo` (medidas antibaneo), `specs/003-alcampo-scraper-logging` (logging), `specs/004-alcampo-scraper-authentication` (autenticación), `specs/005-alcampo-scraper-dockerization` (Docker) y `specs/008-alcampo-scraper-outbound-protection` (protección de salida hacia Alcampo). Las specs 006 y 007 están pendientes. Ver [limitaciones conocidas](#limitaciones-conocidas).
+> Estado: implementadas `specs/001-alcampo-scraper-mvp` (MVP de búsqueda), `specs/002-alcampo-scraper-antibaneo` (medidas antibaneo), `specs/003-alcampo-scraper-logging` (logging), `specs/004-alcampo-scraper-authentication` (autenticación), `specs/005-alcampo-scraper-dockerization` (Docker), `specs/007-alcampo-scraper-warehouse-resolution` (región por código postal y Redis degradado) y `specs/008-alcampo-scraper-outbound-protection` (protección de salida hacia Alcampo). La spec 006 está pendiente. Ver [limitaciones conocidas](#limitaciones-conocidas).
 
 ## Puesta en marcha
 
@@ -29,7 +29,7 @@ docker compose down               # parar y borrar los contenedores
 ```
 
 - **Configuración:** la API lee el `.env` (si falta, no arranca y muestra el `ValidationError` de las variables obligatorias). `REDIS_URL` lo fija el compose para apuntar a su Redis, aunque el `.env` diga otra cosa. El puerto del host se cambia con `API_PORT` (por defecto `8000`): `API_PORT=9000 docker compose up`.
-- **Arranque ordenado:** la API no arranca hasta que Redis responde. Hasta la spec 007, una búsqueda sin Redis es un `500`.
+- **Arranque ordenado:** la API no arranca hasta que Redis responde. Si Redis cae después, la API sigue respondiendo sin cache (ver [Redis](#redis)).
 - **Imagen:** `python:3.11-slim`, solo dependencias de producción, usuario sin privilegios (uid `10001`). Solo entran en ella `pyproject.toml` y `app/`: el `.dockerignore` es una lista de permitidos, así que ni el `.env` ni ningún fichero nuevo llegan a la imagen.
 - **Sonda de vida:** `HEALTHCHECK` contra `/health` cada 30 s (`docker compose ps` muestra `healthy`). `/health` no pide token ni toca Redis ni Alcampo. **Docker solo marca el contenedor como `unhealthy`, no lo reinicia:** eso lo hace un orquestador. Cada sonda deja 2 líneas `INFO` en los logs; si molestan, `LOG_LEVEL=WARNING`.
 - **Logs:** en `docker compose logs`, con hora **UTC** (la imagen no define zona horaria). Sin el access log de uvicorn, que duplicaría cada petición sin request id; para reactivarlo, sobrescribe `command` en el compose sin `--no-access-log`.
@@ -60,7 +60,7 @@ curl -H "X-API-Key: $ALCAMPO_API_KEY" \
   "search": {
     "postal_code": "28001",
     "term": "leche",
-    "warehouse": "5",
+    "warehouse": "11",
     "strategy_used": "api",
     "scraped_at": "2026-09-24T10:00:00Z",
     "total_results": 1
@@ -80,7 +80,26 @@ curl -H "X-API-Key: $ALCAMPO_API_KEY" \
 
 - `term` sin resultados → `200` con `products: []`, nunca un error.
 - Alcampo no responde (agotados los reintentos, un `4xx` no reintentable, el WAF de Alcampo bloqueando con un challenge, un [enfriamiento](#medidas-antibaneo) en curso, el [límite de peticiones](#medidas-antibaneo) agotado o una búsqueda que supera `SEARCH_TIMEOUT_SECONDS`) → `502 {"detail": "Upstream service unavailable"}`.
-- Parámetros inválidos (`term` vacío o de más de 50 caracteres) → `422`, sin llamar a Alcampo ni a Redis.
+- Parámetros inválidos (`postal_code` que no sean exactamente 5 dígitos, `term` vacío o de más de 50 caracteres) → `422`, sin llamar a Alcampo ni a Redis.
+- Código postal que Alcampo no conoce o donde no reparte (p. ej. `99999`, Ceuta `51001`, Melilla `52001`) → `404 {"detail": "Postal code not served by Alcampo"}`.
+
+## Región por código postal
+
+Alcampo cambia precio y catálogo según la región (la tienda que sirve): por ejemplo, Las Palmas frente a Madrid. Cada búsqueda usa la región real de su `postal_code`, y `search.warehouse` es su `retailerRegionId` (`"5"` Vaguada, `"32"` Telde…). Detalle en [`specs/007-alcampo-scraper-warehouse-resolution`](specs/007-alcampo-scraper-warehouse-resolution/spec.md).
+
+- **Resolver un código postal nuevo es caro:** ~8 peticiones a Alcampo, una de ellas (crear un destino de entrega temporal) la que su WAF castiga. Por eso:
+  - la región de cada código postal se recuerda **7 días** (`REGION_CACHE_TTL_SECONDS`), y un código sin servicio, 1 hora;
+  - como mucho **2 resoluciones nuevas cada 10 minutos** (`REGION_RESOLUTION_LIMIT` / `REGION_RESOLUTION_WINDOW_SECONDS`). Por encima, los códigos postales **nuevos** reciben `502` al momento; los ya conocidos no se ven afectados;
+  - varias búsquedas simultáneas del mismo código postal nuevo comparten una sola resolución;
+  - un código postal inexistente o sin servicio se detecta antes de crear el destino: no consume cupo.
+- **Alcampo guarda la región en la sesión, no en la petición.** El servicio mantiene **una sesión por región** (sus cookies, en memoria del proceso) y la comprueba al confirmarla: si la página no muestra la región esperada, responde `502` antes que devolver precios de otra región.
+- **La sesión se renueva cada 50 minutos** (`SESSION_MAX_AGE_SECONDS`) reutilizando su destino: 4 peticiones y ningún destino nuevo.
+- Los códigos postales de una misma región comparten sesión y cache (`search:{región}:{término}`).
+
+## Redis
+
+- **Timeouts:** conexión y operaciones cortan a los `REDIS_TIMEOUT_SECONDS` (2 s). Un Redis colgado ya no deja peticiones esperando para siempre.
+- **Redis caído o colgado → el servicio degrada, no se cae:** las búsquedas van a Alcampo sin cache (`200`) con un `WARNING "redis unavailable op=…"`. El límite de peticiones, el de resoluciones y el enfriamiento siguen actuando con un respaldo **local a cada proceso** (se pierde la coordinación entre instancias), y las regiones ya conocidas siguen en la memoria del proceso. `/health` no toca Redis.
 
 ## Autenticación
 
@@ -127,7 +146,13 @@ Invisibles para el consumidor, salvo algo más de latencia en los reintentos y `
 | `WAF_COOLDOWN_MAX_SECONDS` | `900` | Tope del enfriamiento creciente, y ventana en la que un challenge cuenta como reciente. Menor que `WAF_COOLDOWN_SECONDS`: la app no arranca |
 | `ALCAMPO_RATE_LIMIT` | `20` | Peticiones máximas a Alcampo por ventana, entre todas las instancias. `0` = sin límite. Negativo: la app no arranca |
 | `ALCAMPO_RATE_WINDOW_SECONDS` | `60` | Ventana del límite anterior. Menor que `1`: la app no arranca |
-| `SEARCH_TIMEOUT_SECONDS` | `15` | Tiempo máximo total de una búsqueda en Alcampo. `≤ 0`: la app no arranca |
+| `SEARCH_TIMEOUT_SECONDS` | `15` | Tiempo máximo total de una búsqueda en Alcampo (y de una resolución de región). `≤ 0`: la app no arranca |
+| `REDIS_TIMEOUT_SECONDS` | `2` | Timeout de conexión y de cada operación con Redis. `≤ 0`: la app no arranca |
+| `REGION_CACHE_TTL_SECONDS` | `604800` | Cuánto se recuerda la región de un código postal (7 días) |
+| `REGION_NEGATIVE_CACHE_TTL_SECONDS` | `3600` | Cuánto se recuerda que un código postal no tiene servicio |
+| `REGION_RESOLUTION_LIMIT` | `2` | Resoluciones nuevas (creación de destinos) por ventana. `0` = sin límite |
+| `REGION_RESOLUTION_WINDOW_SECONDS` | `600` | Ventana del límite anterior |
+| `SESSION_MAX_AGE_SECONDS` | `3000` | Edad a partir de la cual se renueva la sesión de una región (por debajo de la hora de su cookie) |
 
 **Mantenimiento:** el pool de User-Agents se verificó el 2026-09-25 contra las fuentes oficiales de cada navegador. Revisarlo cada ~3 meses: un User-Agent desfasado delata al bot. Está en `app/scrapers/http_client.py` y hay que actualizar también su copia en `tests/scrapers/test_http_client.py`.
 
@@ -150,8 +175,8 @@ Qué nivel tiene cada evento:
 | Nivel | Eventos |
 |---|---|
 | `ERROR` | error no controlado (con traceback, responde `500`); `502` por Alcampo caído, reintentos agotados, `4xx` no reintentable o búsqueda que supera el tiempo máximo (`reason='search timeout'`); challenge del WAF (con la duración del enfriamiento); respuesta de Alcampo con JSON inválido o formato inesperado; **todos** los productos de una respuesta descartados (probable cambio de formato en Alcampo) |
-| `WARNING` | cada reintento; búsqueda rechazada sin llamar a Alcampo (`search throttled reason='WAF cooldown active'` o `'outbound rate limit reached'`); algunos productos descartados; entrada de cache corrupta |
-| `INFO` | inicio y fin de cada petición; origen de cada búsqueda: `search served source=hit` (cache), `miss` (Alcampo) o `shared` (resultado de otra búsqueda simultánea igual) |
+| `WARNING` | cada reintento; búsqueda rechazada sin llamar a Alcampo (`search throttled reason='WAF cooldown active'`, `'outbound rate limit reached'` o `'region resolution limit reached'`); Redis no disponible (`redis unavailable op=…`); algunos productos descartados; entrada de cache corrupta |
+| `INFO` | inicio y fin de cada petición; región de cada código postal (`region resolved … source=cache|resolved|shared`); sesión de región confirmada (`reason=new|renewal`); código postal sin servicio (`404`); origen de cada búsqueda: `search served source=hit` (cache), `miss` (Alcampo) o `shared` (resultado de otra búsqueda simultánea igual) |
 
 **Nunca se registran** cookies de Alcampo, cabeceras completas, el cuerpo de las respuestas de Alcampo ni la `X-API-Key` (ni los tokens de `API_KEYS`). Los valores que envía el cliente se registran escapados (`%r`), así que un salto de línea no puede fabricar líneas falsas.
 
@@ -159,7 +184,11 @@ En local, uvicorn sigue emitiendo su propio access log, sin request id (se desac
 
 ## Limitaciones conocidas
 
-- **`postal_code` no influye todavía en el resultado.** La Fase 0 demostró que Alcampo cambia precio y catálogo según la región (tienda/zona), pero resolverla en vivo cuesta ~8 peticiones y roza el rate-limit de su WAF. Esta primera feature busca siempre en la región por defecto de una sesión anónima ("Vaguada", Madrid, `warehouse: "5"`). La resolución real de `postal_code` → región llega en `specs/007-...` (pendiente).
+- **El umbral del WAF para crear destinos es una hipótesis** (3–4 por ventana e IP, Fase 0). El límite de 2 cada 10 minutos es prudente, no medido. En un arranque en frío con muchos códigos postales nuevos, parte de ellos reciben `502` hasta que se van resolviendo.
+- **Una resolución sale de golpe:** las ~8 peticiones de un código postal nuevo se envían seguidas, en pocos segundos (la verificación en vivo las espació 30 s a mano). No se ha observado un bloqueo por ello, pero es tráfico más concentrado que el de la Fase 0.
+- **No se sabe cuánto vive un destino temporal** en Alcampo (se reutilizó a los 13 minutos). Si caduca, la región se olvida y se vuelve a resolver (con su coste).
+- **La región se lee del HTML de la portada de Alcampo.** Si cambia su forma, ninguna sesión se podrá confirmar y las búsquedas no cacheadas darán `502` (con un `ERROR` que indica el paso).
+- Las sesiones de región viven en memoria de cada proceso: con varias instancias, cada una confirma las suyas.
 - **`price_format` solo está verificado para `PER_LITRE`.** Las unidades `PER_KG`, `PER_EACH` y `PER_METER` se infieren del bundle web de Alcampo, no de una respuesta real observada.
 - Autenticación de servicio a servicio con un secreto compartido: sin cuentas de usuario, OAuth2/JWT ni cuotas por token (fuera de alcance en la spec 004).
 - Logs solo en texto plano: sin JSON ni integración con plataformas de observabilidad (fuera de alcance en la spec 003).
