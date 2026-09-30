@@ -91,7 +91,8 @@ Formato de commit: `<tipo>(007-alcampo-scraper-warehouse-resolution): <descripci
 
 ## PR 2b — Regiones
 
-### [ ] T8 — `RegionRepository`
+### [x] T8 — `RegionRepository`
+> **Nota (2026-09-30):** RED real (`ModuleNotFoundError`). La L1 es un objeto aparte, `RegionMemory`, que se creará en el `lifespan` en T9 (el repositorio es por petición: una L1 propia no recordaría nada). Al rellenarse desde Redis usa el TTL **restante** de la clave, así que la memoria nunca dura más que el registro. `NOT_SERVED` es una constante: no choca con los ids de región, que son uuid. Un registro de región corrupto se trata como ausente, con `WARNING`. 11 tests, incluidos Redis caído y colgado y la caducidad de la L1 con reloj falso.
 - **RED:** `tests/services/test_region_repository.py`: guardar y leer `postal-code-region:{cp}` (TTL 7 d) y `region:{regionId}` (JSON, TTL 7 d); negativo `NOT_SERVED` (TTL 1 h); L1 en memoria: una segunda lectura no toca Redis; con Redis caído, solo L1 y `WARNING`; `forget_region` borra el registro de región de Redis y de L1.
 - **GREEN:** `app/services/region_repository.py`.
 - **Depende:** T3
