@@ -128,6 +128,14 @@ El `deliveryDestinationId` y el `regionId` son identificadores efímeros o públ
 
 **D12 — Entrega en 4 PRs encadenados** (spec-D9, con el PR de resolución partido en dos al aprobar el plan): **PR 1** Redis (bloque E), **PR 2a** validación, `404` y cliente de la cadena (T5–T7), **PR 2b** repositorio y servicio de regiones (T8–T9), **PR 3** sesiones, búsqueda por región, docs y verificación manual (C+D). **Enmienda (2026-09-30):** el PR 3 superó las 400 líneas al cerrar T11 (~1.000, sobre todo tests), así que se parte en **PR 3a** (T10–T11: sesiones y búsqueda por región, una unidad funcional completa) y **PR 3b** (T12–T13: integración transversal, docs y verificación manual).
 
+**D13 — Circuit breaker de Redis (RF-18, enmienda del 2026-09-30).** `RedisCircuitBreaker` en `app/services/redis_circuit.py`, uno por proceso (`lifespan`), compartido por todos los repositorios. Cada repositorio pasa su operación por `await breaker.call(lambda: …)`:
+- **cerrado:** ejecuta la operación; si lanza `RedisError`, abre el circuito (`WARNING` una vez) y relanza, para que el repositorio use su respaldo como hoy;
+- **abierto:** lanza al momento `RedisCircuitOpenError`, subclase de `RedisError`, sin tocar Redis. Los repositorios **no cambian su manejo de errores**: ya capturan `RedisError`. Solo bajan a `DEBUG` su aviso cuando el error es el del circuito;
+- **pasado el periodo:** la siguiente operación prueba Redis; si responde, cierra (`INFO`); si falla, reabre.
+- Reloj inyectable (`time.monotonic`) para los tests. `REDIS_CIRCUIT_OPEN_SECONDS=0` → `call` ejecuta siempre (desactivado).
+- *Descartada:* un proxy del cliente Redis que intercepte todos los métodos. Es menos código en los repositorios, pero con el `pipeline()` del limitador y sin tipos claros; `breaker.call` es explícito y tipado.
+- *Descartada:* filtrar el log de asyncio para esconder los `gaierror`. Esconde el síntoma; el circuito reduce la causa (los intentos).
+
 ## 6. Regresiones previstas
 
 | Tests afectados | Por qué | Corrección |
@@ -190,6 +198,7 @@ El `deliveryDestinationId` y el `regionId` son identificadores efímeros o públ
 | 11 | Búsqueda con la sesión de la región; cache y agrupación por `retailerRegionId`; `warehouse` real | 3a |
 | 12 | Integración transversal (dos regiones, límite, challenge en la cadena, logs sin secretos) | 3b |
 | 13 | Docs y verificación manual con `docker compose` | 3b |
+| 14 | Circuit breaker de Redis (enmienda RF-18, plan-D13) | 3c |
 
 | Bloque | `app/` | Tests | Docs | Total |
 |---|---|---|---|---|

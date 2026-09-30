@@ -1,6 +1,6 @@
 # Tasks 007 — Resolución de región por código postal
 
-- **Estado:** completada (2026-09-30): T1–T13
+- **Estado:** T1–T13 completadas (2026-09-30). **T14 añadida por enmienda (RF-18), pendiente de aprobación**
 - **Spec:** [spec.md](spec.md) · **Plan:** [plan.md](plan.md) (decisiones citadas como plan-Dn)
 - **Entrega:** 5 PRs encadenados (plan-D12): **PR 1** = T1–T4 · **PR 2a** = T5–T7 · **PR 2b** = T8–T9 · **PR 3a** = T10–T11 · **PR 3b** = T12–T13 (PR 3 partido el 2026-09-30 al superar las 400 líneas).
 
@@ -178,6 +178,22 @@ Formato de commit: `<tipo>(007-alcampo-scraper-warehouse-resolution): <descripci
 
 ---
 
+## PR 3c — Enmienda: circuit breaker de Redis (T14)
+
+### [ ] T14 — Circuit breaker de Redis
+- **RED:**
+  - `tests/core/test_config.py`: `REDIS_CIRCUIT_OPEN_SECONDS` por defecto `10`; `0` válido (desactiva); `-1` → `ValidationError`. Añadirla a `OPTIONAL`.
+  - `tests/services/test_redis_circuit.py` (reloj falso): cerrado → ejecuta; un `RedisError` → abre, `WARNING` una vez y relanza; abierto → `RedisCircuitOpenError` sin ejecutar la operación; pasado el periodo → prueba: éxito cierra (`INFO`), fallo reabre; `0` → nunca abre.
+  - Repositorios (cache, limitador, enfriamiento, regiones): con el circuito abierto, **la operación de Redis no se llama** (un Redis espía que cuenta llamadas) y se usa el respaldo; el aviso del repositorio va a `DEBUG`, no a `WARNING`.
+  - Integración (`tests/integration/test_redis_degradation.py`): con un Redis que falla, **dos** búsquedas seguidas → la segunda no toca Redis (0 llamadas nuevas al doble) y solo hay **un** `WARNING` de apertura del circuito en total.
+- **GREEN:** `app/services/redis_circuit.py`; los 4 repositorios pasan sus operaciones por el circuito; circuito creado en el `lifespan`.
+- **Regresión:** `.env.example` → **parar y pedir al usuario** `REDIS_CIRCUIT_OPEN_SECONDS`. Los tests de T3, T4 y T8 que cuentan `WARNING "redis unavailable"` pueden cambiar de recuento (el circuito abre al primer fallo): se ajustan uno a uno, anotándolo.
+- **Verificación manual:** `docker compose` con Redis parado: 2 búsquedas de términos no cacheados de una región ya conocida → la primera en ~2 s y la segunda sin esperas de Redis; 1 `WARNING` de apertura; menos `Future exception was never retrieved` que en T13 (anotar cuántos). Como mucho 2 búsquedas reales, sin creación de destinos.
+- **Depende:** T13
+- **RF:** RF-18. **Fin del PR 3c.**
+
+---
+
 ## Trazabilidad RF → tareas
 
 | RF | Tareas |
@@ -199,5 +215,6 @@ Formato de commit: `<tipo>(007-alcampo-scraper-warehouse-resolution): <descripci
 | RF-15 | T3, T4, T8, T13 |
 | RF-16 | T4 |
 | RF-17 | T7, T12, T13 |
+| RF-18 | T14 |
 
 Ningún RF queda huérfano. RNF: RNF-1 (contrato: T6, T11, T12), RNF-2 (sin dependencias nuevas, en todas), RNF-3 (secretos: regla 8 y T12), RNF-4 (sin red: regla 6), RNF-5 (T1, T13), RNF-6 (4 PRs).

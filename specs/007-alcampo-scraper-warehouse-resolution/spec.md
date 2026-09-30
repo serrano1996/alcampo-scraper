@@ -75,6 +75,7 @@ Además, dos pendientes de Redis:
 - **RF-14.** El cliente Redis DEBERÁ tener timeouts de conexión y de operación de `REDIS_TIMEOUT_SECONDS` (por defecto `2`).
 - **RF-15.** SI Redis no responde (caído o timeout), ENTONCES EL sistema DEBERÁ degradar en lugar de dar `500`: buscar sin cache (`200` si Alcampo responde) y registrar un `WARNING` por petición afectada. Las protecciones que hoy viven en Redis (límites de salida, enfriamiento, cache de regiones) DEBERÁN seguir actuando según D7.
 - **RF-16.** `/health` no cambia (spec 005 RF-12): no toca Redis.
+- **RF-18.** *(Enmienda del 2026-09-30, tras la verificación manual de T13.)* CUANDO una operación con Redis falle, EL sistema DEBERÁ dejar de intentar Redis durante `REDIS_CIRCUIT_OPEN_SECONDS` (por defecto 10) y usar directamente los respaldos de RF-15, sin esperar ningún timeout. Pasado ese tiempo, la siguiente operación DEBERÁ probar Redis de nuevo: si responde, se vuelve a usar; si falla, se abre otro periodo. `REDIS_CIRCUIT_OPEN_SECONDS=0` DEBERÁ desactivarlo. EL sistema DEBERÁ registrar un `WARNING` al abrirse y un `INFO` al cerrarse; mientras está abierto, las operaciones saltadas solo en `DEBUG`.
 
 ### F. Logs
 
@@ -140,3 +141,18 @@ Además, dos pendientes de Redis:
 | D7 | Redis caído: protecciones | Respaldo en memoria por proceso para el límite global, el de resoluciones y el enfriamiento; la cache se salta | RF-15. Se pierde la coordinación entre instancias, pero cada proceso se sigue protegiendo |
 | D8 | Respuesta a CP sin servicio | `404 {"detail": "Postal code not served by Alcampo"}` | RF-4. Mismo contrato que Mercadona |
 | D9 | Entrega | 3 PRs encadenados: **E** (Redis), **A+B** (validación y resolución), **C+D** (sesiones y cache por región) | Lo más urgente e independiente (Redis) va primero |
+
+## 10. Enmienda del 2026-09-30: circuit breaker de Redis
+
+La verificación manual de T13 mostró dos efectos de RF-15 tal como se implementó:
+
+- **Sin Redis, cada búsqueda tardaba ~9 s:** las ~4 operaciones con Redis de una búsqueda esperaban cada una su timeout de 2 s, en cada búsqueda.
+- **Con el contenedor de Redis parado, asyncio registraba falsos `ERROR`** (`Future exception was never retrieved`, 3 por búsqueda): la consulta DNS del nombre `redis` dura más que el timeout y su error queda sin recoger.
+
+El usuario decidió incluir la corrección en esta spec (RF-18). Con el circuito abierto, una búsqueda sin Redis cuesta un solo timeout al abrirse y ninguno después, y los intentos (y su ruido) bajan a uno cada `REDIS_CIRCUIT_OPEN_SECONDS`.
+
+| # | Duda | Propuesta | Consecuencia |
+|---|---|---|---|
+| D10 | Duración del circuito abierto | 10 s por defecto, configurable; `0` lo desactiva | Tras recuperarse Redis, como mucho 10 s de búsquedas sin cache por proceso |
+| D11 | Alcance | Un circuito **por proceso** para todo Redis (cache, límites, enfriamiento, regiones), creado en el `lifespan` | Coherente con los respaldos locales de RF-15 |
+| D12 | Logs | `WARNING` al abrir, `INFO` al cerrar; operaciones saltadas en `DEBUG` | Una línea por incidente en vez de una por operación |
