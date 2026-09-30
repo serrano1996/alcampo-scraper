@@ -20,6 +20,8 @@ from collections.abc import Callable
 from redis.asyncio import Redis
 from redis.exceptions import RedisError
 
+from app.services.redis_circuit import RedisCircuitBreaker, redis_unavailable
+
 WAF_COOLDOWN_KEY = "waf:cooldown"
 WAF_COOLDOWN_LAST_KEY = "waf:cooldown:last"
 
@@ -57,17 +59,24 @@ class LocalCooldown:
 class WafCooldownRepository:
     """Read and set the WAF cooldown marker (spec 002 RF-15, RF-18, RF-19; spec 008 RF-8)."""
 
-    def __init__(self, redis: Redis, *, fallback: LocalCooldown | None = None) -> None:
+    def __init__(
+        self,
+        redis: Redis,
+        *,
+        fallback: LocalCooldown | None = None,
+        circuit: RedisCircuitBreaker | None = None,
+    ) -> None:
         self._redis = redis
         # Production passes the shared one from app.state (see LocalCooldown).
         self._fallback = fallback if fallback is not None else LocalCooldown()
+        self._circuit = circuit if circuit is not None else RedisCircuitBreaker(open_seconds=0)
 
     async def is_active(self) -> bool:
         """Return `True` while the marker exists; Redis expiry ends the cooldown."""
         try:
-            return bool(await self._redis.exists(WAF_COOLDOWN_KEY))
-        except RedisError:
-            logger.warning("redis unavailable op=cooldown.is_active, degraded")
+            return bool(await self._circuit.call(lambda: self._redis.exists(WAF_COOLDOWN_KEY)))
+        except RedisError as exc:
+            redis_unavailable(logger, "cooldown.is_active", exc)
             return self._fallback.is_active()
 
     async def activate(self, *, base_seconds: int, max_seconds: int) -> int:
@@ -80,7 +89,8 @@ class WafCooldownRepository:
         """
         if base_seconds <= 0:
             return 0
-        try:
+
+        async def activate_in_redis() -> int:
             last = await self._redis.get(WAF_COOLDOWN_LAST_KEY)
             duration = _grow(
                 None if last is None else int(last),
@@ -89,7 +99,10 @@ class WafCooldownRepository:
             )
             await self._redis.set(WAF_COOLDOWN_KEY, "1", ex=duration)
             await self._redis.set(WAF_COOLDOWN_LAST_KEY, str(duration), ex=max_seconds)
-        except RedisError:
-            logger.warning("redis unavailable op=cooldown.activate, degraded")
+            return duration
+
+        try:
+            return await self._circuit.call(activate_in_redis)
+        except RedisError as exc:
+            redis_unavailable(logger, "cooldown.activate", exc)
             return self._fallback.activate(base_seconds=base_seconds, max_seconds=max_seconds)
-        return duration

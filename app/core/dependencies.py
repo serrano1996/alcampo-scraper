@@ -17,7 +17,7 @@ def get_product_service(request: Request) -> ProductService:
     state = request.app.state
     return ProductService(
         scraper=AlcampoSearchScraper(settings=state.settings, rate_limiter=state.rate_limiter),
-        cache=SearchCacheRepository(state.redis),
+        cache=SearchCacheRepository(state.redis, circuit=state.redis_circuit),
         cooldown=state.cooldown,
         in_flight=state.in_flight,
         regions=state.region_service,

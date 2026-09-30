@@ -19,3 +19,15 @@ class BrokenRedis:
 
 DOWN = RedisConnectionError("Connection refused")
 HUNG = RedisTimeoutError("Timeout reading from socket")
+
+
+class CountingBrokenRedis(BrokenRedis):
+    """A broken Redis that counts every command attempted (spec 007 RF-18)."""
+
+    def __init__(self, error: Exception) -> None:
+        super().__init__(error)
+        self.attempts = 0
+
+    def __getattr__(self, name: str) -> object:
+        self.attempts += 1
+        raise self.error

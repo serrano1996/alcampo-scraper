@@ -22,6 +22,7 @@ from redis.asyncio import Redis
 from redis.exceptions import RedisError
 
 from app.exceptions import OutboundRateLimitedError
+from app.services.redis_circuit import RedisCircuitBreaker, redis_unavailable
 
 RATE_LIMIT_KEY = "ratelimit:alcampo"
 
@@ -62,6 +63,7 @@ class OutboundRateLimiter:
         now: Clock = time.time,
         key: str = RATE_LIMIT_KEY,
         fallback: LocalRateLimiter | None = None,
+        circuit: RedisCircuitBreaker | None = None,
     ) -> None:
         self._redis = redis
         self._limit = limit
@@ -71,6 +73,7 @@ class OutboundRateLimiter:
         # Production passes the shared one from app.state; a private window only
         # ever limits this instance.
         self._fallback = fallback if fallback is not None else LocalRateLimiter()
+        self._circuit = circuit if circuit is not None else RedisCircuitBreaker(open_seconds=0)
 
     async def acquire(self) -> None:
         """Take one slot for a request about to be sent, or raise if none is left.
@@ -82,9 +85,9 @@ class OutboundRateLimiter:
             return
         now = self._now()
         try:
-            await self._acquire_in_redis(now)
-        except RedisError:
-            logger.warning("redis unavailable op=rate_limit key=%s, degraded", self._key)
+            await self._circuit.call(lambda: self._acquire_in_redis(now))
+        except RedisError as exc:
+            redis_unavailable(logger, f"rate_limit key={self._key}", exc)
             self._fallback.acquire(now=now, limit=self._limit, window_seconds=self._window)
 
     async def _acquire_in_redis(self, now: float) -> None:

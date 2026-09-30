@@ -100,6 +100,7 @@ Alcampo cambia precio y catálogo según la región (la tienda que sirve): por e
 
 - **Timeouts:** conexión y operaciones cortan a los `REDIS_TIMEOUT_SECONDS` (2 s). Un Redis colgado ya no deja peticiones esperando para siempre.
 - **Redis caído o colgado → el servicio degrada, no se cae:** las búsquedas van a Alcampo sin cache (`200`) con un `WARNING "redis unavailable op=…"`. El límite de peticiones, el de resoluciones y el enfriamiento siguen actuando con un respaldo **local a cada proceso** (se pierde la coordinación entre instancias), y las regiones ya conocidas siguen en la memoria del proceso. `/health` no toca Redis.
+- **Circuit breaker:** tras el primer fallo, el servicio deja de intentar Redis durante `REDIS_CIRCUIT_OPEN_SECONDS` (10 s) y usa directamente los respaldos, sin esperar ningún timeout; luego lo vuelve a probar. Sin Redis, una búsqueda pasó de ~9 s a ~1 s. En los logs: un `WARNING "redis circuit open"` al abrirse y un `INFO "redis circuit closed"` al volver.
 
 ## Autenticación
 
@@ -148,6 +149,7 @@ Invisibles para el consumidor, salvo algo más de latencia en los reintentos y `
 | `ALCAMPO_RATE_WINDOW_SECONDS` | `60` | Ventana del límite anterior. Menor que `1`: la app no arranca |
 | `SEARCH_TIMEOUT_SECONDS` | `15` | Tiempo máximo total de una búsqueda en Alcampo (y de una resolución de región). `≤ 0`: la app no arranca |
 | `REDIS_TIMEOUT_SECONDS` | `2` | Timeout de conexión y de cada operación con Redis. `≤ 0`: la app no arranca |
+| `REDIS_CIRCUIT_OPEN_SECONDS` | `10` | Tras un fallo de Redis, cuánto tiempo se deja de intentar (se usan los respaldos locales). `0` = desactivado |
 | `REGION_CACHE_TTL_SECONDS` | `604800` | Cuánto se recuerda la región de un código postal (7 días) |
 | `REGION_NEGATIVE_CACHE_TTL_SECONDS` | `3600` | Cuánto se recuerda que un código postal no tiene servicio |
 | `REGION_RESOLUTION_LIMIT` | `2` | Resoluciones nuevas (creación de destinos) por ventana. `0` = sin límite |

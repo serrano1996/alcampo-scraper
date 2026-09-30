@@ -31,6 +31,10 @@ class Settings(BaseSettings):
     waf_cooldown_max_seconds: int = Field(default=900, ge=0)
     # Redis (spec 007 RF-14): without timeouts a hung Redis hangs every request.
     redis_timeout_seconds: float = Field(default=2, gt=0)
+    # After a Redis failure, skip it for this long and use the local fallbacks
+    # straight away, instead of waiting a timeout per operation. 0 disables it
+    # (spec 007 RF-18, plan-D13).
+    redis_circuit_open_seconds: int = Field(default=10, ge=0)
     # Postal code -> region (spec 007). Resolving costs ~8 requests, one of them
     # the most WAF-sensitive (creating a delivery destination), hence the long TTL
     # and the strict limit on new resolutions; 0 disables the limit (spec-D2..D4).

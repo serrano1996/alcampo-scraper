@@ -11,6 +11,7 @@ from redis.asyncio import Redis
 from redis.exceptions import RedisError
 
 from app.models.product import ProductSearchResponse
+from app.services.redis_circuit import RedisCircuitBreaker, redis_unavailable
 
 logger = logging.getLogger(__name__)
 
@@ -32,17 +33,18 @@ def _cache_key(*, warehouse: str, term: str) -> str:
 class SearchCacheRepository:
     """Get/set `ProductSearchResponse` entries in Redis (RF-11, RF-12)."""
 
-    def __init__(self, redis: Redis) -> None:
+    def __init__(self, redis: Redis, *, circuit: RedisCircuitBreaker | None = None) -> None:
         self._redis = redis
+        self._circuit = circuit if circuit is not None else RedisCircuitBreaker(open_seconds=0)
 
     async def get(self, *, warehouse: str, term: str) -> ProductSearchResponse | None:
         """Return the cached response, or `None` on a miss or corrupted value (plan-D8)."""
         key = _cache_key(warehouse=warehouse, term=term)
         try:
-            raw = await self._redis.get(key)
-        except RedisError:
+            raw = await self._circuit.call(lambda: self._redis.get(key))
+        except RedisError as exc:
             # Degrade to Alcampo instead of a 500 (spec 007 RF-15, plan-D10).
-            logger.warning("redis unavailable op=cache.get, degraded")
+            redis_unavailable(logger, "cache.get", exc)
             return None
         if raw is None:
             return None
@@ -62,11 +64,13 @@ class SearchCacheRepository:
         ttl_seconds: int,
     ) -> None:
         try:
-            await self._redis.set(
-                _cache_key(warehouse=warehouse, term=term),
-                response.model_dump_json(),
-                ex=ttl_seconds,
+            await self._circuit.call(
+                lambda: self._redis.set(
+                    _cache_key(warehouse=warehouse, term=term),
+                    response.model_dump_json(),
+                    ex=ttl_seconds,
+                )
             )
-        except RedisError:
+        except RedisError as exc:
             # The response is still returned; it just is not cached (spec 007 RF-15).
-            logger.warning("redis unavailable op=cache.set, degraded")
+            redis_unavailable(logger, "cache.set", exc)

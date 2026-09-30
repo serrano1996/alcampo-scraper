@@ -151,7 +151,7 @@ La verificación manual de T13 mostró dos efectos de RF-15 tal como se implemen
 
 El usuario decidió incluir la corrección en esta spec (RF-18). Con el circuito abierto, una búsqueda sin Redis cuesta un solo timeout al abrirse y ninguno después, y los intentos (y su ruido) bajan a uno cada `REDIS_CIRCUIT_OPEN_SECONDS`.
 
-| # | Duda | Propuesta | Consecuencia |
+| # | Duda | Decisión (aprobada el 2026-09-30) | Consecuencia |
 |---|---|---|---|
 | D10 | Duración del circuito abierto | 10 s por defecto, configurable; `0` lo desactiva | Tras recuperarse Redis, como mucho 10 s de búsquedas sin cache por proceso |
 | D11 | Alcance | Un circuito **por proceso** para todo Redis (cache, límites, enfriamiento, regiones), creado en el `lifespan` | Coherente con los respaldos locales de RF-15 |

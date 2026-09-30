@@ -22,6 +22,8 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 from redis.asyncio import Redis
 from redis.exceptions import RedisError
 
+from app.services.redis_circuit import RedisCircuitBreaker, redis_unavailable
+
 NOT_SERVED: Final = "NOT_SERVED"
 
 logger = logging.getLogger(__name__)
@@ -79,11 +81,13 @@ class RegionRepository:
         memory: RegionMemory,
         ttl_seconds: int,
         negative_ttl_seconds: int,
+        circuit: RedisCircuitBreaker | None = None,
     ) -> None:
         self._redis = redis
         self._memory = memory
         self._ttl = ttl_seconds
         self._negative_ttl = negative_ttl_seconds
+        self._circuit = circuit if circuit is not None else RedisCircuitBreaker(open_seconds=0)
 
     async def region_id_for(self, postal_code: str) -> str | None:
         """The region id of `postal_code`, `NOT_SERVED`, or `None` if unknown."""
@@ -115,19 +119,23 @@ class RegionRepository:
         key = _region_key(region_id)
         self._memory.delete(key)
         try:
-            await self._redis.delete(key)
-        except RedisError:
-            logger.warning("redis unavailable op=region.forget, degraded")
+            await self._circuit.call(lambda: self._redis.delete(key))
+        except RedisError as exc:
+            redis_unavailable(logger, "region.forget", exc)
 
     async def _get(self, key: str) -> str | None:
         value = self._memory.get(key)
         if value is not None:
             return value
-        try:
+
+        async def read() -> tuple[bytes | str | None, int]:
             raw = await self._redis.get(key)
-            ttl = await self._redis.ttl(key) if raw is not None else 0
-        except RedisError:
-            logger.warning("redis unavailable op=region.get, degraded")
+            return raw, (await self._redis.ttl(key) if raw is not None else 0)
+
+        try:
+            raw, ttl = await self._circuit.call(read)
+        except RedisError as exc:
+            redis_unavailable(logger, "region.get", exc)
             return None
         if raw is None:
             return None
@@ -140,6 +148,6 @@ class RegionRepository:
     async def _set(self, key: str, value: str, *, ttl_seconds: int) -> None:
         self._memory.set(key, value, ttl_seconds=ttl_seconds)
         try:
-            await self._redis.set(key, value, ex=ttl_seconds)
-        except RedisError:
-            logger.warning("redis unavailable op=region.set, degraded")
+            await self._circuit.call(lambda: self._redis.set(key, value, ex=ttl_seconds))
+        except RedisError as exc:
+            redis_unavailable(logger, "region.set", exc)

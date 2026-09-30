@@ -25,6 +25,7 @@ OPTIONAL = [
     "REGION_RESOLUTION_LIMIT",
     "REGION_RESOLUTION_WINDOW_SECONDS",
     "SESSION_MAX_AGE_SECONDS",
+    "REDIS_CIRCUIT_OPEN_SECONDS",
 ]
 
 
@@ -306,3 +307,26 @@ def test_invalid_region_and_redis_values_fail(
         Settings(_env_file=None)
 
     assert name.lower() in str(exc_info.value)
+
+
+# --- spec 007 RF-18: Redis circuit breaker --------------------------------------
+
+
+def test_redis_circuit_defaults_to_ten_seconds(monkeypatch: pytest.MonkeyPatch) -> None:
+    set_required(monkeypatch)
+
+    assert Settings(_env_file=None).redis_circuit_open_seconds == 10
+
+
+@pytest.mark.parametrize(("raw", "valid"), [("0", True), ("-1", False)])
+def test_redis_circuit_zero_disables_and_negative_fails(
+    monkeypatch: pytest.MonkeyPatch, raw: str, valid: bool
+) -> None:
+    set_required(monkeypatch)
+    monkeypatch.setenv("REDIS_CIRCUIT_OPEN_SECONDS", raw)
+
+    if valid:
+        assert Settings(_env_file=None).redis_circuit_open_seconds == 0
+    else:
+        with pytest.raises(ValidationError):
+            Settings(_env_file=None)

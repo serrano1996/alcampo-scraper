@@ -1,6 +1,6 @@
 # Tasks 007 — Resolución de región por código postal
 
-- **Estado:** T1–T13 completadas (2026-09-30). **T14 añadida por enmienda (RF-18), pendiente de aprobación**
+- **Estado:** completada (2026-09-30): T1–T14 (T14 por enmienda, RF-18)
 - **Spec:** [spec.md](spec.md) · **Plan:** [plan.md](plan.md) (decisiones citadas como plan-Dn)
 - **Entrega:** 5 PRs encadenados (plan-D12): **PR 1** = T1–T4 · **PR 2a** = T5–T7 · **PR 2b** = T8–T9 · **PR 3a** = T10–T11 · **PR 3b** = T12–T13 (PR 3 partido el 2026-09-30 al superar las 400 líneas).
 
@@ -180,7 +180,16 @@ Formato de commit: `<tipo>(007-alcampo-scraper-warehouse-resolution): <descripci
 
 ## PR 3c — Enmienda: circuit breaker de Redis (T14)
 
-### [ ] T14 — Circuit breaker de Redis
+### [x] T14 — Circuit breaker de Redis
+> **Nota (2026-09-30):** RED real (`ModuleNotFoundError` y, para la integración, ejecutada con `REDIS_CIRCUIT_OPEN_SECONDS=0`: **19** intentos contra Redis en una sola búsqueda, frente a **1** con el circuito para dos búsquedas). `RedisCircuitBreaker.call(op)` y `redis_unavailable(logger, op, exc)` (`WARNING` si es un fallo real, `DEBUG` si es el circuito abierto). Los 4 repositorios pasan sus operaciones por el circuito; sin circuito usan uno desactivado (`open_seconds=0`), así que los tests anteriores no cambiaron: **ningún recuento de `WARNING` de T3, T4 y T8 tuvo que ajustarse**. `.env.example`: el usuario añadió `REDIS_CIRCUIT_OPEN_SECONDS` a mano. Simplificación aceptada: con el circuito medio abierto, varias operaciones concurrentes pueden sondear a la vez (cada una acotada por el timeout).
+>
+> **Verificación manual (2026-09-30T11:42–11:44Z)**, Docker 29.6.2, token sintético. **Desviación aprobada por el usuario:** el Redis del compose era nuevo, así que hubo que resolver `28001` otra vez (**1 creación de destino**, ~1,5 h después de la anterior). 13 peticiones reales, ningún challenge.
+> 1. `28001` + `agua` con Redis → `200`, `warehouse: "11"`, 3,0 s.
+> 2. `docker compose stop redis`; `28001` + `pan` → `200` en **1,1 s** (T13: 9,0 s), `WARNING redis circuit open for 10s after ConnectionError` + un único `WARNING redis unavailable op=cache.get`; `28001` + `arroz` 2 s después → `200` en **0,86 s**, sin ninguna línea de Redis. `/health` → `200` en 10 ms.
+> 3. `docker compose start redis` y 12 s de espera: `28001` + `leche` → `200`, `INFO redis circuit closed: redis answered again`, y `search:11:leche` en Redis.
+> 4. Logs: **0** `Future exception was never retrieved` (T13: 3 por búsqueda), 0 apariciones del token. Todo parado y borrado del scratchpad.
+>
+> **Matiz:** esta vez el primer fallo fue un `ConnectionError` inmediato, no la espera de DNS de T13 (depende de la red de Docker en cada momento). Si el DNS tarda, la primera operación sí esperará sus 2 s, y puede aparecer un `gaierror` de asyncio; pero solo **uno por ventana de 10 s**, no uno por operación.
 - **RED:**
   - `tests/core/test_config.py`: `REDIS_CIRCUIT_OPEN_SECONDS` por defecto `10`; `0` válido (desactiva); `-1` → `ValidationError`. Añadirla a `OPTIONAL`.
   - `tests/services/test_redis_circuit.py` (reloj falso): cerrado → ejecuta; un `RedisError` → abre, `WARNING` una vez y relanza; abierto → `RedisCircuitOpenError` sin ejecutar la operación; pasado el periodo → prueba: éxito cierra (`INFO`), fallo reabre; `0` → nunca abre.

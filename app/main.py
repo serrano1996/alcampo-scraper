@@ -21,6 +21,7 @@ from app.scrapers.alcampo_session import AlcampoSessionClient
 from app.scrapers.http_client import create_http_client
 from app.services.in_flight import InFlightSearches
 from app.services.rate_limiter import LocalRateLimiter, OutboundRateLimiter
+from app.services.redis_circuit import RedisCircuitBreaker
 from app.services.region_repository import RegionMemory, RegionRepository
 from app.services.region_service import REGION_RESOLUTIONS_KEY, RegionService
 from app.services.region_sessions import RegionSessions
@@ -55,18 +56,25 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # built once per process, never per request: the in-flight registries, the
     # local fallbacks (spec 007 RF-15) and the sessions must outlive each search.
     app.state.in_flight = InFlightSearches()
+    # One circuit for every Redis-backed repository (spec 007 RF-18, spec-D11).
+    circuit = RedisCircuitBreaker(open_seconds=settings.redis_circuit_open_seconds)
+    app.state.redis_circuit = circuit
     app.state.rate_limiter = OutboundRateLimiter(
         redis_client,
         limit=settings.alcampo_rate_limit,
         window_seconds=settings.alcampo_rate_window_seconds,
         fallback=LocalRateLimiter(),
+        circuit=circuit,
     )
-    app.state.cooldown = WafCooldownRepository(redis_client, fallback=LocalCooldown())
+    app.state.cooldown = WafCooldownRepository(
+        redis_client, fallback=LocalCooldown(), circuit=circuit
+    )
     regions = RegionRepository(
         redis_client,
         memory=RegionMemory(),
         ttl_seconds=settings.region_cache_ttl_seconds,
         negative_ttl_seconds=settings.region_negative_cache_ttl_seconds,
+        circuit=circuit,
     )
 
     def new_session() -> AlcampoSessionClient:
@@ -92,6 +100,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             window_seconds=settings.region_resolution_window_seconds,
             key=REGION_RESOLUTIONS_KEY,
             fallback=LocalRateLimiter(),
+            circuit=circuit,
         ),
         cooldown=app.state.cooldown,
         in_flight=InFlightSearches(),
