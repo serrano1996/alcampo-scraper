@@ -98,7 +98,8 @@ Formato de commit: `<tipo>(007-alcampo-scraper-warehouse-resolution): <descripci
 - **Depende:** T3
 - **RF:** RF-3, RF-4 (cache), RF-15
 
-### [ ] T9 — `RegionService`
+### [x] T9 — `RegionService`
+> **Nota (2026-09-30):** RED real (`ImportError` de `RegionResolutionLimitedError` y del módulo). **Concreción de plan-D4/D5:** la sesión que resuelve una región **nueva** se entrega a `RegionSessions.adopt(region, destino, sesión)`, que la confirma (pasos 6–7 + comprobación) y se queda con ella; así se ahorra un `GET /`. Si la región ya era conocida, la sesión se cierra. El servicio depende de protocolos (`ChainSession`, `SessionRegistry`, `ResolutionLimiter`); `adopt` real llega en T10. Casos añadidos al plan: una región **olvidada** (destino caducado, plan-D6) con el CP aún en cache se vuelve a resolver; la sesión se cierra en todos los caminos de error. El límite de resoluciones se convierte en `RegionResolutionLimitedError` (familia `UpstreamThrottledError`: `WARNING` y `502`). Test de tiempo máximo con red de seguridad de 2 s. Corregido antes de GREEN: dos tests parcheaban el atributo privado `_new_session`; ahora el doble tiene una "puerta" (`Harness.gate`). **Fin del PR 2b.**
 - **RED:** `tests/services/test_region_service.py` con un `AlcampoSessionClient` falso y un `RegionSessions` falso:
   - CP en cache → región sin ninguna petición; `INFO source=cache`;
   - CP nuevo en región nueva → pasos 0–5, límite de resoluciones adquirido **una vez, justo antes del paso 4**, confirmación de sesión, registros guardados; `source=resolved`;

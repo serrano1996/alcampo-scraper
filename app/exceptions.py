@@ -63,3 +63,12 @@ class PostalCodeNotServedError(AlcampoScraperError):
     def __init__(self, postal_code: str) -> None:
         super().__init__(postal_code)
         self.postal_code = postal_code
+
+
+class RegionResolutionLimitedError(UpstreamThrottledError):
+    """Raised when resolving a new postal code would exceed its own strict limit.
+
+    Creating a delivery destination is the step Alcampo's WAF punishes (Fase 0
+    §5), so new resolutions have a limit of their own, stricter than the global
+    one (spec 007 RF-8). A foreseen degradation: WARNING and the standard 502.
+    """
