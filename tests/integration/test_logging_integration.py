@@ -1,8 +1,10 @@
 import logging
 import re
+from collections.abc import AsyncIterator
 
 import httpx
 import pytest
+from fastapi.responses import StreamingResponse
 from fastapi.testclient import TestClient
 
 from app.main import create_app
@@ -168,3 +170,39 @@ def test_client_input_cannot_forge_log_lines(
     [handler_error] = [r for r in app_records(caplog) if r.name == "app.main"]
     # The newline must appear escaped (backslash + n), never as a real line break.
     assert r"leche\nERROR fake injected" in handler_error.getMessage()
+
+
+def test_a_streamed_response_is_finished_only_after_its_body(
+    integration_env: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    # spec 006 RF-5: BaseHTTPMiddleware logged "request finished" when the
+    # response started, before a streamed body was sent; the ASGI middleware
+    # logs it once the body is done, with the same request id throughout.
+    caplog.set_level(logging.INFO)
+    app = create_app()
+    body_logger = logging.getLogger("app.test_stream")
+
+    async def chunks() -> AsyncIterator[bytes]:
+        yield b"first "
+        body_logger.info("streaming the second chunk")
+        yield b"second"
+
+    @app.get("/stream")
+    async def stream() -> StreamingResponse:
+        return StreamingResponse(chunks(), media_type="text/plain")
+
+    with TestClient(app) as client:
+        response = client.get("/stream")
+
+    assert response.text == "first second"
+    request_id = response.headers["X-Request-ID"]
+    lines = [
+        r.getMessage()
+        for r in caplog.records
+        if r.name in {"app.test_stream", "app.middleware.request_context"}
+    ]
+    assert lines.index("streaming the second chunk") < next(
+        i for i, line in enumerate(lines) if line.startswith("request finished")
+    )
+    ours = [r for r in caplog.records if r.name == "app.test_stream"]
+    assert [r.request_id for r in ours] == [request_id]

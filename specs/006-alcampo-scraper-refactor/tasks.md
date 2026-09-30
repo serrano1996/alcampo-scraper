@@ -29,7 +29,8 @@
 - **Regresión:** 12 usos de `client.app.state.*` en tests → `resources(client.app).*`.
 - **RF:** RF-1, RF-2, RF-7
 
-### [ ] T4 — Middleware ASGI puro
+### [x] T4 — Middleware ASGI puro
+> **Nota:** el RED previsto (cabecera en streaming) no era posible: `BaseHTTPMiddleware` ya la añadía. El defecto real era otro, y es el RED que se usó: registraba `request finished` al **empezar** la respuesta, antes de enviar un cuerpo en streaming (`["request started", "request finished", "streaming the second chunk"]`), con una duración que no incluía el cuerpo. Con el middleware ASGI puro, la línea de fin sale cuando la respuesta ha terminado, y los logs del cuerpo llevan el mismo request id. Si una excepción llega con la respuesta ya empezada, se relanza (no se puede convertir en `500`). **Red de seguridad:** 397 tests en verde; `git diff` de `tests/`: 38 líneas añadidas y **0 eliminadas**, ninguna aserción existente cambió.
 - **RED:** test nuevo: una respuesta en streaming lleva `X-Request-ID` y sus dos líneas de log con el mismo id.
 - **GREEN:** `RequestContextMiddleware` como ASGI puro (plan-D2).
 - **Red de seguridad:** toda la suite de las specs 003/004 **sin cambiar aserciones**.
