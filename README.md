@@ -4,7 +4,7 @@ API REST asíncrona (FastAPI) que extrae, procesa y sirve datos de productos de
 [Alcampo online](https://www.compraonline.alcampo.es). Ofrece el mismo contrato que
 `mercadona-scraper` para poder comparar ambos supermercados sin adaptar el consumidor.
 
-> Estado: implementadas `specs/001-alcampo-scraper-mvp` (MVP de búsqueda), `specs/002-alcampo-scraper-antibaneo` (medidas antibaneo), `specs/003-alcampo-scraper-logging` (logging), `specs/004-alcampo-scraper-authentication` (autenticación), `specs/005-alcampo-scraper-dockerization` (Docker), `specs/007-alcampo-scraper-warehouse-resolution` (región por código postal y Redis degradado) y `specs/008-alcampo-scraper-outbound-protection` (protección de salida hacia Alcampo). La spec 006 está pendiente. Ver [limitaciones conocidas](#limitaciones-conocidas).
+> Estado: implementadas `specs/001-alcampo-scraper-mvp` (MVP de búsqueda), `specs/002-alcampo-scraper-antibaneo` (medidas antibaneo), `specs/003-alcampo-scraper-logging` (logging), `specs/004-alcampo-scraper-authentication` (autenticación), `specs/005-alcampo-scraper-dockerization` (Docker), `specs/006-alcampo-scraper-refactor` (refactor y calidad), `specs/007-alcampo-scraper-warehouse-resolution` (región por código postal y Redis degradado) y `specs/008-alcampo-scraper-outbound-protection` (protección de salida hacia Alcampo). Ver [limitaciones conocidas](#limitaciones-conocidas).
 
 ## Puesta en marcha
 
@@ -42,7 +42,12 @@ Solo la imagen: `docker build -t alcampo-scraper .` y `docker run -p 8000:8000 -
 ```bash
 pytest                          # los tests nunca llaman a Alcampo real (respx + fakeredis)
 ruff check . && ruff format .   # obligatorio antes de cada commit
+mypy                            # tipos, estricto, sobre app/ (obligatorio antes de cada commit)
 ```
+
+- **Warnings = errores:** la suite falla ante cualquier warning (`filterwarnings = error`), así una deprecación se ve el día que aparece. Hoy no hay ninguna excepción.
+- **Versiones acotadas:** cada dependencia tiene límite superior de versión mayor (`<1` para las `0.x`); subir una versión mayor es una decisión explícita.
+- **CI:** `.github/workflows/ci.yml` ejecuta en cada push y pull request, con Python 3.11, `ruff check`, `ruff format --check`, `mypy`, `pytest -q` y `docker build`. **Aún no se ha ejecutado en GitHub** (el repositorio no tiene remoto): sus comandos se validan en local.
 
 ## Uso del endpoint
 
@@ -195,7 +200,7 @@ En local, uvicorn sigue emitiendo su propio access log, sin request id (se desac
 - Autenticación de servicio a servicio con un secreto compartido: sin cuentas de usuario, OAuth2/JWT ni cuotas por token (fuera de alcance en la spec 004).
 - Logs solo en texto plano: sin JSON ni integración con plataformas de observabilidad (fuera de alcance en la spec 003).
 - **Imagen Docker no reproducible al 100 %:** `pyproject.toml` no fija versiones (no hay lockfile), así que dos builds en fechas distintas pueden instalar versiones distintas de las dependencias.
-- Docker sin orquestador: `Dockerfile` y `docker-compose.yml` locales, sin Kubernetes, CI/CD ni publicación en un registry (fuera de alcance en la spec 005).
+- Docker sin orquestador: `Dockerfile` y `docker-compose.yml` locales, sin Kubernetes ni publicación en un registry. Hay CI (spec 006), pero no despliegue continuo.
 - El enfriamiento no supera el bloqueo del WAF, solo evita insistir. Si el bloqueo dura más que el enfriamiento aplicado, la siguiente búsqueda recibe otro challenge y el enfriamiento se duplica (hasta `WAF_COOLDOWN_MAX_SECONDS`).
 - **El límite de peticiones no conoce el umbral real del WAF** (la Fase 0 vio los bloqueos en otro endpoint). Si da `502` innecesarios o no evita bloqueos, ajústalo con los `WARNING` y las líneas `source=` de los logs.
 - **Las búsquedas iguales solo se agrupan dentro de cada proceso.** Con varias instancias, cada una puede hacer su propia petición; las protege el límite global. Las líneas de log de una búsqueda compartida (reintentos, challenge) llevan el request id de la **primera** petición del grupo.

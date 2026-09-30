@@ -1,6 +1,6 @@
 # Tasks 006 — Refactor y calidad
 
-- **Estado:** aprobado (2026-09-30) por instrucción del usuario ("termina lo que queda ya"): se implementa seguido, un commit local por tarea (sin push)
+- **Estado:** completada (2026-09-30): T1–T7, aprobada por instrucción del usuario ("termina lo que queda ya"), un commit local por tarea (sin push)
 - **Spec:** [spec.md](spec.md) · **Plan:** [plan.md](plan.md)
 - **Entrega:** un solo PR.
 
@@ -48,7 +48,8 @@
 - **GREEN:** `.github/workflows/ci.yml` (plan-D5).
 - **RF:** RF-9
 
-### [ ] T7 — Docs y comprobaciones finales
+### [x] T7 — Docs y comprobaciones finales
+> **Nota:** sin RED posible (documentación). README: "Estado" con la 006, sección Desarrollo (`mypy`, warnings como errores, versiones acotadas, CI y que aún no se ha ejecutado en GitHub) y la limitación de Docker (ya hay CI). **RF-7:** `grep` de docstrings desfasados (`spec 006`, `BaseHTTPMiddleware`, `app.state.*`, `DEFAULT_WAREHOUSE`): las menciones que quedan describen el código actual. **RF-8:** el README ya describe los 5 dígitos y el `422` desde la 007.
 - **GREEN:** README (sección Desarrollo: `mypy` y CI); comprobar RF-7 (sin docstrings desfasados: `grep`) y RF-8 (README de `postal_code`, ya correcto desde la 007).
 - **RF:** RF-7, RF-8, RNF-3
 
