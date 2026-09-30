@@ -36,7 +36,8 @@
 - **Red de seguridad:** toda la suite de las specs 003/004 **sin cambiar aserciones**.
 - **RF:** RF-5, RF-6
 
-### [ ] T5 — Dependencias y warnings
+### [x] T5 — Dependencias y warnings
+> **Nota:** RED real (15 fallos: 13 dependencias sin límite superior, `filterwarnings` ausente y `httpx2` no declarado). Límites según plan-D4 sobre las versiones instaladas; `pip install -e ".[dev]"` resuelve sin conflictos. Con `httpx2` desaparece el `StarletteDeprecationWarning`, y con `filterwarnings = ["error"]` la suite pasa (413) **sin ninguna excepción documentada**, porque no queda ningún warning.
 - **RED:** `tests/test_package.py`: toda dependencia (y extra `dev`) tiene límite superior; `pytest` está configurado con `filterwarnings = ["error"]`.
 - **GREEN:** límites (plan-D4), `httpx2` en `dev`, `filterwarnings`.
 - **RF:** RF-10, RF-11, RF-12

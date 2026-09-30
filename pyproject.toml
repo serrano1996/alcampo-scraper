@@ -4,24 +4,28 @@ version = "0.1.0"
 description = "Async REST API that scrapes, processes and serves Alcampo product data."
 readme = "README.md"
 requires-python = ">=3.11"
+# Upper bound at the next major version (for 0.x packages, <1): a new major
+# must be a decision, not a surprise in the next build (spec 006 RF-10).
 dependencies = [
-    "fastapi",
-    "pydantic>=2",
-    "pydantic-settings",
-    "httpx",
-    "redis",
-    "uvicorn[standard]",
+    "fastapi>=0.141,<1",
+    "pydantic>=2,<3",
+    "pydantic-settings>=2,<3",
+    "httpx>=0.28,<1",
+    "redis>=8,<9",
+    "uvicorn[standard]>=0.53,<1",
 ]
 
 [project.optional-dependencies]
 dev = [
-    "pytest",
-    "pytest-asyncio",
-    "pytest-cov",
-    "respx",
-    "fakeredis",
-    "ruff",
-    "mypy",
+    "pytest>=9,<10",
+    "pytest-asyncio>=1,<2",
+    "pytest-cov>=7,<8",
+    "respx>=0.23,<1",
+    "fakeredis>=2,<3",
+    "ruff>=0.16,<1",
+    "mypy>=2,<3",
+    # Starlette's test client uses it and warns with plain httpx (spec 006 RF-12).
+    "httpx2>=2,<3",
 ]
 
 [build-system]
@@ -45,6 +49,9 @@ select = ["E", "F", "W", "I", "B", "UP", "ANN", "ASYNC", "RUF"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
+# Any warning fails the suite: a deprecation is caught the day it appears
+# (spec 006 RF-11). No exceptions are needed today.
+filterwarnings = ["error"]
 
 # Strict type checking of the application code (spec 006 RF-3, spec-D1).
 [tool.mypy]
