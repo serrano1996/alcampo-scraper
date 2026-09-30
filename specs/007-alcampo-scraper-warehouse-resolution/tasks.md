@@ -140,7 +140,8 @@ Formato de commit: `<tipo>(007-alcampo-scraper-warehouse-resolution): <descripci
 - **Depende:** T10
 - **RF:** RF-9, RF-12, RF-13
 
-### [ ] T12 — Integración transversal
+### [x] T12 — Integración transversal
+> **Nota (2026-09-30):** 6 tests (8 casos) en `tests/integration/test_region_resolution.py` con un **Alcampo falso con estado** (`FakeAlcampo`): una región por cookie de sesión, `activate` la mueve, el HTML muestra la de cada sesión y cada búsqueda anota la región de la sesión con la que llegó. Así se comprueba que `28001` y `35001` se buscan **cada uno en su región** (no solo que `warehouse` sea distinto). **Hueco encontrado y corregido (GREEN):** el fake generaba el JSON con espacios (`"csrf": {"token": …}`) y la extracción del HTML exigía la forma compacta, así que todo daba `502`. El HTML real es compacto (la verificación en vivo lo extrajo), pero un cambio de serializador en Alcampo habría tumbado todas las confirmaciones de sesión (riesgo R1): las expresiones admiten ahora espacios, con un test unitario nuevo en `test_alcampo_session.py` (RED → GREEN). **Mutaciones:** sin la comprobación de región tras confirmar → falla `test_a_session_that_lands_in_another_region_is_never_used` (solo el unitario: el fake siempre deja la sesión en la región pedida); límite de resoluciones al principio de la cadena → fallan los tests de T9 de orden y de "no consume cupo". Restaurado. El límite global se desactiva en estos tests (`ALCAMPO_RATE_LIMIT=0`): lo cubre la 008 y aquí se cuentan llamadas de la cadena.
 - **RED:** `tests/integration/test_region_resolution.py`:
   - `28001` (región `5`) y `35001` (región `32`) → `warehouse` distinto y claves `search:5:agua` y `search:32:agua`;
   - repetir `35001` → 0 peticiones de cadena; otro CP de la región 32 → pasos 0–5, sin confirmación nueva;

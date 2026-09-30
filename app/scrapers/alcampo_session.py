@@ -51,11 +51,13 @@ ACTIVE_PATH = "/api/customersessions/v2/sessions/active"
 
 # Fragments of the server-side state embedded in the home page. Each must yield
 # exactly one distinct value; anything else means the page changed (RF-5).
+# Whitespace around `:` and `{` is tolerated: the page embeds compact JSON today,
+# and a serializer change must not take every region session down (plan R1).
 _HOME_PATTERNS = {
-    "csrf_token": re.compile(r'"csrf":\{"token":"([^"]+)"'),
-    "visitor_id": re.compile(r'"visitorId":"([^"]+)"'),
-    "region_id": re.compile(r'"regionId":"([0-9a-f-]{36})"'),
-    "retailer_region_id": re.compile(r'"retailerRegionId":"?([0-9A-Za-z-]+)"?'),
+    "csrf_token": re.compile(r'"csrf"\s*:\s*\{\s*"token"\s*:\s*"([^"]+)"'),
+    "visitor_id": re.compile(r'"visitorId"\s*:\s*"([^"]+)"'),
+    "region_id": re.compile(r'"regionId"\s*:\s*"([0-9a-f-]{36})"'),
+    "retailer_region_id": re.compile(r'"retailerRegionId"\s*:\s*"?([0-9A-Za-z-]+)"?'),
 }
 
 _DESTINATION_ID = TypeAdapter(Annotated[str, StringConstraints(min_length=1)])

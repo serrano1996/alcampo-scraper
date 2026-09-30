@@ -118,6 +118,24 @@ async def test_open_accepts_an_unquoted_retailer_region_id(http: httpx.AsyncClie
     assert (home.region_id, home.retailer_region_id) == (TELDE, "32")
 
 
+@respx.mock
+async def test_open_tolerates_whitespace_in_the_embedded_state(http: httpx.AsyncClient) -> None:
+    # Today the page embeds compact JSON; a serializer change that adds spaces
+    # must not take every region session down (plan R1).
+    spaced = (
+        '<script>window.__INITIAL_STATE__={"session": {"csrf": {"token": "test-csrf-token-0001"},'
+        ' "metadata": {"visitorId": "test-visitor-id-0001"}}, "region": {"regionId": '
+        f'"{VAGUADA}", "retailerRegionId": "5"}}}};</script>'
+    )
+    respx.get(f"{BASE}/").mock(return_value=httpx.Response(200, html=spaced))
+    session = AlcampoSessionClient(client=http, settings=settings(), rate_limiter=limiter())
+
+    home = await session.open()
+
+    assert (home.region_id, home.retailer_region_id) == (VAGUADA, "5")
+    assert session.home.csrf_token == CSRF
+
+
 @pytest.mark.parametrize(
     "html",
     [
