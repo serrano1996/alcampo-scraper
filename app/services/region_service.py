@@ -28,6 +28,7 @@ from app.exceptions import (
 from app.models.alcampo import AlcampoAreaDetails
 from app.services.in_flight import InFlightSearches
 from app.services.region_repository import NOT_SERVED, Region, RegionRepository
+from app.services.region_sessions import RegionSession
 
 DELIVERABLE = "DELIVERABLE"
 # Its own window, separate from the global one (spec 007 RF-8, plan-D3).
@@ -36,16 +37,19 @@ REGION_RESOLUTIONS_KEY = "ratelimit:alcampo:region-resolutions"
 logger = logging.getLogger(__name__)
 
 
-class ChainSession(Protocol):
-    """The part of `AlcampoSessionClient` used to resolve a postal code."""
+class ChainSession(RegionSession, Protocol):
+    """The part of `AlcampoSessionClient` used to resolve a postal code.
 
-    async def open(self) -> object: ...
+    It extends `RegionSession`: the session that resolves a new region is
+    handed to `RegionSessions.adopt`, which confirms it (steps 6-7).
+    """
+
+    # open() and aclose() come from RegionSession.
     async def find_area(self, postal_code: str) -> str | None: ...
     async def area_details(self, area_id: str) -> AlcampoAreaDetails: ...
     async def deliverability(self, area: AlcampoAreaDetails) -> str: ...
     async def create_destination(self, area: AlcampoAreaDetails) -> str: ...
     async def delivery_address(self, destination_id: str) -> str: ...
-    async def aclose(self) -> None: ...
 
 
 class SessionRegistry(Protocol):

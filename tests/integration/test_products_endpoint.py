@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 import httpx
 from fastapi.testclient import TestClient
 
+from app.core.state import resources
 from app.main import create_app
 from app.models.product import ProductSearchResponse, SearchMetadata
 from tests.integration.conftest import (
@@ -50,7 +51,7 @@ async def test_blank_term_returns_422_without_touching_alcampo_or_redis(
 
     assert response.status_code == 422
     assert route.call_count == 0
-    assert await client.app.state.redis.dbsize() == 0
+    assert await resources(client.app).redis.dbsize() == 0
 
 
 async def test_persistent_5xx_returns_502_after_retry_max_attempts_calls(
@@ -61,10 +62,10 @@ async def test_persistent_5xx_returns_502_after_retry_max_attempts_calls(
     response = client.get("/api/v1/products", params={"postal_code": "28001", "term": "leche"})
 
     assert response.status_code == 502
-    assert route.call_count == client.app.state.settings.retry_max_attempts
+    assert route.call_count == resources(client.app).settings.retry_max_attempts
     # Nothing cached. Not dbsize() == 0: the outbound rate limiter now keeps
     # its own key for every request sent (spec 008 T5).
-    assert await client.app.state.redis.keys("search:*") == []
+    assert await resources(client.app).redis.keys("search:*") == []
 
 
 async def test_alcampo_404_returns_502_with_a_single_call(client: TestClient, respx_mock) -> None:
@@ -76,7 +77,7 @@ async def test_alcampo_404_returns_502_with_a_single_call(client: TestClient, re
     assert route.call_count == 1
     # Nothing cached. Not dbsize() == 0: the outbound rate limiter now keeps
     # its own key for every request sent (spec 008 T5).
-    assert await client.app.state.redis.keys("search:*") == []
+    assert await resources(client.app).redis.keys("search:*") == []
 
 
 async def test_waf_challenge_returns_502_with_a_single_call(client: TestClient, respx_mock) -> None:
@@ -88,7 +89,7 @@ async def test_waf_challenge_returns_502_with_a_single_call(client: TestClient, 
 
     assert response.status_code == 502
     assert route.call_count == 1
-    redis = client.app.state.redis
+    redis = resources(client.app).redis
     assert await redis.keys("search:*") == []
     assert await redis.exists("waf:cooldown") == 1
 
@@ -141,7 +142,7 @@ async def test_exhausted_rate_limit_rejects_new_searches_but_serves_the_cache(
     integration_env.setenv("ALCAMPO_RATE_LIMIT", "1")
     route = mock_alcampo_search(respx_mock, json_body=load_fixture("alcampo_search_leche.json"))
     with TestClient(create_app(), headers={"X-API-Key": TEST_API_KEY}) as client:
-        redis = client.app.state.redis
+        redis = resources(client.app).redis
         await seed_region(redis)
         await redis.set("search:5:leche", CACHED_LECHE.model_dump_json(), ex=3600)
         await redis.zadd("ratelimit:alcampo", {"someone-else": time.time()})
@@ -199,4 +200,4 @@ async def test_invalid_postal_code_returns_422_without_touching_alcampo_or_redis
 
     assert response.status_code == 422
     assert route.call_count == 0
-    assert await client.app.state.redis.dbsize() == 0
+    assert await resources(client.app).redis.dbsize() == 0

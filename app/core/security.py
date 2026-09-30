@@ -7,6 +7,8 @@ from typing import Annotated
 from fastapi import HTTPException, Request, Security
 from fastapi.security import APIKeyHeader
 
+from app.core.state import resources
+
 API_KEY_HEADER = "X-API-Key"
 UNAUTHORIZED_DETAIL = "Invalid or missing API key"
 
@@ -44,7 +46,7 @@ def require_api_key(
     never touches the cache, the WAF cooldown or Alcampo (verified, plan §2).
     Keys come from the settings stored by the lifespan (plan-D5).
     """
-    if not is_valid_api_key(api_key, request.app.state.settings.api_keys):
+    if not is_valid_api_key(api_key, resources(request.app).settings.api_keys):
         # Never the received value, valid or not (spec 004 RF-10, RF-12, plan-D8).
         logger.warning(
             "rejected request: API key reason=%s path=%r",

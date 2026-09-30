@@ -11,6 +11,7 @@ from fastapi.responses import JSONResponse
 from app.api.v1.products import router as products_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
+from app.core.state import AppResources
 from app.exceptions import (
     PostalCodeNotServedError,
     UpstreamThrottledError,
@@ -49,26 +50,20 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         # Fail closed, but loudly: otherwise "everything returns 401" is a mystery
         # after a deploy (spec 004 RF-8, RF-9, plan-D6).
         logger.warning("no API_KEYS configured: every request to /api/v1 will be rejected")
-    app.state.settings = settings
     redis_client = create_redis(settings.redis_url, timeout_seconds=settings.redis_timeout_seconds)
-    app.state.redis = redis_client
     # Everything below keeps its state in Redis or in process memory, so it is
     # built once per process, never per request: the in-flight registries, the
     # local fallbacks (spec 007 RF-15) and the sessions must outlive each search.
-    app.state.in_flight = InFlightSearches()
     # One circuit for every Redis-backed repository (spec 007 RF-18, spec-D11).
     circuit = RedisCircuitBreaker(open_seconds=settings.redis_circuit_open_seconds)
-    app.state.redis_circuit = circuit
-    app.state.rate_limiter = OutboundRateLimiter(
+    rate_limiter = OutboundRateLimiter(
         redis_client,
         limit=settings.alcampo_rate_limit,
         window_seconds=settings.alcampo_rate_window_seconds,
         fallback=LocalRateLimiter(),
         circuit=circuit,
     )
-    app.state.cooldown = WafCooldownRepository(
-        redis_client, fallback=LocalCooldown(), circuit=circuit
-    )
+    cooldown = WafCooldownRepository(redis_client, fallback=LocalCooldown(), circuit=circuit)
     regions = RegionRepository(
         redis_client,
         memory=RegionMemory(),
@@ -82,18 +77,18 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         return AlcampoSessionClient(
             client=create_http_client(settings),
             settings=settings,
-            rate_limiter=app.state.rate_limiter,
+            rate_limiter=rate_limiter,
         )
 
-    app.state.region_sessions = RegionSessions(
+    region_sessions = RegionSessions(
         new_session=new_session,
         repository=regions,
         max_age_seconds=settings.session_max_age_seconds,
     )
-    app.state.region_service = RegionService(
+    region_service = RegionService(
         repository=regions,
         new_session=new_session,
-        sessions=app.state.region_sessions,
+        sessions=region_sessions,
         resolution_limiter=OutboundRateLimiter(
             redis_client,
             limit=settings.region_resolution_limit,
@@ -102,14 +97,25 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             fallback=LocalRateLimiter(),
             circuit=circuit,
         ),
-        cooldown=app.state.cooldown,
+        cooldown=cooldown,
         in_flight=InFlightSearches(),
         settings=settings,
+    )
+    # One typed object instead of loose attributes (spec 006 RF-1, plan-D1).
+    app.state.resources = AppResources(
+        settings=settings,
+        redis=redis_client,
+        redis_circuit=circuit,
+        rate_limiter=rate_limiter,
+        cooldown=cooldown,
+        in_flight=InFlightSearches(),
+        region_sessions=region_sessions,
+        region_service=region_service,
     )
     try:
         yield
     finally:
-        await app.state.region_sessions.aclose()
+        await region_sessions.aclose()
         await redis_client.aclose()
 
 

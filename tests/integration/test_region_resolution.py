@@ -19,6 +19,7 @@ import pytest
 import respx
 from fastapi.testclient import TestClient
 
+from app.core.state import resources
 from app.main import create_app
 from tests.integration.conftest import (
     ALCAMPO_BASE_URL,
@@ -184,7 +185,7 @@ async def test_each_postal_code_is_searched_in_its_own_region(
     assert madrid.json()["search"]["warehouse"] == "5"
     assert canarias.json()["search"]["warehouse"] == "32"
     assert alcampo.search_regions == ["5", "32"]  # the session really was in each region
-    redis = app_client.app.state.redis
+    redis = resources(app_client.app).redis
     assert sorted(await redis.keys("search:*")) == [b"search:32:agua", b"search:5:agua"]
 
 
@@ -242,7 +243,7 @@ async def test_a_waf_challenge_while_resolving_starts_the_cooldown(
     response = search(app_client, "35001")
 
     assert response.status_code == 502
-    redis = app_client.app.state.redis
+    redis = resources(app_client.app).redis
     assert await redis.exists("waf:cooldown") == 1
     assert await redis.exists("postal-code-region:35001") == 0
     assert alcampo.calls["search"] == 0

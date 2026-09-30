@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 import pytest
 from fastapi.testclient import TestClient
 
+from app.core.state import resources
 from app.main import create_app
 from app.models.product import ProductSearchResponse, SearchMetadata
 from tests.integration.conftest import TEST_API_KEY, load_fixture, mock_alcampo_search
@@ -149,7 +150,7 @@ async def test_rejection_happens_before_cache_cooldown_and_alcampo(
     anon_client: TestClient, respx_mock
 ) -> None:
     route = mock_alcampo_search(respx_mock, json_body=load_fixture("alcampo_search_leche.json"))
-    redis = anon_client.app.state.redis
+    redis = resources(anon_client.app).redis
     await redis.set("search:5:leche", CACHED_RESPONSE.model_dump_json())
     await redis.set("waf:cooldown", "1")
 

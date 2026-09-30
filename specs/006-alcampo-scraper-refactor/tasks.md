@@ -22,7 +22,8 @@
 - **GREEN:** `AGENTS.md` (comandos y proceso) y `docs/constitution.md` (principio 8 y proceso).
 - **RF:** RF-4
 
-### [ ] T3 — `AppResources` tipado
+### [x] T3 — `AppResources` tipado
+> **Nota:** RED real (`ModuleNotFoundError: app.core.state`). `lifespan` guarda un `AppResources` (dataclass congelada) en `app.state.resources`; `resources(app)` es el único lector de `app.state` y falla con `RuntimeError` fuera del `lifespan`. `security.py` y `dependencies.py` lo usan; docstring de `dependencies.py` corregido (RF-7). 12 usos en tests pasan a `resources(client.app).*` sin cambiar aserciones. **Mutación:** `res.redsi` → `mypy`: `"AppResources" has no attribute "redsi"; maybe "redis"?` (antes solo fallaba en ejecución). **Hallazgo de `mypy` al tipar el cableado:** `RegionService` declaraba entregar a `adopt` una `ChainSession` (solo pasos 0–5), pero `RegionSessions.adopt` usa `propose`, `activate` y `client`; funcionaba porque el objeto real los tiene. `ChainSession` extiende ahora `RegionSession`.
 - **RED:** `tests/core/test_state.py`: `resources(app)` devuelve el `AppResources` del `lifespan` con todos sus campos; sin `lifespan`, error claro.
 - **GREEN:** `app/core/state.py`; `lifespan` y `get_product_service` lo usan; docstring de `dependencies.py` actualizado (RF-7).
 - **Regresión:** 12 usos de `client.app.state.*` en tests → `resources(client.app).*`.

@@ -7,6 +7,7 @@ from collections.abc import Iterator
 import pytest
 from fastapi.testclient import TestClient
 
+from app.core.state import resources
 from app.main import create_app
 from app.services.rate_limiter import RATE_LIMIT_KEY
 from app.services.waf_cooldown import WAF_COOLDOWN_KEY, WAF_COOLDOWN_LAST_KEY
@@ -31,7 +32,7 @@ async def test_cooldown_is_checked_before_the_rate_limit(
     limited_client: TestClient, respx_mock, caplog: pytest.LogCaptureFixture
 ) -> None:
     route = mock_alcampo_search(respx_mock, json_body=load_fixture("alcampo_search_leche.json"))
-    redis = limited_client.app.state.redis
+    redis = resources(limited_client.app).redis
     await redis.set(WAF_COOLDOWN_KEY, "1", ex=180)
     await redis.zadd(RATE_LIMIT_KEY, {"someone-else": time.time()})  # limit exhausted too
 
@@ -64,7 +65,7 @@ async def test_a_recent_second_challenge_doubles_the_cooldown(
     client: TestClient, respx_mock, caplog: pytest.LogCaptureFixture
 ) -> None:
     mock_alcampo_search(respx_mock, status_code=202, headers={"x-amzn-waf-action": "challenge"})
-    redis = client.app.state.redis
+    redis = resources(client.app).redis
 
     first = client.get("/api/v1/products", params=SEARCH)
     await redis.delete(WAF_COOLDOWN_KEY)  # cooldown over, but the challenge is still recent
