@@ -17,7 +17,8 @@
 - **GREEN:** `[tool.mypy]` y `[tool.pydantic-mypy]` en `pyproject.toml`; `mypy` en `dev`; corregir los 6 errores con tipos (sin `# type: ignore`).
 - **RF:** RF-3
 
-### [ ] T2 — `mypy` en el cierre de cada tarea
+### [x] T2 — `mypy` en el cierre de cada tarea
+> **Nota:** sin RED posible (solo documentación). `AGENTS.md`: comando `mypy` y cierre de tarea; constitución, principio 8 ("Lint y tipos").
 - **GREEN:** `AGENTS.md` (comandos y proceso) y `docs/constitution.md` (principio 8 y proceso).
 - **RF:** RF-4
 

@@ -13,6 +13,7 @@ pip install -e ".[dev]"          # instalar
 uvicorn app.main:app --reload    # arrancar en local (http://127.0.0.1:8000/docs)
 pytest                           # tests (nunca llaman a Alcampo real)
 ruff check . && ruff format .    # lint + formato (obligatorio antes de cada commit)
+mypy                             # tipos, estricto, sobre app/ (obligatorio antes de cada commit)
 docker compose up --build        # API + Redis en contenedores (necesita .env)
 docker compose down              # parar y borrar los contenedores
 ```
@@ -26,6 +27,6 @@ docker compose down              # parar y borrar los contenedores
 
 - SDD estricto: `specs/NNN-alcampo-scraper-<nombre>/{spec,plan,tasks}.md`, aprobados antes de codificar.
 - TDD estricto (RED → GREEN → refactor). Una tarea = un commit; al cerrar cada tarea:
-  `ruff check .`, `ruff format --check .`, `pytest -q`, marcar la tarea y proponer el commit. Parar.
+  `ruff check .`, `ruff format --check .`, `mypy`, `pytest -q`, marcar la tarea y proponer el commit. Parar.
 - Investigación en vivo de Alcampo: [docs/investigacion/fase-0-alcampo.md](docs/investigacion/fase-0-alcampo.md).
   **Cuidado:** AWS WAF bloquea la IP tras ráfagas de peticiones; sondea despacio.

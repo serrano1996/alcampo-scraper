@@ -11,7 +11,7 @@ Reglas no negociables. Cualquier excepción se discute y se documenta **antes** 
 5. **Validación:** toda entrada y salida de la API pasa por un schema Pydantic v2.
 6. **Cache:** las llamadas repetidas a Alcampo pasan por Redis antes de ir a la red.
 7. **Tests:** `pytest` obligatorio para cada endpoint y cada scraper. Los tests **nunca** llaman a Alcampo real: `respx` para HTTP, `fakeredis` para Redis.
-8. **Lint:** `ruff check . && ruff format .` limpio antes de cada commit (line-length 100).
+8. **Lint y tipos:** `ruff check . && ruff format .` y `mypy` (estricto, sobre `app/`) limpios antes de cada commit (line-length 100). Lo comprueba también el CI.
 9. **Docs vivas:** Swagger (`/docs`) refleja los schemas reales; `README.md` y `.env.example` se actualizan en la misma feature que los cambia.
 10. **Idioma:** código, docstrings y commits en inglés; documentación técnica (specs, README) en español.
 11. **Límite de responsabilidad:** el scraper no persiste datos propios más allá del cache. Es un proxy inteligente sobre Alcampo, no la fuente de verdad.
