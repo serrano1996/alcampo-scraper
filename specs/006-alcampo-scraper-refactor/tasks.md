@@ -42,7 +42,8 @@
 - **GREEN:** límites (plan-D4), `httpx2` en `dev`, `filterwarnings`.
 - **RF:** RF-10, RF-11, RF-12
 
-### [ ] T6 — Workflow de CI
+### [x] T6 — Workflow de CI
+> **Nota:** RED real (`FileNotFoundError` en 8 tests). `.github/workflows/ci.yml`: `push` y `pull_request`, Python 3.11, `pip install -e ".[dev]"`, `ruff check .`, `ruff format --check .`, `mypy`, `pytest -q` y `docker build`; permisos de solo lectura. El test cubre que PyYAML lee `on:` como `True`. **Sin remoto, el workflow no se ha ejecutado nunca en GitHub** (riesgo R1): se validaron en local los mismos comandos, incluido `docker build` (imagen en Python 3.11.16, borrada después). Observación: la imagen instaló FastAPI 0.142.2 frente a la 0.141.1 del venv local; está dentro del límite, pero muestra la falta de lockfile ya documentada.
 - **RED:** `tests/infra/test_ci_workflow.py`: el workflow corre en `push` y `pull_request`, con Python 3.11, y ejecuta `ruff check .`, `ruff format --check .`, `mypy`, `pytest -q` y `docker build`.
 - **GREEN:** `.github/workflows/ci.yml` (plan-D5).
 - **RF:** RF-9
