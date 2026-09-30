@@ -11,7 +11,8 @@
 
 ---
 
-### [ ] T1 — `mypy` estricto
+### [x] T1 — `mypy` estricto
+> **Nota:** RED real (6 errores). Corregidos con tipos, sin `# type: ignore`: `StreamHandler[TextIO]` solo bajo `TYPE_CHECKING` (su subscripción en tiempo de ejecución no está garantizada en 3.11); `2.0 ** n` en vez de `2 ** n` (que `typeshed` tipa como `Any`); en el cliente de sesión, un `TypeAdapter` por respuesta como constante del módulo y `_parse(adapter: TypeAdapter[T])`; `params: dict[str, str | int]` en la búsqueda. `mypy`: 0 errores en 33 ficheros.
 - **RED:** `mypy` con la configuración nueva → los 6 errores del plan §1.
 - **GREEN:** `[tool.mypy]` y `[tool.pydantic-mypy]` en `pyproject.toml`; `mypy` en `dev`; corregir los 6 errores con tipos (sin `# type: ignore`).
 - **RF:** RF-3

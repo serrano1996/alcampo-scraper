@@ -31,7 +31,7 @@ class AlcampoSearchScraper:
         `client` carries the cookies of a session confirmed in the wanted region:
         Alcampo takes the region from the session, not from the request (spec 007 RF-9).
         """
-        params = {
+        params: dict[str, str | int] = {
             "q": term,
             "tag": "web",
             "maxPageSize": PAGE_SIZE,

@@ -14,7 +14,7 @@ import logging
 import sys
 from collections.abc import Callable
 from contextvars import ContextVar
-from typing import TextIO
+from typing import TYPE_CHECKING, TextIO
 
 LOG_FORMAT = "%(asctime)s %(levelname)s [%(request_id)s] %(name)s: %(message)s"
 
@@ -24,7 +24,13 @@ request_id_var: ContextVar[str] = ContextVar("request_id", default="-")
 _installed_factory: Callable[..., logging.LogRecord] | None = None
 
 
-class _AppHandler(logging.StreamHandler):
+if TYPE_CHECKING:
+    _StreamHandler = logging.StreamHandler[TextIO]
+else:  # not subscriptable at runtime on every supported Python
+    _StreamHandler = logging.StreamHandler
+
+
+class _AppHandler(_StreamHandler):
     """Marks the handler installed by `configure_logging`, so it can be replaced alone."""
 
 

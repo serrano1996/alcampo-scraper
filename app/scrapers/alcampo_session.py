@@ -27,7 +27,7 @@ from dataclasses import dataclass, field
 from typing import Annotated, NoReturn, TypeVar
 
 import httpx
-from pydantic import BaseModel, StringConstraints, TypeAdapter, ValidationError
+from pydantic import StringConstraints, TypeAdapter, ValidationError
 
 from app.core.config import Settings
 from app.exceptions import UpstreamUnavailableError
@@ -60,9 +60,16 @@ _HOME_PATTERNS = {
     "retailer_region_id": re.compile(r'"retailerRegionId"\s*:\s*"?([0-9A-Za-z-]+)"?'),
 }
 
-_DESTINATION_ID = TypeAdapter(Annotated[str, StringConstraints(min_length=1)])
+# One validator per response shape, built once.
+_AREAS: TypeAdapter[list[AlcampoArea]] = TypeAdapter(list[AlcampoArea])
+_AREA_DETAILS: TypeAdapter[AlcampoAreaDetails] = TypeAdapter(AlcampoAreaDetails)
+_DELIVERABILITY: TypeAdapter[AlcampoDeliverability] = TypeAdapter(AlcampoDeliverability)
+_DESTINATION_ID: TypeAdapter[str] = TypeAdapter(Annotated[str, StringConstraints(min_length=1)])
+_DELIVERY_ADDRESS: TypeAdapter[AlcampoDeliveryAddress] = TypeAdapter(AlcampoDeliveryAddress)
+_PROPOSITION: TypeAdapter[AlcampoSessionProposition] = TypeAdapter(AlcampoSessionProposition)
+_ACTIVE_SESSION: TypeAdapter[AlcampoActiveSession] = TypeAdapter(AlcampoActiveSession)
 
-ModelT = TypeVar("ModelT", bound=BaseModel)
+T = TypeVar("T")
 
 logger = logging.getLogger(__name__)
 
@@ -121,14 +128,14 @@ class AlcampoSessionClient:
         response = await self._send(
             "PUT", AREAS_PATH, data={"query": postal_code}, headers=self._headers()
         )
-        areas = self._parse("areas", AREAS_PATH, response, TypeAdapter(list[AlcampoArea]))
+        areas = self._parse("areas", AREAS_PATH, response, _AREAS)
         return areas[0].id if areas else None
 
     async def area_details(self, area_id: str) -> AlcampoAreaDetails:
         """Step 2."""
         path = f"{AREAS_PATH}/{area_id}"
         response = await self._send("GET", path, headers=self._headers())
-        return self._parse("area_details", path, response, AlcampoAreaDetails)
+        return self._parse("area_details", path, response, _AREA_DETAILS)
 
     async def deliverability(self, area: AlcampoAreaDetails) -> str:
         """Step 3: returned as is; the caller decides what "not served" means."""
@@ -142,7 +149,7 @@ class AlcampoSessionClient:
             },
             headers=self._headers(),
         )
-        parsed = self._parse("deliverability", DELIVERABILITY_PATH, response, AlcampoDeliverability)
+        parsed = self._parse("deliverability", DELIVERABILITY_PATH, response, _DELIVERABILITY)
         return parsed.deliverability
 
     async def create_destination(self, area: AlcampoAreaDetails) -> str:
@@ -165,9 +172,7 @@ class AlcampoSessionClient:
         """Step 5: the region id that serves `destination_id`."""
         path = DELIVERY_ADDRESS_PATH.format(id=destination_id)
         response = await self._send("GET", path, headers=self._headers())
-        return self._parse(
-            "delivery_address", path, response, AlcampoDeliveryAddress
-        ).resolved_region_id
+        return self._parse("delivery_address", path, response, _DELIVERY_ADDRESS).resolved_region_id
 
     async def propose(self, region_id: str, destination_id: str) -> tuple[str, str]:
         """Step 6: `(origin, destination)` cart proposition ids for `activate`."""
@@ -177,7 +182,7 @@ class AlcampoSessionClient:
             payload={"destinationRegionId": region_id, "deliveryDestinationId": destination_id},
             headers=self._headers(),
         )
-        proposition = self._parse("propose", PROPOSITION_PATH, response, AlcampoSessionProposition)
+        proposition = self._parse("propose", PROPOSITION_PATH, response, _PROPOSITION)
         return proposition.origin.cart_proposition_id, proposition.destination.cart_proposition_id
 
     async def activate(self, origin_id: str, destination_id: str) -> str:
@@ -191,7 +196,7 @@ class AlcampoSessionClient:
             },
             headers={**self._headers(), "customer-id": ""},
         )
-        return self._parse("activate", ACTIVE_PATH, response, AlcampoActiveSession).region_id
+        return self._parse("activate", ACTIVE_PATH, response, _ACTIVE_SESSION).region_id
 
     async def aclose(self) -> None:
         await self._client.aclose()
@@ -238,13 +243,10 @@ class AlcampoSessionClient:
         step: str,
         path: str,
         response: httpx.Response,
-        model: type[ModelT] | TypeAdapter[ModelT],
-    ) -> ModelT:
+        adapter: TypeAdapter[T],
+    ) -> T:
         try:
-            body = response.json()
-            if isinstance(model, TypeAdapter):
-                return model.validate_python(body)
-            return model.model_validate(body)
+            return adapter.validate_python(response.json())
         except (json.JSONDecodeError, ValidationError):
             self._unexpected(step, path)
 

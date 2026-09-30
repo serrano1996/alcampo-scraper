@@ -105,7 +105,7 @@ async def send_with_retry(
         logger.error("retries exhausted attempts=%d reason=%s url=%r", attempt, reason, url)
 
     def backoff(attempt: int) -> float:
-        return base_delay * 2 ** (attempt - 1) + uniform(0, jitter_max)
+        return base_delay * 2.0 ** (attempt - 1) + uniform(0, jitter_max)
 
     def rate_limited_wait(response: httpx.Response, attempt: int) -> float:
         retry_after = parse_retry_after(response.headers.get("Retry-After"), now=now())

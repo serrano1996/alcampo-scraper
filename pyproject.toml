@@ -21,6 +21,7 @@ dev = [
     "respx",
     "fakeredis",
     "ruff",
+    "mypy",
 ]
 
 [build-system]
@@ -44,3 +45,15 @@ select = ["E", "F", "W", "I", "B", "UP", "ANN", "ASYNC", "RUF"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
+
+# Strict type checking of the application code (spec 006 RF-3, spec-D1).
+[tool.mypy]
+files = ["app"]
+python_version = "3.11"
+strict = true
+plugins = ["pydantic.mypy"]
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
