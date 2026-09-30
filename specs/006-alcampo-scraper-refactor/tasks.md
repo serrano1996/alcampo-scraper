@@ -1,0 +1,60 @@
+# Tasks 006 — Refactor y calidad
+
+- **Estado:** aprobado (2026-09-30) por instrucción del usuario ("termina lo que queda ya"): se implementa seguido, un commit local por tarea (sin push)
+- **Spec:** [spec.md](spec.md) · **Plan:** [plan.md](plan.md)
+- **Entrega:** un solo PR.
+
+## Reglas de cada tarea
+
+1. **RED → GREEN → refactor**; si no hay RED posible, verificación por mutación anotada.
+2. Cierre: `ruff check .`, `ruff format --check .`, `mypy` (desde T1) y `pytest -q`, todo limpio. Marcar `[x]` y commit.
+
+---
+
+### [ ] T1 — `mypy` estricto
+- **RED:** `mypy` con la configuración nueva → los 6 errores del plan §1.
+- **GREEN:** `[tool.mypy]` y `[tool.pydantic-mypy]` en `pyproject.toml`; `mypy` en `dev`; corregir los 6 errores con tipos (sin `# type: ignore`).
+- **RF:** RF-3
+
+### [ ] T2 — `mypy` en el cierre de cada tarea
+- **GREEN:** `AGENTS.md` (comandos y proceso) y `docs/constitution.md` (principio 8 y proceso).
+- **RF:** RF-4
+
+### [ ] T3 — `AppResources` tipado
+- **RED:** `tests/core/test_state.py`: `resources(app)` devuelve el `AppResources` del `lifespan` con todos sus campos; sin `lifespan`, error claro.
+- **GREEN:** `app/core/state.py`; `lifespan` y `get_product_service` lo usan; docstring de `dependencies.py` actualizado (RF-7).
+- **Regresión:** 12 usos de `client.app.state.*` en tests → `resources(client.app).*`.
+- **RF:** RF-1, RF-2, RF-7
+
+### [ ] T4 — Middleware ASGI puro
+- **RED:** test nuevo: una respuesta en streaming lleva `X-Request-ID` y sus dos líneas de log con el mismo id.
+- **GREEN:** `RequestContextMiddleware` como ASGI puro (plan-D2).
+- **Red de seguridad:** toda la suite de las specs 003/004 **sin cambiar aserciones**.
+- **RF:** RF-5, RF-6
+
+### [ ] T5 — Dependencias y warnings
+- **RED:** `tests/test_package.py`: toda dependencia (y extra `dev`) tiene límite superior; `pytest` está configurado con `filterwarnings = ["error"]`.
+- **GREEN:** límites (plan-D4), `httpx2` en `dev`, `filterwarnings`.
+- **RF:** RF-10, RF-11, RF-12
+
+### [ ] T6 — Workflow de CI
+- **RED:** `tests/infra/test_ci_workflow.py`: el workflow corre en `push` y `pull_request`, con Python 3.11, y ejecuta `ruff check .`, `ruff format --check .`, `mypy`, `pytest -q` y `docker build`.
+- **GREEN:** `.github/workflows/ci.yml` (plan-D5).
+- **RF:** RF-9
+
+### [ ] T7 — Docs y comprobaciones finales
+- **GREEN:** README (sección Desarrollo: `mypy` y CI); comprobar RF-7 (sin docstrings desfasados: `grep`) y RF-8 (README de `postal_code`, ya correcto desde la 007).
+- **RF:** RF-7, RF-8, RNF-3
+
+## Trazabilidad
+
+| RF | Tareas |
+|---|---|
+| RF-1, RF-2 | T3 |
+| RF-3 | T1 |
+| RF-4 | T2 |
+| RF-5, RF-6 | T4 |
+| RF-7 | T3, T7 |
+| RF-8 | T7 |
+| RF-9 | T6 |
+| RF-10, RF-11, RF-12 | T5 |
