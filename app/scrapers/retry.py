@@ -137,7 +137,10 @@ async def send_with_retry(
 
         if not _is_retryable(response):
             logger.error("non-retryable upstream status=%d url=%r", response.status_code, url)
-            raise UpstreamUnavailableError(f"non-retryable upstream status {response.status_code}")
+            raise UpstreamUnavailableError(
+                f"non-retryable upstream status {response.status_code}",
+                status_code=response.status_code,
+            )
 
         reason = f"status {response.status_code}"
         if attempt == max_attempts:

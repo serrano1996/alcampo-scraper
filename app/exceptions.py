@@ -13,9 +13,12 @@ class UpstreamUnavailableError(AlcampoScraperError):
     forwarded to the API response.
     """
 
-    def __init__(self, reason: str) -> None:
+    def __init__(self, reason: str, *, status_code: int | None = None) -> None:
         super().__init__(reason)
         self.reason = reason
+        # Only for a non-retryable 4xx: lets a caller tell "Alcampo rejected this"
+        # from a transient failure (spec 007 plan-D6). Never sent to the client.
+        self.status_code = status_code
 
 
 class UpstreamBlockedError(UpstreamUnavailableError):

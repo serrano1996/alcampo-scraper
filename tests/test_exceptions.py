@@ -48,3 +48,8 @@ def test_postal_code_not_served_is_a_domain_error_but_not_an_upstream_failure() 
     assert isinstance(error, AlcampoScraperError)
     assert not isinstance(error, UpstreamUnavailableError)
     assert error.postal_code == "35001"
+
+
+def test_upstream_status_code_is_optional() -> None:
+    assert UpstreamUnavailableError("boom").status_code is None
+    assert UpstreamUnavailableError("gone", status_code=410).status_code == 410

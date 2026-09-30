@@ -117,7 +117,8 @@ Formato de commit: `<tipo>(007-alcampo-scraper-warehouse-resolution): <descripci
 
 ## PR 3 — Sesiones y búsqueda por región
 
-### [ ] T10 — `RegionSessions`
+### [x] T10 — `RegionSessions`
+> **Nota (2026-09-30):** RED real (`ModuleNotFoundError` y 3 × `AttributeError: status_code`). **Cambio fuera del plan, necesario para plan-D6:** `UpstreamUnavailableError` acepta un `status_code` opcional que solo rellena la rama "4xx no reintentable" de `retry.py`; así `RegionSessions` distingue "Alcampo rechaza el destino guardado" (olvidar la región) de un fallo pasajero (mantenerla), sin comparar textos. No se envía al cliente. **API:** `adopt(región, destino, sesión)` confirma una sesión ya abierta (la que resolvió la región, T9) y `get(región)` devuelve una sesión confirmada, renovándola si no existe o tiene más de 50 min (`open` → `propose` → `activate` → `open` de comprobación: ningún destino nuevo, ni el límite de resoluciones). Comprobación RF-10: `activate` **y** el HTML deben mostrar la región esperada; si no, `502 "region not confirmed"` y la sesión se cierra. Las sesiones sustituidas se retiran y se cierran en la renovación siguiente (una búsqueda podía estar usándolas) o al cerrar el `lifespan`. Corregido antes de GREEN: una primera versión cerraba las retiradas con tareas sin esperar (asyncio puede recogerlas sin terminar); ahora se esperan.
 - **RED:** `tests/services/test_region_sessions.py` con reloj falso y un `AlcampoSessionClient` falso:
   - `confirm` → sesión nueva (`open`, pasos 6–7, `GET /`) y `retailerRegionId`; `INFO reason=new`;
   - `GET /` tras confirmar con **otra** región → `UpstreamUnavailableError("region not confirmed")`, cliente cerrado, ninguna sesión guardada;

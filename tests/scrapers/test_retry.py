@@ -415,3 +415,22 @@ async def test_url_defaults_to_dash(caplog: pytest.LogCaptureFixture) -> None:
 
     [warning] = retry_records(caplog, logging.WARNING)
     assert "url='-'" in warning.getMessage()
+
+
+async def test_non_retryable_4xx_keeps_its_status_code() -> None:
+    # spec 007 plan-D6: a 4xx on a stored destination means "forget the region".
+    with pytest.raises(UpstreamUnavailableError) as exc_info:
+        await send_with_retry(
+            sequence(make_response(410)), max_attempts=3, base_delay=0, sleep=FakeSleep()
+        )
+
+    assert exc_info.value.status_code == 410
+
+
+async def test_exhausted_5xx_has_no_status_code() -> None:
+    with pytest.raises(UpstreamUnavailableError) as exc_info:
+        await send_with_retry(
+            sequence(make_response(503)), max_attempts=1, base_delay=0, sleep=FakeSleep()
+        )
+
+    assert exc_info.value.status_code is None
