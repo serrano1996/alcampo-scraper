@@ -1,6 +1,6 @@
 # Plan 007 — Resolución de región por código postal
 
-- **Estado:** aprobado (2026-09-28). Entrega: 4 PRs encadenados (D12)
+- **Estado:** aprobado (2026-09-28). Entrega: 5 PRs encadenados (D12; PR 3 partido el 2026-09-30)
 - **Fecha:** 2026-09-28
 - **Spec:** [spec.md](spec.md) (aprobada y enmendada tras §2). Sus decisiones se citan como **spec-D1…spec-D9**; las de specs anteriores como **008-plan-Dn**, etc. Las decisiones de este plan son **D1…**
 
@@ -126,7 +126,7 @@ El `deliveryDestinationId` y el `regionId` son identificadores efímeros o públ
 
 **D11 — Logs** (RF-17): `INFO "region resolved postal_code=%r region=%s source=%s"` (`cache`, `resolved`, `shared`), `INFO "region session confirmed region=%s retailer=%s reason=%s"` (`new`, `renewal`), `WARNING` para límite agotado y Redis degradado, `ERROR` con el paso para formas inesperadas. Nunca CSRF, `visitorId`, cookies, coordenadas ni direcciones.
 
-**D12 — Entrega en 4 PRs encadenados** (spec-D9, con el PR de resolución partido en dos al aprobar el plan): **PR 1** Redis (bloque E), **PR 2a** validación, `404` y cliente de la cadena (T5–T7), **PR 2b** repositorio y servicio de regiones (T8–T9), **PR 3** sesiones, búsqueda por región, docs y verificación manual (C+D).
+**D12 — Entrega en 4 PRs encadenados** (spec-D9, con el PR de resolución partido en dos al aprobar el plan): **PR 1** Redis (bloque E), **PR 2a** validación, `404` y cliente de la cadena (T5–T7), **PR 2b** repositorio y servicio de regiones (T8–T9), **PR 3** sesiones, búsqueda por región, docs y verificación manual (C+D). **Enmienda (2026-09-30):** el PR 3 superó las 400 líneas al cerrar T11 (~1.000, sobre todo tests), así que se parte en **PR 3a** (T10–T11: sesiones y búsqueda por región, una unidad funcional completa) y **PR 3b** (T12–T13: integración transversal, docs y verificación manual).
 
 ## 6. Regresiones previstas
 
@@ -186,10 +186,10 @@ El `deliveryDestinationId` y el `regionId` son identificadores efímeros o públ
 | 7 | `AlcampoSessionClient`: `GET /`, extracción SSR y pasos 1–7 con modelos | 2a |
 | 8 | `RegionRepository` (Redis + L1, negativos) | 2b |
 | 9 | `RegionService` (cache, agrupación, límite antes del paso 4, cadena) | 2b |
-| 10 | `RegionSessions` (confirmar, comprobar región, renovar, destino caducado) | 3 |
-| 11 | Búsqueda con la sesión de la región; cache y agrupación por `retailerRegionId`; `warehouse` real | 3 |
-| 12 | Integración transversal (dos regiones, límite, challenge en la cadena, logs sin secretos) | 3 |
-| 13 | Docs y verificación manual con `docker compose` | 3 |
+| 10 | `RegionSessions` (confirmar, comprobar región, renovar, destino caducado) | 3a |
+| 11 | Búsqueda con la sesión de la región; cache y agrupación por `retailerRegionId`; `warehouse` real | 3a |
+| 12 | Integración transversal (dos regiones, límite, challenge en la cadena, logs sin secretos) | 3b |
+| 13 | Docs y verificación manual con `docker compose` | 3b |
 
 | Bloque | `app/` | Tests | Docs | Total |
 |---|---|---|---|---|

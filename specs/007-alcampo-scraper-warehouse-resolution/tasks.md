@@ -2,7 +2,7 @@
 
 - **Estado:** aprobado (2026-09-28)
 - **Spec:** [spec.md](spec.md) · **Plan:** [plan.md](plan.md) (decisiones citadas como plan-Dn)
-- **Entrega:** 4 PRs encadenados (plan-D12): **PR 1** = T1–T4 · **PR 2a** = T5–T7 · **PR 2b** = T8–T9 · **PR 3** = T10–T13.
+- **Entrega:** 5 PRs encadenados (plan-D12): **PR 1** = T1–T4 · **PR 2a** = T5–T7 · **PR 2b** = T8–T9 · **PR 3a** = T10–T11 · **PR 3b** = T12–T13 (PR 3 partido el 2026-09-30 al superar las 400 líneas).
 
 ## Reglas de cada tarea
 
@@ -115,7 +115,7 @@ Formato de commit: `<tipo>(007-alcampo-scraper-warehouse-resolution): <descripci
 
 ---
 
-## PR 3 — Sesiones y búsqueda por región
+## PR 3a — Sesiones y búsqueda por región (T10–T11) · PR 3b — Integración, docs y verificación (T12–T13)
 
 ### [x] T10 — `RegionSessions`
 > **Nota (2026-09-30):** RED real (`ModuleNotFoundError` y 3 × `AttributeError: status_code`). **Cambio fuera del plan, necesario para plan-D6:** `UpstreamUnavailableError` acepta un `status_code` opcional que solo rellena la rama "4xx no reintentable" de `retry.py`; así `RegionSessions` distingue "Alcampo rechaza el destino guardado" (olvidar la región) de un fallo pasajero (mantenerla), sin comparar textos. No se envía al cliente. **API:** `adopt(región, destino, sesión)` confirma una sesión ya abierta (la que resolvió la región, T9) y `get(región)` devuelve una sesión confirmada, renovándola si no existe o tiene más de 50 min (`open` → `propose` → `activate` → `open` de comprobación: ningún destino nuevo, ni el límite de resoluciones). Comprobación RF-10: `activate` **y** el HTML deben mostrar la región esperada; si no, `502 "region not confirmed"` y la sesión se cierra. Las sesiones sustituidas se retiran y se cierran en la renovación siguiente (una búsqueda podía estar usándolas) o al cerrar el `lifespan`. Corregido antes de GREEN: una primera versión cerraba las retiradas con tareas sin esperar (asyncio puede recogerlas sin terminar); ahora se esperan.
@@ -131,7 +131,7 @@ Formato de commit: `<tipo>(007-alcampo-scraper-warehouse-resolution): <descripci
 - **RF:** RF-9, RF-10, RF-11
 
 ### [x] T11 — Búsqueda con la región real
-> **Nota (2026-09-30):** RED real (53 fallos por las firmas nuevas). **Hueco del plan cubierto:** resolver un CP nuevo es tráfico a Alcampo, así que `RegionService` comprueba el enfriamiento antes de abrir la cadena (`CooldownActiveError`), y `ProductService` activa el enfriamiento si la resolución recibe un challenge (RF-6); test nuevo en `test_region_service.py` y en `test_product_service.py`. **Cableado:** todo lo que tiene estado se construye una vez en el `lifespan` (limitador global, enfriamiento, repositorio y servicio de regiones, `RegionSessions`); `get_product_service` solo lo junta. Desaparece el cliente HTTP global (cada sesión de región tiene el suyo) y `DEFAULT_WAREHOUSE` con su test. La renovación de sesión va bajo su propio tiempo máximo (`"region session timeout"`). **Regresiones (plan §6):** `mock_alcampo_search` registra también `mock_region_chain` (28001 → región sintética con `retailerRegionId` `"5"`, así que las claves `search:5:…` no cambian). Tests tocados, uno a uno: (1) `test_alcampo_cookies_never_reach_the_logs` **pasaba en vacío** (la búsqueda nunca salía por la cadena sin mockear): cadena añadida y `assert route.called` para que no vuelva a pasar; (2) `test_waf_cooldown_end_to_end` y (3) `test_slow_alcampo…` registran la búsqueda a mano: cadena añadida; (4) `test_slow_alcampo…`: tiempo máximo de 0,1 → 1,5 s y Alcampo lento de 2 → 5 s (crear el cliente de una sesión cuesta ~0,4 s por el contexto TLS), con `elapsed < 4`; (5) `test_exhausted_rate_limit…`: la cadena también consume cupo, así que se siembran región, cache de `leche` y el único hueco; `route.call_count` pasa de 1 a 0 porque ya no hay primera búsqueda real; la intención (límite agotado → `502`, cache → `200`) se mantiene. Corregido durante GREEN: un esqueleto de `_within_timeout` con sintaxis genérica de 3.12 (no compila en 3.11, la versión mínima y la de la imagen). **Tamaño:** el PR 3 lleva ~1.000 líneas (T10 + T11: 348 en `app/`, 549 en tests), por encima de las 400 del plan §9 → aviso al usuario antes de T12.
+> **Nota (2026-09-30):** RED real (53 fallos por las firmas nuevas). **Hueco del plan cubierto:** resolver un CP nuevo es tráfico a Alcampo, así que `RegionService` comprueba el enfriamiento antes de abrir la cadena (`CooldownActiveError`), y `ProductService` activa el enfriamiento si la resolución recibe un challenge (RF-6); test nuevo en `test_region_service.py` y en `test_product_service.py`. **Cableado:** todo lo que tiene estado se construye una vez en el `lifespan` (limitador global, enfriamiento, repositorio y servicio de regiones, `RegionSessions`); `get_product_service` solo lo junta. Desaparece el cliente HTTP global (cada sesión de región tiene el suyo) y `DEFAULT_WAREHOUSE` con su test. La renovación de sesión va bajo su propio tiempo máximo (`"region session timeout"`). **Regresiones (plan §6):** `mock_alcampo_search` registra también `mock_region_chain` (28001 → región sintética con `retailerRegionId` `"5"`, así que las claves `search:5:…` no cambian). Tests tocados, uno a uno: (1) `test_alcampo_cookies_never_reach_the_logs` **pasaba en vacío** (la búsqueda nunca salía por la cadena sin mockear): cadena añadida y `assert route.called` para que no vuelva a pasar; (2) `test_waf_cooldown_end_to_end` y (3) `test_slow_alcampo…` registran la búsqueda a mano: cadena añadida; (4) `test_slow_alcampo…`: tiempo máximo de 0,1 → 1,5 s y Alcampo lento de 2 → 5 s (crear el cliente de una sesión cuesta ~0,4 s por el contexto TLS), con `elapsed < 4`; (5) `test_exhausted_rate_limit…`: la cadena también consume cupo, así que se siembran región, cache de `leche` y el único hueco; `route.call_count` pasa de 1 a 0 porque ya no hay primera búsqueda real; la intención (límite agotado → `502`, cache → `200`) se mantiene. Corregido durante GREEN: un esqueleto de `_within_timeout` con sintaxis genérica de 3.12 (no compila en 3.11, la versión mínima y la de la imagen). **Tamaño:** el PR 3 lleva ~1.000 líneas (T10 + T11: 348 en `app/`, 549 en tests), por encima de las 400 del plan §9 → aviso al usuario, que aprobó partirlo: **fin del PR 3a**.
 - **RED:**
   - `tests/scrapers/test_alcampo_search.py`: `search(term, client=…)` usa el cliente recibido (sus cookies van en la petición).
   - `tests/services/test_product_service.py`: la clave de cache y la de agrupación usan el `retailerRegionId`; `search.warehouse` es el real; dos regiones no comparten cache; un `PostalCodeNotServedError` se propaga.
@@ -150,7 +150,7 @@ Formato de commit: `<tipo>(007-alcampo-scraper-warehouse-resolution): <descripci
   - con `LOG_LEVEL=DEBUG`, ningún valor sintético de CSRF, `visitorId` ni cookies aparece en `caplog.text` (RF-17).
 - **Verificación por mutación:** quitar la comprobación de región tras confirmar → el test de "otra región → `502`" (T10) falla; adquirir el límite al principio de la cadena en vez de antes del paso 4 → el test de "CP inexistente no consume cupo" (T9) falla. Anotarlo.
 - **Depende:** T11
-- **RF:** transversal. Si el PR 3 supera las 400 líneas al llegar aquí, **parar y avisar** (plan §9).
+- **RF:** transversal. Primera tarea del **PR 3b**.
 
 ### [ ] T13 — Docs y verificación manual
 - **GREEN:** README: sección de región por código postal (qué se resuelve, `404`, `422`, cache de 7 días, límite de resoluciones, sesión por región renovada cada 50 min), sección Redis (timeouts y degradación), variables nuevas, logs nuevos, limitaciones (vida del destino temporal no verificada; umbral del WAF para crear destinos es una hipótesis; `warehouse` es el `retailerRegionId`); "Estado".
@@ -161,7 +161,7 @@ Formato de commit: `<tipo>(007-alcampo-scraper-warehouse-resolution): <descripci
   4. Parar el contenedor de Redis → una búsqueda cacheada en L1 de región y ya resuelta responde `200` sin cache con `WARNING`; `/health` `200`; volver a arrancar Redis.
   5. Logs sin CSRF, `visitorId`, cookies ni token. `docker compose down`, borrar el override.
 - **Depende:** T12
-- **RF:** RNF-5. **Fin del PR 3.**
+- **RF:** RNF-5. **Fin del PR 3b.**
 
 ---
 
