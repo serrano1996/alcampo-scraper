@@ -51,3 +51,15 @@ class OutboundRateLimitedError(UpstreamThrottledError):
     would take the whole service down for minutes (spec 008 RF-3, RF-4). Being a
     subclass, it still maps to the standard 502.
     """
+
+
+class PostalCodeNotServedError(AlcampoScraperError):
+    """Raised when Alcampo does not serve a postal code: it does not exist or is not deliverable.
+
+    Not an upstream failure: Alcampo answered, the answer is "no". It maps to a
+    404 with our own detail, never Alcampo's text (spec 007 RF-4, spec-D8).
+    """
+
+    def __init__(self, postal_code: str) -> None:
+        super().__init__(postal_code)
+        self.postal_code = postal_code

@@ -3,6 +3,7 @@ from app.exceptions import (
     AlcampoScraperError,
     CooldownActiveError,
     OutboundRateLimitedError,
+    PostalCodeNotServedError,
     UpstreamBlockedError,
     UpstreamThrottledError,
     UpstreamUnavailableError,
@@ -37,3 +38,13 @@ def test_foreseen_degradations_share_a_throttled_parent() -> None:
     assert issubclass(CooldownActiveError, UpstreamThrottledError)
     assert issubclass(OutboundRateLimitedError, UpstreamThrottledError)
     assert not issubclass(UpstreamBlockedError, UpstreamThrottledError)
+
+
+def test_postal_code_not_served_is_a_domain_error_but_not_an_upstream_failure() -> None:
+    # A 404 for the client, not a 502: Alcampo answered, it just does not serve
+    # that postal code (spec 007 RF-4, spec-D8).
+    error = PostalCodeNotServedError("35001")
+
+    assert isinstance(error, AlcampoScraperError)
+    assert not isinstance(error, UpstreamUnavailableError)
+    assert error.postal_code == "35001"

@@ -68,7 +68,8 @@ Formato de commit: `<tipo>(007-alcampo-scraper-warehouse-resolution): <descripci
 - **Depende:** —
 - **RF:** RF-1
 
-### [ ] T6 — `404` para código postal sin servicio
+### [x] T6 — `404` para código postal sin servicio
+> **Nota (2026-09-30):** RED real (`ImportError` de `PostalCodeNotServedError`). La excepción guarda `postal_code` para el log; el handler registra `INFO "postal code not served postal_code=%r"` (no es un fallo) y responde `404 {"detail": "Postal code not served by Alcampo"}` con `X-Request-ID` (lo pone el middleware). Todavía nadie la lanza: llega en T9 con `RegionService`.
 - **RED:** `tests/test_exceptions.py`: `PostalCodeNotServedError` es `AlcampoScraperError` y **no** `UpstreamUnavailableError`. `tests/api/test_products_route.py`: un servicio que la lanza → `404 {"detail": "Postal code not served by Alcampo"}`, con `X-Request-ID` y un `INFO` (no `ERROR`).
 - **GREEN:** excepción y handler en `main.py` (plan-D7).
 - **Depende:** —

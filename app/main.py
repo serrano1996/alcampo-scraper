@@ -11,7 +11,11 @@ from fastapi.responses import JSONResponse
 from app.api.v1.products import router as products_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
-from app.exceptions import UpstreamThrottledError, UpstreamUnavailableError
+from app.exceptions import (
+    PostalCodeNotServedError,
+    UpstreamThrottledError,
+    UpstreamUnavailableError,
+)
 from app.middleware.request_context import RequestContextMiddleware
 from app.scrapers.http_client import create_http_client
 from app.services.in_flight import InFlightSearches
@@ -89,6 +93,17 @@ def create_app() -> FastAPI:
             )
         # The reason is for logs only: the body never carries it (spec 001 RF-17).
         return JSONResponse(status_code=502, content={"detail": "Upstream service unavailable"})
+
+    @app.exception_handler(PostalCodeNotServedError)
+    async def postal_code_not_served_handler(
+        request: Request, exc: PostalCodeNotServedError
+    ) -> JSONResponse:
+        # A normal answer, not a failure: INFO, and our own detail, never
+        # Alcampo's text (spec 007 RF-4, spec-D8). Same contract as Mercadona.
+        logger.info("postal code not served postal_code=%r", exc.postal_code)
+        return JSONResponse(
+            status_code=404, content={"detail": "Postal code not served by Alcampo"}
+        )
 
     @app.get("/health")
     async def health() -> dict[str, str]:

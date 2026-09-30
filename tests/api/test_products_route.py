@@ -9,6 +9,7 @@ from app.core.security import require_api_key
 from app.exceptions import (
     CooldownActiveError,
     OutboundRateLimitedError,
+    PostalCodeNotServedError,
     UpstreamBlockedError,
     UpstreamUnavailableError,
 )
@@ -160,3 +161,22 @@ def test_waf_challenge_502_is_logged_as_error(caplog: pytest.LogCaptureFixture) 
     client.get("/api/v1/products", params=SEARCH)
 
     assert len(records_at(caplog, logging.ERROR)) == 1
+
+
+# --- spec 007 RF-4: postal code not served -------------------------------------
+
+
+def test_postal_code_not_served_returns_404_logged_as_info(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level(logging.INFO)
+    client = make_client(FakeService(error=PostalCodeNotServedError("51001")))
+
+    response = client.get("/api/v1/products", params={"postal_code": "51001", "term": "agua"})
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Postal code not served by Alcampo"}
+    assert response.headers["X-Request-ID"]
+    served = [r for r in caplog.records if r.name == "app.main"]
+    assert [r.levelno for r in served] == [logging.INFO]
+    assert "'51001'" in served[0].getMessage()
