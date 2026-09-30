@@ -57,3 +57,64 @@ class AlcampoSearchResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     product_groups: list[AlcampoProductGroup] = Field(alias="productGroups")
+
+
+# --- Postal code -> region chain (spec 007, Fase 0 §3, verified live in plan §2) ---
+
+
+class AlcampoArea(BaseModel):
+    """Step 1: one geocoded area for a postal code (a Google Place ID)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    id: str = Field(min_length=1)
+
+
+class AlcampoAreaDetails(BaseModel):
+    """Step 2: coordinates and address of an area, needed by steps 3 and 4."""
+
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
+
+    latitude: float
+    longitude: float
+    postal_code: str = Field(alias="postalCode", min_length=1)
+    formatted_address: str = Field(alias="formattedAddress", min_length=1)
+
+
+class AlcampoDeliverability(BaseModel):
+    """Step 3: `DELIVERABLE`, or `NOT_DELIVERABLE` (seen for Ceuta and Melilla)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    deliverability: str = Field(min_length=1)
+
+
+class AlcampoDeliveryAddress(BaseModel):
+    """Step 5: the region that serves a delivery destination."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    resolved_region_id: str = Field(alias="resolvedRegionId", min_length=1)
+
+
+class AlcampoCartProposition(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    cart_proposition_id: str = Field(alias="cartPropositionId", min_length=1)
+
+
+class AlcampoSessionProposition(BaseModel):
+    """Step 6: previews a region change. It does not apply it; step 7 does."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    origin: AlcampoCartProposition = Field(alias="originCartProposition")
+    destination: AlcampoCartProposition = Field(alias="destinationCartProposition")
+
+
+class AlcampoActiveSession(BaseModel):
+    """Step 7: confirms the region change. No `retailerRegionId` here: that is in the HTML."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    region_id: str = Field(alias="regionId", min_length=1)

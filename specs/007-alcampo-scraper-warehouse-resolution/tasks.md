@@ -75,7 +75,8 @@ Formato de commit: `<tipo>(007-alcampo-scraper-warehouse-resolution): <descripci
 - **Depende:** —
 - **RF:** RF-4 (respuesta)
 
-### [ ] T7 — `AlcampoSessionClient`
+### [x] T7 — `AlcampoSessionClient`
+> **Nota (2026-09-30):** RED real (`ModuleNotFoundError`). 20 tests con fixtures **sintéticas** nuevas (`alcampo_home_vaguada.html`, `alcampo_home_telde.html`, `alcampo_session_proposition.json`, `alcampo_session_active.json`, `alcampo_deliverability_not_deliverable.json`); en Telde el `retailerRegionId` va sin comillas para cubrir las dos formas. **Concreción de plan-D2:** solo se reintentan los `GET`; los `PUT`/`POST` van con un único intento, porque repetir "crear destino" tras un `5xx` podría crear dos (el paso sensible al WAF). Siguen pasando por el límite global y la detección del challenge. `HomeState` oculta CSRF y `visitorId` del `repr`; los errores de forma registran el paso (`step='…'`) y el recuento de coincidencias, nunca valores ni cuerpos. **Mutaciones:** reintentar también escrituras → falla `test_writes_are_never_retried`; `repr=True` en el CSRF → falla el test de `open`. Restaurado. Corrección durante GREEN: `_send` tenía `**kwargs: object` con un `# type: ignore` y un parámetro sin usar; se sustituyó por parámetros explícitos (constitución #4). **Fin del PR 2a.**
 - **RED:** `tests/scrapers/test_alcampo_session.py` con respx y fixtures **sintéticas** nuevas (`alcampo_home_vaguada.html`, `alcampo_home_telde.html` mínimos con el fragmento SSR; paso 4 como string; pasos 6 y 7 con la forma observada en plan §2; `alcampo_deliverability_not_deliverable.json`):
   - `open()` extrae CSRF, `visitorId`, `regionId` y `retailerRegionId`; HTML sin alguno de ellos, o con dos valores distintos → `UpstreamUnavailableError` con el paso en el motivo;
   - pasos 1–7: método, ruta, cuerpo y cabeceras (`X-CSRF-Token`, `visitorid`, `visitor-id`, `customer-id: ""` en el 7) exactos; respuestas parseadas con modelos Pydantic;
