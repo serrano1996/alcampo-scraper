@@ -8,6 +8,7 @@ import pytest
 
 from app.core.config import Settings
 from app.exceptions import (
+    CooldownActiveError,
     OutboundRateLimitedError,
     PostalCodeNotServedError,
     RegionResolutionLimitedError,
@@ -95,8 +96,23 @@ class FakeLimiter:
         self.acquired += 1
 
 
+class FakeCooldown:
+    def __init__(self, *, active: bool = False) -> None:
+        self.active = active
+
+    async def is_active(self) -> bool:
+        return self.active
+
+
 class Harness:
-    def __init__(self, *, timeout: float = 15, exhausted: bool = False, **overrides: object):
+    def __init__(
+        self,
+        *,
+        timeout: float = 15,
+        exhausted: bool = False,
+        cooldown: bool = False,
+        **overrides: object,
+    ):
         self.log: list[str] = []
         self.redis = fakeredis.FakeAsyncRedis()
         self.repository = RegionRepository(
@@ -113,6 +129,7 @@ class Harness:
             new_session=self.new_session,
             sessions=self.sessions,
             resolution_limiter=self.limiter,
+            cooldown=FakeCooldown(active=cooldown),
             in_flight=InFlightSearches(),
             settings=Settings(
                 _env_file=None,
@@ -271,3 +288,16 @@ async def test_a_forgotten_region_is_resolved_again() -> None:
 
     assert await h.service.region_for("35001") == TELDE
     assert "create_destination" in h.log
+
+
+async def test_no_resolution_goes_out_during_a_waf_cooldown() -> None:
+    # Resolving is traffic to Alcampo too (spec 007 RF-6): the cooldown applies.
+    h = Harness(cooldown=True)
+    await h.repository.save_region(TELDE)
+    await h.repository.save_postal_code("35001", TELDE_ID)
+
+    with pytest.raises(CooldownActiveError):
+        await h.service.region_for("35017")
+
+    assert h.log == []
+    assert await h.service.region_for("35001") == TELDE  # cached ones still work

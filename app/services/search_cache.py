@@ -1,8 +1,8 @@
 """Redis-backed cache for search responses.
 
 Keyed by warehouse (region), not by postal code (plan-D4): all postal codes
-resolving to the same region share a cache entry. That resolution arrives in
-spec 007; today every request uses `DEFAULT_WAREHOUSE`.
+resolving to the same region share a cache entry, and two regions never mix
+(spec 007 RF-12). The warehouse is the region's `retailerRegionId`.
 """
 
 import logging

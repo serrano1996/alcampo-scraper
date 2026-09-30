@@ -10,7 +10,7 @@ import respx
 from app.core.config import Settings
 from app.exceptions import OutboundRateLimitedError, UpstreamUnavailableError
 from app.models.alcampo import AlcampoSearchResponse
-from app.scrapers.alcampo_search import DEFAULT_WAREHOUSE, SEARCH_PATH, AlcampoSearchScraper
+from app.scrapers.alcampo_search import SEARCH_PATH, AlcampoSearchScraper
 from app.services.rate_limiter import OutboundRateLimiter
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
@@ -38,13 +38,9 @@ def make_scraper(
     )
     client = httpx.AsyncClient(base_url=settings.alcampo_base_url)
     scraper = AlcampoSearchScraper(
-        client=client, settings=settings, rate_limiter=rate_limiter or disabled_limiter()
+        settings=settings, rate_limiter=rate_limiter or disabled_limiter()
     )
     return scraper, client
-
-
-def test_default_warehouse_is_the_verified_fase_0_region() -> None:
-    assert DEFAULT_WAREHOUSE == "5"
 
 
 @respx.mock
@@ -55,7 +51,7 @@ async def test_search_calls_alcampo_exactly_once_with_expected_params() -> None:
     scraper, client = make_scraper()
 
     try:
-        await scraper.search("leche")
+        await scraper.search("leche", client=client)
     finally:
         await client.aclose()
 
@@ -76,7 +72,7 @@ async def test_search_returns_parsed_response() -> None:
     scraper, client = make_scraper()
 
     try:
-        response = await scraper.search("leche")
+        response = await scraper.search("leche", client=client)
     finally:
         await client.aclose()
 
@@ -91,7 +87,7 @@ async def test_search_raises_on_non_json_body() -> None:
 
     try:
         with pytest.raises(UpstreamUnavailableError):
-            await scraper.search("leche")
+            await scraper.search("leche", client=client)
     finally:
         await client.aclose()
 
@@ -103,7 +99,7 @@ async def test_search_raises_on_json_without_expected_shape() -> None:
 
     try:
         with pytest.raises(UpstreamUnavailableError):
-            await scraper.search("leche")
+            await scraper.search("leche", client=client)
     finally:
         await client.aclose()
 
@@ -115,7 +111,7 @@ async def test_search_raises_on_persistent_5xx() -> None:
 
     try:
         with pytest.raises(UpstreamUnavailableError):
-            await scraper.search("leche")
+            await scraper.search("leche", client=client)
     finally:
         await client.aclose()
 
@@ -127,7 +123,7 @@ async def test_search_raises_on_persistent_transport_error_not_httpx() -> None:
 
     try:
         with pytest.raises(UpstreamUnavailableError):
-            await scraper.search("leche")
+            await scraper.search("leche", client=client)
     finally:
         await client.aclose()
 
@@ -149,9 +145,9 @@ async def test_search_passes_the_configured_jitter_to_retries(
         retry_jitter_max_s=0.25,
     )
     async with httpx.AsyncClient(base_url=settings.alcampo_base_url) as client:
-        await AlcampoSearchScraper(
-            client=client, settings=settings, rate_limiter=disabled_limiter()
-        ).search("leche")
+        await AlcampoSearchScraper(settings=settings, rate_limiter=disabled_limiter()).search(
+            "leche", client=client
+        )
 
     assert captured["jitter_max"] == 0.25
     assert SEARCH_PATH in captured["url"]
@@ -173,7 +169,7 @@ async def test_non_json_body_is_logged_as_invalid_json(caplog: pytest.LogCapture
 
     try:
         with pytest.raises(UpstreamUnavailableError):
-            await scraper.search("leche")
+            await scraper.search("leche", client=client)
     finally:
         await client.aclose()
 
@@ -191,7 +187,7 @@ async def test_unexpected_shape_is_logged_as_unexpected_schema(
 
     try:
         with pytest.raises(UpstreamUnavailableError):
-            await scraper.search("leche")
+            await scraper.search("leche", client=client)
     finally:
         await client.aclose()
 
@@ -212,7 +208,7 @@ async def test_exhausted_limit_sends_nothing_to_alcampo() -> None:
 
     async with client:
         with pytest.raises(OutboundRateLimitedError):
-            await scraper.search("leche")
+            await scraper.search("leche", client=client)
 
     assert route.call_count == 0
 
@@ -226,6 +222,27 @@ async def test_limit_exhausted_between_attempts_stops_the_retries() -> None:
 
     async with client:
         with pytest.raises(OutboundRateLimitedError):
-            await scraper.search("leche")
+            await scraper.search("leche", client=client)
 
     assert route.call_count == 1
+
+
+# --- spec 007 RF-9: search with the region's session ---------------------------
+
+
+@respx.mock
+async def test_search_uses_the_client_of_the_region_session() -> None:
+    # The region lives in the session cookies: the search must go out with them.
+    route = respx.get(SEARCH_URL).mock(
+        return_value=httpx.Response(200, json=load_fixture("alcampo_search_leche.json"))
+    )
+    scraper, default_client = make_scraper()
+    async with (
+        default_client,
+        httpx.AsyncClient(
+            base_url="https://alcampo.test", cookies={"global_sid": "telde-session"}
+        ) as telde_client,
+    ):
+        await scraper.search("leche", client=telde_client)
+
+    assert "global_sid=telde-session" in route.calls.last.request.headers["cookie"]

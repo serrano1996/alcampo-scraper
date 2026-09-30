@@ -19,6 +19,7 @@ from typing import NoReturn, Protocol
 
 from app.core.config import Settings
 from app.exceptions import (
+    CooldownActiveError,
     OutboundRateLimitedError,
     PostalCodeNotServedError,
     RegionResolutionLimitedError,
@@ -29,6 +30,8 @@ from app.services.in_flight import InFlightSearches
 from app.services.region_repository import NOT_SERVED, Region, RegionRepository
 
 DELIVERABLE = "DELIVERABLE"
+# Its own window, separate from the global one (spec 007 RF-8, plan-D3).
+REGION_RESOLUTIONS_KEY = "ratelimit:alcampo:region-resolutions"
 
 logger = logging.getLogger(__name__)
 
@@ -57,6 +60,10 @@ class ResolutionLimiter(Protocol):
     async def acquire(self) -> None: ...
 
 
+class CooldownGate(Protocol):
+    async def is_active(self) -> bool: ...
+
+
 class RegionService:
     """Resolve the region that serves a postal code."""
 
@@ -67,6 +74,7 @@ class RegionService:
         new_session: Callable[[], ChainSession],
         sessions: SessionRegistry,
         resolution_limiter: ResolutionLimiter,
+        cooldown: CooldownGate,
         in_flight: InFlightSearches[Region],
         settings: Settings,
     ) -> None:
@@ -74,6 +82,7 @@ class RegionService:
         self._new_session = new_session
         self._sessions = sessions
         self._resolution_limiter = resolution_limiter
+        self._cooldown = cooldown
         self._in_flight = in_flight
         self._settings = settings
 
@@ -104,6 +113,10 @@ class RegionService:
             raise UpstreamUnavailableError("region resolution timeout") from exc
 
     async def _resolve(self, postal_code: str) -> Region:
+        # Resolving is traffic to Alcampo too: no chain during a WAF cooldown
+        # (spec 007 RF-6). Cached postal codes never get here.
+        if await self._cooldown.is_active():
+            raise CooldownActiveError("WAF cooldown active")
         session = self._new_session()
         adopted = False
         try:

@@ -1,36 +1,26 @@
 """FastAPI dependency providers, centralized as required by the constitution.
 
-`AppState` is a typed replacement for the loose attributes set on `app.state`
-in the `lifespan`; a fully typed `state.AppState` arrives in spec 006 (plan-D10).
+Everything stateful is built once in the `lifespan` (`app.main`); a provider
+only assembles the per-request objects around it. A typed `AppState` for these
+attributes arrives in spec 006.
 """
 
 from fastapi import Request
 
 from app.scrapers.alcampo_search import AlcampoSearchScraper
 from app.services.product_service import ProductService
-from app.services.rate_limiter import OutboundRateLimiter
 from app.services.search_cache import SearchCacheRepository
-from app.services.waf_cooldown import WafCooldownRepository
 
 
 def get_product_service(request: Request) -> ProductService:
     """Build a `ProductService` from the resources created in the `lifespan`."""
     state = request.app.state
-    settings = state.settings
-    rate_limiter = OutboundRateLimiter(
-        state.redis,
-        limit=settings.alcampo_rate_limit,
-        window_seconds=settings.alcampo_rate_window_seconds,
-        fallback=state.rate_limit_fallback,
-    )
-    scraper = AlcampoSearchScraper(
-        client=state.http_client, settings=settings, rate_limiter=rate_limiter
-    )
-    cache = SearchCacheRepository(state.redis)
     return ProductService(
-        scraper=scraper,
-        cache=cache,
-        cooldown=WafCooldownRepository(state.redis, fallback=state.cooldown_fallback),
+        scraper=AlcampoSearchScraper(settings=state.settings, rate_limiter=state.rate_limiter),
+        cache=SearchCacheRepository(state.redis),
+        cooldown=state.cooldown,
         in_flight=state.in_flight,
+        regions=state.region_service,
+        sessions=state.region_sessions,
         settings=state.settings,
     )

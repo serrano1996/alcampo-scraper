@@ -24,6 +24,8 @@ from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Protocol
 
+import httpx
+
 from app.exceptions import UpstreamUnavailableError
 from app.services.in_flight import InFlightSearches
 from app.services.region_repository import Region, RegionRepository
@@ -39,7 +41,10 @@ class HomeView(Protocol):
 
 
 class RegionSession(Protocol):
-    """The part of `AlcampoSessionClient` used to confirm and keep a region."""
+    """The part of `AlcampoSessionClient` used to confirm, keep and search a region."""
+
+    @property
+    def client(self) -> httpx.AsyncClient: ...
 
     async def open(self) -> HomeView: ...
     async def propose(self, region_id: str, destination_id: str) -> tuple[str, str]: ...

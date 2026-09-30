@@ -1,4 +1,4 @@
-"""Application factory and lifespan: creates and closes the shared HTTP and Redis clients."""
+"""Application factory and lifespan: creates and closes the shared clients and services."""
 
 import logging
 from collections.abc import AsyncIterator
@@ -17,10 +17,14 @@ from app.exceptions import (
     UpstreamUnavailableError,
 )
 from app.middleware.request_context import RequestContextMiddleware
+from app.scrapers.alcampo_session import AlcampoSessionClient
 from app.scrapers.http_client import create_http_client
 from app.services.in_flight import InFlightSearches
-from app.services.rate_limiter import LocalRateLimiter
-from app.services.waf_cooldown import LocalCooldown
+from app.services.rate_limiter import LocalRateLimiter, OutboundRateLimiter
+from app.services.region_repository import RegionMemory, RegionRepository
+from app.services.region_service import REGION_RESOLUTIONS_KEY, RegionService
+from app.services.region_sessions import RegionSessions
+from app.services.waf_cooldown import LocalCooldown, WafCooldownRepository
 
 logger = logging.getLogger(__name__)
 
@@ -45,21 +49,59 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         # after a deploy (spec 004 RF-8, RF-9, plan-D6).
         logger.warning("no API_KEYS configured: every request to /api/v1 will be rejected")
     app.state.settings = settings
-    app.state.http_client = create_http_client(settings)
-    app.state.redis = create_redis(
-        settings.redis_url, timeout_seconds=settings.redis_timeout_seconds
-    )
-    # Per process, not per request: it must outlive every search (spec 008 plan-D2).
+    redis_client = create_redis(settings.redis_url, timeout_seconds=settings.redis_timeout_seconds)
+    app.state.redis = redis_client
+    # Everything below keeps its state in Redis or in process memory, so it is
+    # built once per process, never per request: the in-flight registries, the
+    # local fallbacks (spec 007 RF-15) and the sessions must outlive each search.
     app.state.in_flight = InFlightSearches()
-    # Local fallbacks while Redis is unavailable: per process, so they outlive
-    # the per-request limiter and repository (spec 007 RF-15, plan-D10).
-    app.state.rate_limit_fallback = LocalRateLimiter()
-    app.state.cooldown_fallback = LocalCooldown()
+    app.state.rate_limiter = OutboundRateLimiter(
+        redis_client,
+        limit=settings.alcampo_rate_limit,
+        window_seconds=settings.alcampo_rate_window_seconds,
+        fallback=LocalRateLimiter(),
+    )
+    app.state.cooldown = WafCooldownRepository(redis_client, fallback=LocalCooldown())
+    regions = RegionRepository(
+        redis_client,
+        memory=RegionMemory(),
+        ttl_seconds=settings.region_cache_ttl_seconds,
+        negative_ttl_seconds=settings.region_negative_cache_ttl_seconds,
+    )
+
+    def new_session() -> AlcampoSessionClient:
+        # Its own HTTP client, so its own cookies: one Alcampo session each.
+        return AlcampoSessionClient(
+            client=create_http_client(settings),
+            settings=settings,
+            rate_limiter=app.state.rate_limiter,
+        )
+
+    app.state.region_sessions = RegionSessions(
+        new_session=new_session,
+        repository=regions,
+        max_age_seconds=settings.session_max_age_seconds,
+    )
+    app.state.region_service = RegionService(
+        repository=regions,
+        new_session=new_session,
+        sessions=app.state.region_sessions,
+        resolution_limiter=OutboundRateLimiter(
+            redis_client,
+            limit=settings.region_resolution_limit,
+            window_seconds=settings.region_resolution_window_seconds,
+            key=REGION_RESOLUTIONS_KEY,
+            fallback=LocalRateLimiter(),
+        ),
+        cooldown=app.state.cooldown,
+        in_flight=InFlightSearches(),
+        settings=settings,
+    )
     try:
         yield
     finally:
-        await app.state.http_client.aclose()
-        await app.state.redis.aclose()
+        await app.state.region_sessions.aclose()
+        await redis_client.aclose()
 
 
 def create_app() -> FastAPI:

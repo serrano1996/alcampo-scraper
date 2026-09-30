@@ -6,7 +6,12 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.main import create_app
-from tests.integration.conftest import SEARCH_URL, load_fixture, mock_alcampo_search
+from tests.integration.conftest import (
+    SEARCH_URL,
+    load_fixture,
+    mock_alcampo_search,
+    mock_region_chain,
+)
 
 
 @pytest.mark.parametrize("level", ["ERROR", "DEBUG"])
@@ -131,7 +136,8 @@ def test_alcampo_cookies_never_reach_the_logs(
     client: TestClient, respx_mock, caplog: pytest.LogCaptureFixture
 ) -> None:
     caplog.set_level(logging.DEBUG)
-    respx_mock.get(SEARCH_URL).mock(
+    mock_region_chain(respx_mock)
+    route = respx_mock.get(SEARCH_URL).mock(
         return_value=httpx.Response(
             503,
             headers=[
@@ -143,6 +149,7 @@ def test_alcampo_cookies_never_reach_the_logs(
 
     client.get("/api/v1/products", params=SEARCH)
 
+    assert route.called  # otherwise this would pass without testing anything
     assert "secret-cookie-value" not in caplog.text
     assert "secret-sid-value" not in caplog.text
 

@@ -15,30 +15,22 @@ from app.services.rate_limiter import OutboundRateLimiter
 SEARCH_PATH = "/api/webproductpagews/v6/product-pages/search"
 PAGE_SIZE = 50
 
-# Verified live in Fase 0 (2026-09-24): retailerRegionId of the anonymous
-# session's default region ("Vaguada", Madrid). See docs/investigacion/
-# fase-0-alcampo.md and spec-D1. Real localization arrives in spec 007.
-DEFAULT_WAREHOUSE = "5"
-
 logger = logging.getLogger(__name__)
 
 
 class AlcampoSearchScraper:
     """Searches Alcampo's product catalog by free text (RF-3)."""
 
-    def __init__(
-        self,
-        *,
-        client: httpx.AsyncClient,
-        settings: Settings,
-        rate_limiter: OutboundRateLimiter,
-    ) -> None:
-        self._client = client
+    def __init__(self, *, settings: Settings, rate_limiter: OutboundRateLimiter) -> None:
         self._settings = settings
         self._rate_limiter = rate_limiter
 
-    async def search(self, term: str) -> AlcampoSearchResponse:
-        """Return the raw, validated search envelope for `term` (a single page)."""
+    async def search(self, term: str, *, client: httpx.AsyncClient) -> AlcampoSearchResponse:
+        """Return the raw, validated search envelope for `term` (a single page).
+
+        `client` carries the cookies of a session confirmed in the wanted region:
+        Alcampo takes the region from the session, not from the request (spec 007 RF-9).
+        """
         params = {
             "q": term,
             "tag": "web",
@@ -54,7 +46,7 @@ class AlcampoSearchScraper:
             # exhausted limit raises OutboundRateLimitedError, which
             # send_with_retry does not catch, so the retries stop (RF-5, plan-D4).
             await self._rate_limiter.acquire()
-            return await self._client.get(SEARCH_PATH, params=params)
+            return await client.get(SEARCH_PATH, params=params)
 
         response = await send_with_retry(
             send,

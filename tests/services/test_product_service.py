@@ -7,11 +7,17 @@ import fakeredis
 import pytest
 
 from app.core.config import Settings
-from app.exceptions import CooldownActiveError, UpstreamBlockedError, UpstreamUnavailableError
+from app.exceptions import (
+    CooldownActiveError,
+    PostalCodeNotServedError,
+    UpstreamBlockedError,
+    UpstreamUnavailableError,
+)
 from app.models.alcampo import AlcampoSearchResponse
 from app.models.product import ProductQuery
 from app.services.in_flight import InFlightSearches
 from app.services.product_service import ProductService
+from app.services.region_repository import Region
 from app.services.search_cache import SearchCacheRepository
 from app.services.waf_cooldown import WAF_COOLDOWN_KEY, WafCooldownRepository
 
@@ -31,7 +37,7 @@ class FakeScraper:
         self.response = response
         self.calls: list[str] = []
 
-    async def search(self, term: str) -> AlcampoSearchResponse:
+    async def search(self, term: str, *, client: object = None) -> AlcampoSearchResponse:
         self.calls.append(term)
         return self.response
 
@@ -41,7 +47,7 @@ class FailingScraper:
         self.error = error
         self.calls: list[str] = []
 
-    async def search(self, term: str) -> AlcampoSearchResponse:
+    async def search(self, term: str, *, client: object = None) -> AlcampoSearchResponse:
         self.calls.append(term)
         raise self.error
 
@@ -59,7 +65,7 @@ class HangingScraper:
     def __init__(self) -> None:
         self.cancelled = False
 
-    async def search(self, term: str) -> AlcampoSearchResponse:
+    async def search(self, term: str, *, client: object = None) -> AlcampoSearchResponse:
         try:
             await asyncio.Event().wait()
         except asyncio.CancelledError:
@@ -77,12 +83,45 @@ class GatedScraper:
         self.error = error
         self.calls: list[str] = []
 
-    async def search(self, term: str) -> AlcampoSearchResponse:
+    async def search(self, term: str, *, client: object = None) -> AlcampoSearchResponse:
         self.calls.append(term)
         await self.gate.wait()
         if self.error is not None:
             raise self.error
         return self.response
+
+
+# Existing tests keep the region of spec 001 ("5"), so their `search:5:...`
+# cache keys do not change (spec 007 plan §6).
+VAGUADA = Region(region_id="vaguada-uuid", retailer_region_id="5", delivery_destination_id="d5")
+TELDE = Region(region_id="telde-uuid", retailer_region_id="32", delivery_destination_id="d32")
+
+
+class FakeRegions:
+    """Postal code -> region without the chain; a mapping or an error per code."""
+
+    def __init__(self, regions: dict[str, Region | Exception] | None = None) -> None:
+        self.regions = regions or {}
+
+    async def region_for(self, postal_code: str) -> Region:
+        region = self.regions.get(postal_code, VAGUADA)
+        if isinstance(region, Exception):
+            raise region
+        return region
+
+
+class FakeSession:
+    def __init__(self, region: Region) -> None:
+        self.client = f"client-of-{region.retailer_region_id}"
+
+
+class FakeSessions:
+    def __init__(self) -> None:
+        self.asked: list[str] = []
+
+    async def get(self, region: Region) -> FakeSession:
+        self.asked.append(region.retailer_region_id)
+        return FakeSession(region)
 
 
 def make_service(
@@ -92,6 +131,8 @@ def make_service(
     clock: Callable[[], datetime] = lambda: FIXED_NOW,
     waf_cooldown_seconds: int = 180,
     search_timeout_seconds: float = 15,
+    regions: FakeRegions | None = None,
+    sessions: FakeSessions | None = None,
 ) -> tuple[ProductService, SearchCacheRepository]:
     settings = Settings(
         _env_file=None,
@@ -106,6 +147,8 @@ def make_service(
         cache=cache,
         cooldown=WafCooldownRepository(redis),
         in_flight=InFlightSearches(),
+        regions=regions or FakeRegions(),
+        sessions=sessions or FakeSessions(),
         settings=settings,
         clock=clock,
     )
@@ -475,3 +518,82 @@ async def test_a_cache_hit_is_logged_as_hit(
     await service.search(query)
 
     assert origins(caplog) == ["miss", "hit"]
+
+
+# --- spec 007: search in the real region ---------------------------------------
+
+
+class RecordingScraper(FakeScraper):
+    def __init__(self, response: AlcampoSearchResponse) -> None:
+        super().__init__(response)
+        self.clients: list[object] = []
+
+    async def search(self, term: str, *, client: object = None) -> AlcampoSearchResponse:
+        self.clients.append(client)
+        return await super().search(term, client=client)
+
+
+async def test_the_search_goes_out_with_the_region_session(
+    redis: fakeredis.FakeAsyncRedis,
+) -> None:
+    scraper = RecordingScraper(make_raw_response(has_products=True))
+    sessions = FakeSessions()
+    service, _ = make_service(
+        scraper, redis, regions=FakeRegions({"35001": TELDE}), sessions=sessions
+    )
+
+    response = await service.search(ProductQuery(postal_code="35001", term="leche"))
+
+    assert scraper.clients == ["client-of-32"]
+    assert sessions.asked == ["32"]
+    assert response.search.warehouse == "32"
+    assert await redis.exists("search:32:leche") == 1
+
+
+async def test_two_regions_never_share_a_cache_entry(redis: fakeredis.FakeAsyncRedis) -> None:
+    scraper = FakeScraper(make_raw_response(has_products=True))
+    service, _ = make_service(scraper, redis, regions=FakeRegions({"35001": TELDE}))
+
+    madrid = await service.search(ProductQuery(postal_code="28001", term="leche"))
+    canarias = await service.search(ProductQuery(postal_code="35001", term="leche"))
+
+    assert scraper.calls == ["leche", "leche"]  # the second one is not a cache hit
+    assert (madrid.search.warehouse, canarias.search.warehouse) == ("5", "32")
+
+
+async def test_a_cache_hit_needs_no_session(redis: fakeredis.FakeAsyncRedis) -> None:
+    sessions = FakeSessions()
+    service, _ = make_service(
+        FakeScraper(make_raw_response(has_products=True)), redis, sessions=sessions
+    )
+    await service.search(ProductQuery(postal_code="28001", term="leche"))
+
+    await service.search(ProductQuery(postal_code="28001", term="leche"))
+
+    assert sessions.asked == ["5"]  # only the miss
+
+
+async def test_a_postal_code_not_served_propagates(redis: fakeredis.FakeAsyncRedis) -> None:
+    scraper = FakeScraper(make_raw_response(has_products=True))
+    regions = FakeRegions({"51001": PostalCodeNotServedError("51001")})
+    service, _ = make_service(scraper, redis, regions=regions)
+
+    with pytest.raises(PostalCodeNotServedError):
+        await service.search(ProductQuery(postal_code="51001", term="agua"))
+
+    assert scraper.calls == []
+
+
+async def test_a_waf_challenge_while_resolving_the_region_starts_the_cooldown(
+    redis: fakeredis.FakeAsyncRedis, caplog: pytest.LogCaptureFixture
+) -> None:
+    regions = FakeRegions({"35001": UpstreamBlockedError("WAF challenge")})
+    service, _ = make_service(
+        FakeScraper(make_raw_response(has_products=True)), redis, regions=regions
+    )
+
+    with pytest.raises(UpstreamBlockedError):
+        await service.search(ProductQuery(postal_code="35001", term="agua"))
+
+    assert await WafCooldownRepository(redis).is_active() is True
+    assert any("blocked" in r.getMessage() for r in service_records(caplog))
