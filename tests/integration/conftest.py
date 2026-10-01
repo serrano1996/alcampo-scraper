@@ -44,6 +44,12 @@ def integration_env(monkeypatch: pytest.MonkeyPatch) -> Iterator[pytest.MonkeyPa
     monkeypatch.setenv("RETRY_BASE_DELAY", "0")
     monkeypatch.setenv("RETRY_JITTER_MAX_S", "0")
     monkeypatch.setenv("API_KEYS", TEST_API_KEY)
+    # Outbound limits and spacing off by default (spec 010): a first search is
+    # already ~10 requests (region chain + search) and spacing would add 0.5-1 s
+    # per request. The tests that check a limit set their own values.
+    monkeypatch.setenv("ALCAMPO_RATE_LIMIT", "0")
+    monkeypatch.setenv("ALCAMPO_RATE_LIMIT_LONG", "0")
+    monkeypatch.setenv("ALCAMPO_MIN_INTERVAL_MS", "0")
     monkeypatch.setattr(main_module, "create_redis", lambda _url, **_: fakeredis.FakeAsyncRedis())
     get_settings.cache_clear()
 

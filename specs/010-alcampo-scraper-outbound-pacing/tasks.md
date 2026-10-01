@@ -13,7 +13,8 @@
 
 ---
 
-### [ ] T1 — `Settings`
+### [x] T1 — `Settings`
+> **Nota (2026-10-01):** RED real (8 fallos: campos inexistentes, validaciones que no saltaban y el `20 == 10`). **Aserción cambiada, justificada:** `test_outbound_protection_defaults` (spec 008) pasa de `alcampo_rate_limit == 20` a `10` por spec-D2, con un comentario. **Regresión adelantada de T5 a T1** (regla: se corrige en la tarea que la provoca): bajar el límite a 10 rompía 5 tests de integración que superan 10 peticiones (cadena + búsqueda); `integration_env` desactiva ahora `ALCAMPO_RATE_LIMIT`, `ALCAMPO_RATE_LIMIT_LONG` y `ALCAMPO_MIN_INTERVAL_MS`, y los tests de límite fijan los suyos. `.env.example`: el usuario añadió las 4 variables y cambió `ALCAMPO_RATE_LIMIT` a 10.
 - **RED:** `alcampo_rate_limit == 10`; `alcampo_rate_limit_long == 30` (`≥ 0`); `alcampo_rate_window_long_seconds == 900` (`≥ 1`); `alcampo_min_interval_ms == 500` (`≥ 0`); `alcampo_interval_jitter_ms == 500` (`≥ 0`); negativos → `ValidationError`.
 - **Regresión:** `.env.example` → **parar y pedir al usuario** las 4 variables nuevas (y el nuevo 10 de `ALCAMPO_RATE_LIMIT`).
 - **RF:** RF-1, RF-2, RF-3

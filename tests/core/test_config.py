@@ -26,6 +26,10 @@ OPTIONAL = [
     "REGION_RESOLUTION_WINDOW_SECONDS",
     "SESSION_MAX_AGE_SECONDS",
     "REDIS_CIRCUIT_OPEN_SECONDS",
+    "ALCAMPO_RATE_LIMIT_LONG",
+    "ALCAMPO_RATE_WINDOW_LONG_SECONDS",
+    "ALCAMPO_MIN_INTERVAL_MS",
+    "ALCAMPO_INTERVAL_JITTER_MS",
 ]
 
 
@@ -199,7 +203,7 @@ def test_outbound_protection_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
 
     settings = Settings(_env_file=None)
 
-    assert settings.alcampo_rate_limit == 20
+    assert settings.alcampo_rate_limit == 10  # spec 010 D2 (was 20 in spec 008)
     assert settings.alcampo_rate_window_seconds == 60
     assert settings.search_timeout_seconds == 15
     assert settings.waf_cooldown_max_seconds == 900
@@ -330,3 +334,48 @@ def test_redis_circuit_zero_disables_and_negative_fails(
     else:
         with pytest.raises(ValidationError):
             Settings(_env_file=None)
+
+
+# --- spec 010: outbound pacing ---------------------------------------------------
+
+
+def test_outbound_pacing_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
+    set_required(monkeypatch)
+
+    settings = Settings(_env_file=None)
+
+    assert settings.alcampo_rate_limit_long == 30
+    assert settings.alcampo_rate_window_long_seconds == 900
+    assert settings.alcampo_min_interval_ms == 500
+    assert settings.alcampo_interval_jitter_ms == 500
+
+
+@pytest.mark.parametrize(
+    ("name", "raw"),
+    [
+        ("ALCAMPO_RATE_LIMIT_LONG", "-1"),
+        ("ALCAMPO_RATE_WINDOW_LONG_SECONDS", "0"),
+        ("ALCAMPO_MIN_INTERVAL_MS", "-1"),
+        ("ALCAMPO_INTERVAL_JITTER_MS", "-1"),
+    ],
+)
+def test_invalid_outbound_pacing_values_fail(
+    monkeypatch: pytest.MonkeyPatch, name: str, raw: str
+) -> None:
+    set_required(monkeypatch)
+    monkeypatch.setenv(name, raw)
+
+    with pytest.raises(ValidationError) as exc_info:
+        Settings(_env_file=None)
+
+    assert name.lower() in str(exc_info.value)
+
+
+@pytest.mark.parametrize("name", ["ALCAMPO_RATE_LIMIT_LONG", "ALCAMPO_MIN_INTERVAL_MS"])
+def test_zero_disables_the_long_window_and_the_spacing(
+    monkeypatch: pytest.MonkeyPatch, name: str
+) -> None:
+    set_required(monkeypatch)
+    monkeypatch.setenv(name, "0")
+
+    assert getattr(Settings(_env_file=None), name.lower()) == 0

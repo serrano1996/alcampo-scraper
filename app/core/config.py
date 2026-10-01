@@ -21,11 +21,19 @@ class Settings(BaseSettings):
     retry_base_delay: float = 0.5
     retry_jitter_max_s: float = Field(default=0.3, ge=0)
     waf_cooldown_seconds: int = Field(default=180, ge=0)
-    # Outbound protection (spec 008). The rate-limit default is an estimate: the
-    # WAF threshold for search is unknown (Fase 0 saw blocks on another endpoint).
-    # 0 disables the limit (RF-6).
-    alcampo_rate_limit: int = Field(default=20, ge=0)
+    # Outbound protection (specs 008 and 010). Two windows shared through Redis:
+    # a short one against bursts and a long one, because on 2026-10-01 the WAF
+    # blocked 10 searches in ~15 min that a 1-minute window let through. The
+    # defaults are NOT proven safe (spec 010 D2): they are tuned with the traffic
+    # breakdown logged on every challenge. 0 disables a window.
+    alcampo_rate_limit: int = Field(default=10, ge=0)
     alcampo_rate_window_seconds: int = Field(default=60, ge=1)
+    alcampo_rate_limit_long: int = Field(default=30, ge=0)
+    alcampo_rate_window_long_seconds: int = Field(default=900, ge=1)
+    # Minimum gap between two requests of this process, plus random jitter, so a
+    # region resolution (~10 requests) is not sent in 1-3 s (spec 010 RF-3). 0 disables it.
+    alcampo_min_interval_ms: int = Field(default=500, ge=0)
+    alcampo_interval_jitter_ms: int = Field(default=500, ge=0)
     search_timeout_seconds: float = Field(default=15, gt=0)
     # Cap of the growing cooldown, and how long a challenge counts as "recent" (RF-8).
     waf_cooldown_max_seconds: int = Field(default=900, ge=0)
