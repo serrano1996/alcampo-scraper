@@ -1,6 +1,6 @@
 # Spec 010 — Ritmo de salida hacia Alcampo
 
-- **Estado:** borrador (pendiente de resolver las dudas de la sección 9)
+- **Estado:** aprobada (2026-10-01)
 - **Fecha:** 2026-10-01
 - **Referencia:** sin equivalente en `mercadona-scraper`. Amplía la spec 008 (límite global de salida) tras el challenge del WAF del 2026-10-01 (spec 009, sección 10). Va **antes** de implementar la 009, que añade tráfico (recorrer páginas)
 
@@ -42,11 +42,11 @@ Lo que sí es seguro:
 ### A. Límite en dos ventanas
 
 - **RF-1.** Además de la ventana corta de la spec 008, EL sistema DEBERÁ limitar las peticiones a Alcampo en una **ventana larga** (`ALCAMPO_RATE_LIMIT_LONG` por `ALCAMPO_RATE_WINDOW_LONG_SECONDS`), con las mismas reglas: compartida en Redis, con respaldo local, reintentos incluidos y un rechazo que no consume cupo (D1).
-- **RF-2.** Los valores por defecto de ambas ventanas DEBERÁN quedar por debajo de todo el tráfico con el que se ha visto un challenge (sección 1) (D2).
+- **RF-2.** Los valores por defecto DEBERÁN ser **10 peticiones / 60 s** (ventana corta, antes 20) y **30 peticiones / 900 s** (ventana larga), configurables (D2). No están demostrados: se revisan con los datos de RF-6.
 
 ### B. Espaciado
 
-- **RF-3.** EL sistema DEBERÁ dejar al menos `ALCAMPO_MIN_INTERVAL_MS` entre dos peticiones consecutivas a Alcampo del mismo proceso, con un jitter aleatorio, en lugar de enviarlas de golpe (D3). Esperar no consume cupo y cuenta dentro del tiempo máximo de cada operación (spec 008 RF-7).
+- **RF-3.** EL sistema DEBERÁ dejar al menos `ALCAMPO_MIN_INTERVAL_MS` (por defecto 500) más un jitter aleatorio de hasta `ALCAMPO_INTERVAL_JITTER_MS` (por defecto 500) entre dos peticiones consecutivas a Alcampo **del mismo proceso**, en lugar de enviarlas de golpe (D3, D4). `ALCAMPO_MIN_INTERVAL_MS=0` lo desactiva. Esperar no consume cupo y cuenta dentro del tiempo máximo de cada operación (spec 008 RF-7).
 
 ### C. No provocar errores
 
@@ -89,11 +89,11 @@ Lo que sí es seguro:
 - [ ] `ruff`, `mypy` y `pytest` limpios; README y `.env.example` actualizados.
 - [ ] **Sin verificación en vivo de los límites** (sería provocar bloqueos). Verificación manual corta con `docker compose`: una búsqueda real y una resolución de región, comprobando en los logs el espaciado.
 
-## 9. Dudas abiertas
+## 9. Decisiones (resueltas el 2026-10-01)
 
-| # | Duda | Opciones | Recomendación |
+| # | Duda | Decisión | Consecuencia |
 |---|---|---|---|
-| D1 | Cómo limitar a medio plazo | (a) segunda ventana larga (15 min). (b) solo bajar la ventana corta | **(a)**. El bloqueo del 01-10 fue con 10 peticiones en 15 min a 30 s: una ventana de 1 min nunca lo habría frenado |
-| D2 | Valores por defecto | (a) corta **10 / 60 s** y larga **30 / 15 min**. (b) más estrictos: 6 / 60 s y 15 / 15 min | **(a)**, revisables con los datos de RF-6. (b) dejaría la app casi inutilizable en un uso normal: una búsqueda nueva de un CP nuevo ya son ~11 peticiones. Hay que asumirlo: **ningún valor está demostrado**, porque el 01-10 hubo bloqueo con 10 en 15 min |
-| D3 | Espaciado mínimo | (a) **500 ms** + jitter de hasta 500 ms, por proceso. (b) 2 s | **(a)**. Convierte la ráfaga de ~10 peticiones de una resolución (1–3 s) en ~7 s, sin hacer lenta una búsqueda normal (1 petición). (b) la llevaría a ~25 s, por encima del tiempo máximo de 15 s |
-| D4 | Espaciado entre instancias | (a) por proceso. (b) global en Redis | **(a)**. Hoy hay una instancia; un turno global en Redis añade latencia y complejidad. La ventana larga ya es global |
+| D1 | Cómo limitar a medio plazo | Segunda ventana, larga, de 15 min, con las mismas reglas que la corta | RF-1. El bloqueo del 01-10 (10 en 15 min a 30 s) nunca lo habría frenado una ventana de 1 min |
+| D2 | Valores por defecto | Corta 10 / 60 s (antes 20); larga 30 / 900 s | RF-2. **No demostrados**: el 01-10 hubo bloqueo con 10 en 15 min. Más estrictos dejarían la app casi inutilizable (una búsqueda de un CP nuevo ≈ 11 peticiones). Se revisan con RF-6 |
+| D3 | Espaciado mínimo | 500 ms + jitter de hasta 500 ms | RF-3. Una resolución pasa de 1–3 s a ~7 s; una búsqueda normal (1 petición) no cambia |
+| D4 | Espaciado entre instancias | Por proceso | RF-3. La ventana larga ya es global (Redis) |
