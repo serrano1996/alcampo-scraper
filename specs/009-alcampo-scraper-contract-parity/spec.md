@@ -1,6 +1,6 @@
 # Spec 009 — Paridad de contrato con Mercadona y paginación
 
-- **Estado:** borrador (pendiente de resolver las dudas de la sección 9; varias exigen verificación en vivo antes del plan)
+- **Estado:** aprobada (2026-10-01), con las decisiones de la sección 9 tomadas tras la verificación en vivo de la sección 10
 - **Fecha:** 2026-10-01
 - **Referencia:** `mercadona-scraper/specs/008-mercadona-scraper-search-completeness` (paginación y total real) y el contrato actual de Mercadona, comparado campo a campo el 2026-10-01
 
@@ -47,24 +47,24 @@ El objetivo de base del proyecto es que un consumidor pueda usar Alcampo y Merca
 
 - **RF-1.** EL sistema DEBERÁ aceptar `page` (entero ≥ 1, por defecto 1) y `page_size` (entero de 1 a 100, por defecto 50). Fuera de rango → `422` sin llamar a Alcampo ni a Redis.
 - **RF-2.** SIN `page` ni `page_size`, EL sistema DEBERÁ devolver los mismos productos que hoy (primera página de 50): los clientes actuales no notan el cambio.
-- **RF-3.** La longitud máxima de `term` DEBERÁ ser la de Mercadona (100) **si** Alcampo trata igual los términos de más de 50 caracteres (D6); si no, se documenta la diferencia.
+- **RF-3.** La longitud máxima de `term` DEBERÁ ser la de Mercadona (100). A Alcampo se le DEBERÁN enviar como mucho los 50 primeros caracteres del término normalizado, como hace su propia web (Fase 0 §1, D6).
 
 ### B. Total y páginas
 
-- **RF-4.** `search.total_results` DEBERÁ ser el número total de productos que coinciden con la búsqueda en esa región, no los de esta página. Cómo se obtiene lo decide D3 tras la verificación en vivo.
-- **RF-5.** `search` DEBERÁ incluir `page`, `page_size` y `total_pages`, con el mismo significado que en Mercadona.
+- **RF-4.** `search.total_results` DEBERÁ ser el número total de productos que coinciden con la búsqueda en esa región, no los de esta página. Alcampo no da un total exacto (sección 10), así que DEBERÁ estimarse con la suma de los `productCount` de primer nivel de `additionalPageInfo.categories`, y pasar a ser exacto cuando se sirva la última página (la que llega sin `nextPageToken`): `(page − 1) × page_size + productos de esa página` (D3).
+- **RF-5.** `search` DEBERÁ incluir `page`, `page_size` y `total_pages`, con el mismo significado que en Mercadona. `total_pages = min(ceil(total_results / page_size), MAX_PAGE)`; en la última página, la página servida.
 - **RF-6.** SI la página pedida no existe (más allá de la última), ENTONCES EL sistema DEBERÁ responder `404 {"detail": "Page out of range"}` sin cachear nada. La página 1 sin resultados sigue siendo `200` con lista vacía.
 
 ### C. Cursor y tráfico hacia Alcampo
 
-- **RF-7.** EL sistema DEBERÁ guardar en Redis el token de cada página que obtenga, por región, término normalizado y tamaño de página, para no recorrer de nuevo las páginas anteriores (D2).
+- **RF-7.** EL sistema DEBERÁ guardar el token de cada página que obtenga **en memoria, en la sesión de la región que lo obtuvo**, por término normalizado y tamaño de página: los tokens están ligados a la sesión (sección 10). SI la sesión se renueva, ENTONCES sus tokens se descartan (D2).
 - **RF-8.** Para servir una página N sin su token, EL sistema DEBERÁ recorrer desde la última página conocida, con **todas** las protecciones de las specs 002 y 008 (límite global, enfriamiento, tiempo máximo) aplicadas a cada petición. SI N supera `MAX_PAGE` (D2), ENTONCES `422` sin llamar a Alcampo.
 - **RF-9.** Cada página DEBERÁ cachearse por separado: `search:{región}:{término}:{page}:{page_size}`.
 
 ### D. Forma de la respuesta
 
 - **RF-10.** `search.term` DEBERÁ ser el término normalizado, como en Mercadona (D5).
-- **RF-11.** `products[].image_url` y `products[].category` DEBERÁN tener el mismo tipo en ambas APIs (D4).
+- **RF-11.** `products[].image_url` y `products[].category` DEBERÁN ser texto no nulo, como en Mercadona. Un producto sin imagen o sin categoría se descarta como cualquier otro mal formado (spec 001, D4).
 
 ## 5. Requisitos no funcionales
 
@@ -103,14 +103,37 @@ El objetivo de base del proyecto es que un consumidor pueda usar Alcampo y Merca
 - [ ] README actualizado.
 - [ ] Verificación manual con `docker compose`: páginas 1, 2 y 3 de `leche`, la 3 repetida sale de cache, y una página fuera de rango da `404`.
 
-## 9. Dudas abiertas
+## 9. Decisiones (resueltas el 2026-10-01)
 
-| # | Duda | Opciones | Recomendación |
+| # | Duda | Decisión | Consecuencia |
 |---|---|---|---|
-| D1 | **Verificación en vivo previa** | Comprobar: **(a)** si alguna respuesta, cabecera o parámetro de la búsqueda da un **total exacto**; **(b)** si un `pageToken` sirve más tarde y en otra sesión de la **misma región** (para poder guardarlo); **(c)** si `maxPageSize` admite 100; **(d)** cómo es la última página (¿sin token? ¿vacía?) y qué devuelve un token inválido; **(e)** cuántos de 100 productos reales traen `image` o `categoryPath` vacíos; **(f)** qué hace Alcampo con un término de más de 50 caracteres | **Hacerla**, al ritmo seguro: 30 s entre peticiones, **sin crear destinos** (todo en la región por defecto). Unas 10–12 peticiones |
-| D2 | Cómo servir la página N con un cursor | (a) guardar los tokens en Redis y recorrer desde la última conocida, con un tope `MAX_PAGE`. (b) solo permitir avanzar de una en una | **(a)** con `MAX_PAGE = 20`, como el límite efectivo de Algolia en Mercadona (1.000 resultados con 50 por página). El peor caso de una página nueva son 20 peticiones encadenadas, todas bajo el límite global |
-| D3 | `total_results` y `total_pages` sin total exacto | (a) total exacto, si D1a lo encuentra. (b) suma de los `productCount` de categoría como estimación documentada. (c) `total_results` solo exacto al llegar a la última página | **(a) si existe**; si no, **(b)**, con `total_pages = ceil(total / page_size)` acotado por `MAX_PAGE` y documentado como estimación |
-| D4 | `image_url` y `category` nulos | (a) Alcampo nunca devuelve `null`: cadena vacía si falta. (b) ambos contratos los declaran opcionales (cambio en Mercadona). (c) se mantiene la diferencia, documentada | **Decidir con los datos de D1e.** Si en 100 productos reales nunca faltan, **(a)**; si faltan, **(b)**, porque inventar una cadena vacía oculta un dato ausente |
-| D5 | `search.term` normalizado o el del cliente | (a) normalizado, como Mercadona. (b) el del cliente, como hoy | **(a)**. Cambia una decisión de la spec 008 de Alcampo, pero la paridad es el objetivo de base |
-| D6 | Longitud máxima de `term` | (a) 100, como Mercadona, si D1f muestra que Alcampo busca igual con más de 50. (b) 50, documentado como diferencia | **Según D1f** |
-| D7 | `page_size` mayor que lo que admita Alcampo | (a) si `maxPageSize` no llega a 100, componer una página con varias peticiones. (b) limitar `page_size` a lo que admita Alcampo y documentarlo | **Según D1c.** Si no admite 100, **(b)**: componer páginas multiplica las peticiones |
+| D1 | Verificación en vivo previa | Hecha (sección 10); cortada por un challenge del WAF en la 8.ª petición | D2, D3, D4 y D7 se deciden con datos; D6 sin datos |
+| D2 | Cómo servir la página N con un cursor | Tokens **en memoria, en la sesión de cada región** (no en Redis: ligados a la sesión); si la sesión se renueva, se vuelve a recorrer. `MAX_PAGE = 20` | RF-7, RF-8. Revisada tras la sección 10 (la versión aprobada antes, tokens en Redis, no funcionaría) |
+| D3 | Total sin dato exacto | Estimación por la suma de `productCount` de categorías de primer nivel, documentada; exacto al servir la última página | RF-4, RF-5. "Sin total hasta el final" rompería el tipo `int` del contrato de Mercadona |
+| D4 | `image_url` / `category` nulos | Nunca nulos, como Mercadona; un producto sin ellos se descarta | RF-11. 0 de 100 productos reales vacíos (sección 10) |
+| D5 | `search.term` | Normalizado, como Mercadona | RF-10. Cambia la decisión plan-D1 de la spec 008 de Alcampo |
+| D6 | Términos de más de 50 caracteres | Se aceptan hasta 100; a Alcampo van los 50 primeros, como hace su web | RF-3. No verificado en vivo (sección 10) |
+| D7 | `page_size` | De 1 a 100, en una sola petición | RF-1. `maxPageSize=100` verificado |
+
+## 10. Verificación en vivo de D1 (2026-10-01, 11:50–11:53Z)
+
+Región por defecto, sin crear destinos, 30 s entre peticiones. **Cortada por un challenge del WAF en la 8.ª petición** (R8, término de 60 caracteres); no se hizo ninguna más.
+
+| Pregunta | Resultado |
+|---|---|
+| (a) Total exacto | **No existe.** Ni en el cuerpo (el único número fuera de productos y categorías es `additionalPageInfo.currentCategory.productCount: 0`) ni en cabeceras |
+| (b) Token en otra sesión / más tarde | En **otra sesión: `400`**. En la misma sesión, 1,5 min después: `200` con 50 productos. **El token está ligado a la sesión** |
+| (c) `maxPageSize=100` | Funciona: 100 productos decorados |
+| (d) Última página y token inválido | Última página **sin `nextPageToken`** y con `metadata: {}` (`quinoa`: 25 resultados, una página). Token inválido: **`401`** `CC-090` |
+| (e) Imagen o categoría vacías | **0 de 100** productos reales sin `image.src` y 0 sin `categoryPath` |
+| (f) Término de más de 50 caracteres | **Sin respuesta:** challenge del WAF en esa petición |
+
+**Consecuencias para las dudas:**
+
+- **D2 queda invalidada en su forma aprobada:** los tokens no se pueden guardar en Redis ni compartir entre instancias, ni sobreviven a la renovación de sesión (cada 50 min, spec 007). Propuesta revisada: tokens **en memoria, en la sesión de cada región** (`RegionSessions`), por término normalizado y tamaño de página; si la sesión se renueva, se vuelve a recorrer. Las páginas ya servidas siguen en la cache de Redis y no necesitan token. `MAX_PAGE = 20` se mantiene.
+- **D3:** sin total exacto, quedan la estimación por categorías o "total desconocido hasta la última página".
+- **D4:** con 0 de 100 vacíos, la opción (a) (nunca nulo) es viable.
+- **D7:** `maxPageSize=100` funciona: `page_size` de 1 a 100 en una sola petición.
+- **D6:** sin datos.
+
+**Hallazgo fuera de esta spec:** el challenge llegó con 10 búsquedas en ~15 min a 30 s de separación, muy por debajo del límite por defecto de la spec 008 (20 por minuto). O el umbral real de la búsqueda es mucho menor, o el WAF penalizó las respuestas de error provocadas (el `400` del token ajeno y el `401` del token inválido). Se trata aparte (límite de salida y espaciado).
