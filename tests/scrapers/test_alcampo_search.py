@@ -12,6 +12,7 @@ from app.exceptions import OutboundRateLimitedError, UpstreamUnavailableError
 from app.models.alcampo import AlcampoSearchResponse
 from app.scrapers.alcampo_search import SEARCH_PATH, AlcampoSearchScraper
 from app.services.rate_limiter import OutboundRateLimiter
+from tests.services.outbound_doubles import RecordingGate, gate_for
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
 SEARCH_URL = "https://alcampo.test/api/webproductpagews/v6/product-pages/search"
@@ -19,10 +20,6 @@ SEARCH_URL = "https://alcampo.test/api/webproductpagews/v6/product-pages/search"
 
 def load_fixture(name: str) -> dict:
     return json.loads((FIXTURES / name).read_text(encoding="utf-8"))
-
-
-def disabled_limiter() -> OutboundRateLimiter:
-    return OutboundRateLimiter(fakeredis.FakeAsyncRedis(), limit=0, window_seconds=60)
 
 
 def make_scraper(
@@ -37,9 +34,7 @@ def make_scraper(
         retry_jitter_max_s=0,
     )
     client = httpx.AsyncClient(base_url=settings.alcampo_base_url)
-    scraper = AlcampoSearchScraper(
-        settings=settings, rate_limiter=rate_limiter or disabled_limiter()
-    )
+    scraper = AlcampoSearchScraper(settings=settings, gate=gate_for(rate_limiter))
     return scraper, client
 
 
@@ -145,7 +140,7 @@ async def test_search_passes_the_configured_jitter_to_retries(
         retry_jitter_max_s=0.25,
     )
     async with httpx.AsyncClient(base_url=settings.alcampo_base_url) as client:
-        await AlcampoSearchScraper(settings=settings, rate_limiter=disabled_limiter()).search(
+        await AlcampoSearchScraper(settings=settings, gate=gate_for()).search(
             "leche", client=client
         )
 
@@ -246,3 +241,22 @@ async def test_search_uses_the_client_of_the_region_session() -> None:
         await scraper.search("leche", client=telde_client)
 
     assert "global_sid=telde-session" in route.calls.last.request.headers["cookie"]
+
+
+# --- spec 010: every request goes through the outbound gate ---------------------
+
+
+@respx.mock
+async def test_the_search_is_announced_and_its_answer_reported_to_the_gate() -> None:
+    respx.get(SEARCH_URL).mock(
+        return_value=httpx.Response(200, json=load_fixture("alcampo_search_leche.json"))
+    )
+    gate = RecordingGate()
+    settings = Settings(
+        _env_file=None, alcampo_base_url="https://alcampo.test", redis_url="redis://x"
+    )
+    async with httpx.AsyncClient(base_url=settings.alcampo_base_url) as client:
+        await AlcampoSearchScraper(settings=settings, gate=gate).search("leche", client=client)
+
+    assert gate.kinds == ["search"]
+    assert gate.answers == [("search", SEARCH_PATH, 200)]

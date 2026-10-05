@@ -17,7 +17,7 @@ def get_product_service(request: Request) -> ProductService:
     """Build a `ProductService` from the resources created in the `lifespan`."""
     res = resources(request.app)
     return ProductService(
-        scraper=AlcampoSearchScraper(settings=res.settings, rate_limiter=res.rate_limiter),
+        scraper=AlcampoSearchScraper(settings=res.settings, gate=res.gate),
         cache=SearchCacheRepository(res.redis, circuit=res.redis_circuit),
         cooldown=res.cooldown,
         in_flight=res.in_flight,

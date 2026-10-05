@@ -25,6 +25,8 @@ from app.exceptions import OutboundRateLimitedError
 from app.services.redis_circuit import RedisCircuitBreaker, redis_unavailable
 
 RATE_LIMIT_KEY = "ratelimit:alcampo"
+# The long window of spec 010 (RF-1): same rules, its own key.
+RATE_LIMIT_LONG_KEY = "ratelimit:alcampo:long"
 
 Clock = Callable[[], float]
 

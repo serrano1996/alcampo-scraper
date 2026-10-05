@@ -40,7 +40,7 @@ from app.models.alcampo import (
     AlcampoSessionProposition,
 )
 from app.scrapers.retry import send_with_retry
-from app.services.rate_limiter import OutboundRateLimiter
+from app.services.outbound import OutboundGate
 
 AREAS_PATH = "/api/address/v1/addresses/areas"
 DELIVERABILITY_PATH = "/api/ecomdeliverydestinations/v2/deliverability"
@@ -48,6 +48,15 @@ DESTINATIONS_PATH = "/api/ecomdeliverydestinations/v2/temporary-delivery-destina
 DELIVERY_ADDRESS_PATH = "/api/ecomdeliverydestinations/v4/delivery-addresses/{id}"
 PROPOSITION_PATH = "/api/customersessions/v2/sessions/proposition"
 ACTIVE_PATH = "/api/customersessions/v2/sessions/active"
+
+# Steps 1-5 resolve a postal code; the home page and steps 6-7 confirm or renew
+# a session. Told apart in the traffic breakdown (spec 010 plan-D5).
+_RESOLUTION_PREFIXES = (
+    AREAS_PATH,
+    DELIVERABILITY_PATH,
+    DESTINATIONS_PATH,
+    DELIVERY_ADDRESS_PATH.split("{", 1)[0],
+)
 
 # Fragments of the server-side state embedded in the home page. Each must yield
 # exactly one distinct value; anything else means the page changed (RF-5).
@@ -92,11 +101,11 @@ class AlcampoSessionClient:
         *,
         client: httpx.AsyncClient,
         settings: Settings,
-        rate_limiter: OutboundRateLimiter,
+        gate: OutboundGate,
     ) -> None:
         self._client = client
         self._settings = settings
-        self._rate_limiter = rate_limiter
+        self._gate = gate
         self._home: HomeState | None = None
 
     @property
@@ -224,11 +233,15 @@ class AlcampoSessionClient:
         second destination, on the step the WAF punishes (Fase 0 §5).
         """
 
+        kind = "resolution" if path.startswith(_RESOLUTION_PREFIXES) else "session"
+
         async def send() -> httpx.Response:
-            await self._rate_limiter.acquire()
-            return await self._client.request(
+            await self._gate.before_request(kind)
+            response = await self._client.request(
                 method, path, headers=headers, data=data, json=payload
             )
+            self._gate.after_response(kind=kind, endpoint=path, status=response.status_code)
+            return response
 
         return await send_with_retry(
             send,

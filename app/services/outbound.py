@@ -1,18 +1,25 @@
 """What every request to Alcampo goes through before leaving (spec 010).
 
 `OutboundPacer` spaces the requests of this process; `TrafficLog` remembers
-what was sent, for the breakdown logged with every WAF challenge.
+what was sent, for the breakdown logged with every WAF challenge; `OutboundGate`
+puts them together with the two outbound windows.
 """
 
 import asyncio
+import logging
 import random
 import time
 from collections import deque
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
+from typing import Protocol
+
+from app.exceptions import OutboundRateLimitedError
 
 Sleep = Callable[[float], Awaitable[None]]
 Uniform = Callable[[float, float], float]
+
+logger = logging.getLogger(__name__)
 
 
 class OutboundPacer:
@@ -119,3 +126,58 @@ class TrafficLog:
             self._requests.popleft()
         while self._client_errors and self._client_errors[0] < oldest:
             self._client_errors.popleft()
+
+
+class Pacer(Protocol):
+    async def wait_turn(self) -> float: ...
+
+
+class SlotLimiter(Protocol):
+    async def acquire(self) -> str: ...
+    async def release(self, slot: str) -> None: ...
+
+
+# 404 and 429 are expected answers with their own handling; any other 4xx means
+# the app sent something Alcampo considers invalid, which the WAF may score as a
+# bot signal (spec 010 RF-5, the 2026-10-01 challenge).
+EXPECTED_CLIENT_ERRORS = frozenset({404, 429})
+
+
+class OutboundGate:
+    """The single gate every request to Alcampo goes through (spec 010 plan-D1).
+
+    `before_request` waits its turn (pacer), then takes a slot of the long window
+    and of the short one; if the short one rejects, the long slot is given back,
+    so a rejected request consumes no quota anywhere (plan-D2). `after_response`
+    records the answer and warns about unexpected 4xx. One instance per process
+    (`lifespan`).
+    """
+
+    def __init__(
+        self, *, pacer: Pacer, short: SlotLimiter, long: SlotLimiter, traffic: TrafficLog
+    ) -> None:
+        self._pacer = pacer
+        self._short = short
+        self._long = long
+        self.traffic = traffic
+
+    async def before_request(self, kind: str) -> None:
+        """Pace, then take a slot of both windows; raises `OutboundRateLimitedError`."""
+        await self._pacer.wait_turn()
+        long_slot = await self._long.acquire()
+        try:
+            await self._short.acquire()
+        except OutboundRateLimitedError:
+            await self._long.release(long_slot)
+            raise
+        self.traffic.record(kind)
+
+    def after_response(self, *, kind: str, endpoint: str, status: int) -> None:
+        self.traffic.record_status(status)
+        if 400 <= status < 500 and status not in EXPECTED_CLIENT_ERRORS:
+            logger.warning(
+                "unexpected client error from Alcampo status=%d endpoint=%r kind=%s",
+                status,
+                endpoint,
+                kind,
+            )

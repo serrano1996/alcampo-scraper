@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 
 from app.core.state import resources
 from app.main import create_app
-from app.services.rate_limiter import RATE_LIMIT_KEY
+from app.services.rate_limiter import RATE_LIMIT_KEY, RATE_LIMIT_LONG_KEY
 from app.services.waf_cooldown import WAF_COOLDOWN_KEY, WAF_COOLDOWN_LAST_KEY
 from tests.integration.conftest import TEST_API_KEY, load_fixture, mock_alcampo_search
 
@@ -77,3 +77,21 @@ async def test_a_recent_second_challenge_doubles_the_cooldown(
     assert "cooldown_s=360" in second_error.getMessage()
     assert await redis.get(WAF_COOLDOWN_LAST_KEY) == b"360"
     assert 359 <= await redis.ttl(WAF_COOLDOWN_KEY) <= 360
+
+
+async def test_an_exhausted_long_window_rejects_new_searches(
+    integration_env: pytest.MonkeyPatch, respx_mock, caplog: pytest.LogCaptureFixture
+) -> None:
+    # spec 010 RF-1: the long window is wired in the real app, with its own key.
+    integration_env.setenv("ALCAMPO_RATE_LIMIT_LONG", "1")
+    route = mock_alcampo_search(respx_mock, json_body=load_fixture("alcampo_search_leche.json"))
+    with TestClient(create_app(), headers={"X-API-Key": TEST_API_KEY}) as client:
+        redis = resources(client.app).redis
+        await redis.zadd(RATE_LIMIT_LONG_KEY, {"someone-else": time.time()})
+
+        response = client.get("/api/v1/products", params=SEARCH)
+
+    assert response.status_code == 502
+    assert route.call_count == 0
+    warnings = [r.getMessage() for r in records(caplog, "app.main", logging.WARNING)]
+    assert any("outbound rate limit reached" in message for message in warnings)

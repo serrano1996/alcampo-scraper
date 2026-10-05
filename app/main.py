@@ -21,7 +21,12 @@ from app.middleware.request_context import RequestContextMiddleware
 from app.scrapers.alcampo_session import AlcampoSessionClient
 from app.scrapers.http_client import create_http_client
 from app.services.in_flight import InFlightSearches
-from app.services.rate_limiter import LocalRateLimiter, OutboundRateLimiter
+from app.services.outbound import OutboundGate, OutboundPacer, TrafficLog
+from app.services.rate_limiter import (
+    RATE_LIMIT_LONG_KEY,
+    LocalRateLimiter,
+    OutboundRateLimiter,
+)
 from app.services.redis_circuit import RedisCircuitBreaker
 from app.services.region_repository import RegionMemory, RegionRepository
 from app.services.region_service import REGION_RESOLUTIONS_KEY, RegionService
@@ -56,12 +61,29 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     # local fallbacks (spec 007 RF-15) and the sessions must outlive each search.
     # One circuit for every Redis-backed repository (spec 007 RF-18, spec-D11).
     circuit = RedisCircuitBreaker(open_seconds=settings.redis_circuit_open_seconds)
-    rate_limiter = OutboundRateLimiter(
-        redis_client,
-        limit=settings.alcampo_rate_limit,
-        window_seconds=settings.alcampo_rate_window_seconds,
-        fallback=LocalRateLimiter(),
-        circuit=circuit,
+    # Every request to Alcampo goes through this gate: spacing, a short and a
+    # long window, and the traffic log for challenge breakdowns (spec 010).
+    gate = OutboundGate(
+        pacer=OutboundPacer(
+            min_interval_ms=settings.alcampo_min_interval_ms,
+            jitter_ms=settings.alcampo_interval_jitter_ms,
+        ),
+        short=OutboundRateLimiter(
+            redis_client,
+            limit=settings.alcampo_rate_limit,
+            window_seconds=settings.alcampo_rate_window_seconds,
+            fallback=LocalRateLimiter(),
+            circuit=circuit,
+        ),
+        long=OutboundRateLimiter(
+            redis_client,
+            limit=settings.alcampo_rate_limit_long,
+            window_seconds=settings.alcampo_rate_window_long_seconds,
+            key=RATE_LIMIT_LONG_KEY,
+            fallback=LocalRateLimiter(),
+            circuit=circuit,
+        ),
+        traffic=TrafficLog(),
     )
     cooldown = WafCooldownRepository(redis_client, fallback=LocalCooldown(), circuit=circuit)
     regions = RegionRepository(
@@ -77,7 +99,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         return AlcampoSessionClient(
             client=create_http_client(settings),
             settings=settings,
-            rate_limiter=rate_limiter,
+            gate=gate,
         )
 
     region_sessions = RegionSessions(
@@ -106,7 +128,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         settings=settings,
         redis=redis_client,
         redis_circuit=circuit,
-        rate_limiter=rate_limiter,
+        gate=gate,
         cooldown=cooldown,
         in_flight=InFlightSearches(),
         region_sessions=region_sessions,

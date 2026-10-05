@@ -34,7 +34,8 @@
 - **RED:** `record(kind)` y `record_status(...)`; `summary()` con recuentos 1/5/15 min por tipo y `4xx`; las entradas de más de 15 min se descartan.
 - **RF:** RF-6. **Fin del PR 1.**
 
-### [ ] T5 — `OutboundGate` y cableado
+### [x] T5 — `OutboundGate` y cableado
+> **Nota (2026-10-05):** RED real (`ImportError: OutboundGate`; después, 35 fallos por `gate=` en scraper y cliente de sesión). `OutboundGate` en `app/services/outbound.py`: `before_request(kind)` = espaciado → ventana larga → ventana corta (si la corta rechaza, libera el hueco de la larga) → registro; `after_response(...)` registra el estado y avisa (`WARNING` con código, endpoint y tipo) de los `4xx` salvo `404`/`429`. Scraper y cliente de sesión reciben `gate` en vez de `rate_limiter`; el tipo de cada paso de la cadena sale de su ruta (`resolution` para los pasos 1–5, `session` para la portada y los pasos 6–7, plan-D5). `AppResources.rate_limiter` pasa a `gate`; nueva clave `ratelimit:alcampo:long`. Dobles compartidos en `tests/services/outbound_doubles.py` (`gate_for`, `RecordingGate`). Test de punta a punta añadido: con la ventana larga llena, una búsqueda da `502` sin salir a Alcampo. **Mutación:** ignorar la ventana larga en la puerta → fallan el test de punta a punta y los de orden de la puerta. Restaurado. La regresión de `integration_env` prevista aquí ya se hizo en T1.
 - **RED:** orden espaciado → larga → corta; rechazo de la corta libera la larga; la puerta registra tipo y estado; `401` → `WARNING` con código, endpoint y tipo; `404`/`429` sin `WARNING`. Scraper y cliente de sesión pasan por la puerta (tipo por endpoint, plan-D5).
 - **Regresión (plan §4):** `integration_env` con espaciado y límites desactivados; helpers de scraper y sesión con una puerta desactivada.
 - **RF:** RF-1, RF-3, RF-5

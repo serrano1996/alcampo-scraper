@@ -14,7 +14,7 @@ from starlette.applications import Starlette
 from app.core.config import Settings
 from app.models.product import ProductSearchResponse
 from app.services.in_flight import InFlightSearches
-from app.services.rate_limiter import OutboundRateLimiter
+from app.services.outbound import OutboundGate
 from app.services.redis_circuit import RedisCircuitBreaker
 from app.services.region_service import RegionService
 from app.services.region_sessions import RegionSessions
@@ -28,7 +28,7 @@ class AppResources:
     settings: Settings
     redis: Redis
     redis_circuit: RedisCircuitBreaker
-    rate_limiter: OutboundRateLimiter
+    gate: OutboundGate
     cooldown: WafCooldownRepository
     in_flight: InFlightSearches[ProductSearchResponse]
     region_sessions: RegionSessions

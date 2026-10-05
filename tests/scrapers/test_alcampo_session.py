@@ -19,6 +19,7 @@ from app.exceptions import OutboundRateLimitedError, UpstreamBlockedError, Upstr
 from app.models.alcampo import AlcampoAreaDetails
 from app.scrapers.alcampo_session import AlcampoSessionClient
 from app.services.rate_limiter import OutboundRateLimiter
+from tests.services.outbound_doubles import RecordingGate, gate_for
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
 BASE = "https://alcampo.test"
@@ -76,9 +77,7 @@ async def opened(
     rate_limiter: OutboundRateLimiter | None = None,
 ) -> AlcampoSessionClient:
     mock_home(router)
-    session = AlcampoSessionClient(
-        client=http, settings=settings(), rate_limiter=rate_limiter or limiter()
-    )
+    session = AlcampoSessionClient(client=http, settings=settings(), gate=gate_for(rate_limiter))
     await session.open()
     return session
 
@@ -111,7 +110,7 @@ async def test_open_reads_the_session_and_region_from_the_home_html(
 @respx.mock
 async def test_open_accepts_an_unquoted_retailer_region_id(http: httpx.AsyncClient) -> None:
     mock_home(respx.mock, "alcampo_home_telde.html")
-    session = AlcampoSessionClient(client=http, settings=settings(), rate_limiter=limiter())
+    session = AlcampoSessionClient(client=http, settings=settings(), gate=gate_for())
 
     home = await session.open()
 
@@ -128,7 +127,7 @@ async def test_open_tolerates_whitespace_in_the_embedded_state(http: httpx.Async
         f'"{VAGUADA}", "retailerRegionId": "5"}}}};</script>'
     )
     respx.get(f"{BASE}/").mock(return_value=httpx.Response(200, html=spaced))
-    session = AlcampoSessionClient(client=http, settings=settings(), rate_limiter=limiter())
+    session = AlcampoSessionClient(client=http, settings=settings(), gate=gate_for())
 
     home = await session.open()
 
@@ -151,7 +150,7 @@ async def test_unexpected_home_html_is_an_upstream_failure(
     http: httpx.AsyncClient, caplog: pytest.LogCaptureFixture, html: str
 ) -> None:
     respx.get(f"{BASE}/").mock(return_value=httpx.Response(200, html=html))
-    session = AlcampoSessionClient(client=http, settings=settings(), rate_limiter=limiter())
+    session = AlcampoSessionClient(client=http, settings=settings(), gate=gate_for())
 
     with pytest.raises(UpstreamUnavailableError) as exc_info:
         await session.open()
@@ -163,7 +162,7 @@ async def test_unexpected_home_html_is_an_upstream_failure(
 
 
 async def test_a_step_before_open_is_a_programming_error(http: httpx.AsyncClient) -> None:
-    session = AlcampoSessionClient(client=http, settings=settings(), rate_limiter=limiter())
+    session = AlcampoSessionClient(client=http, settings=settings(), gate=gate_for())
 
     with pytest.raises(RuntimeError):
         await session.find_area("28001")
@@ -359,3 +358,29 @@ async def test_session_tokens_never_reach_the_logs(
 
     assert CSRF not in caplog.text
     assert VISITOR not in caplog.text
+
+
+# --- spec 010: each step is announced to the gate with its kind -----------------
+
+
+@respx.mock
+async def test_each_step_goes_through_the_gate_with_its_kind(http: httpx.AsyncClient) -> None:
+    mock_home(respx.mock)
+    respx.put(AREAS).mock(return_value=httpx.Response(200, json=[]))
+    respx.post(PROPOSITION).mock(
+        return_value=httpx.Response(200, json=fixture("alcampo_session_proposition.json"))
+    )
+    respx.post(ACTIVE).mock(return_value=httpx.Response(401, json={"code": "CC-090"}))
+    gate = RecordingGate()
+    session = AlcampoSessionClient(client=http, settings=settings(), gate=gate)
+
+    await session.open()
+    await session.find_area("99999")
+    origin, destination = await session.propose(TELDE, DESTINATION)
+    with pytest.raises(UpstreamUnavailableError):
+        await session.activate(origin, destination)
+
+    # Resolution steps (1-5) and session steps (home, 6, 7) are told apart (plan-D5).
+    assert gate.kinds == ["session", "resolution", "session", "session"]
+    assert [status for _, _, status in gate.answers] == [200, 200, 200, 401]
+    assert gate.answers[-1][:2] == ("session", "/api/customersessions/v2/sessions/active")
