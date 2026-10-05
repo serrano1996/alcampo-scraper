@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from app.exceptions import UpstreamFormatError
 from app.mappers.product_mapper import map_search
 from app.models.alcampo import AlcampoSearchResponse
 
@@ -95,15 +96,33 @@ def test_partial_discard_logs_one_warning_with_count_and_ids(
     assert "'1'" in record.getMessage()
 
 
-def test_discarding_every_product_is_an_error(caplog: pytest.LogCaptureFixture) -> None:
+def test_discarding_every_product_is_an_upstream_format_error(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    # Spec 011 RF-1: no longer `[]` (a 200 that looks like "no results", cached).
+    # The 502 handler logs the single ERROR with this reason (plan-D2).
     broken_a = {**first_raw_product(), "name": ""}
     broken_b = {**first_raw_product(), "retailerProductId": "2", "price": {"amount": "abc"}}
 
-    assert map_search(envelope(broken_a, broken_b)) == []
+    with pytest.raises(UpstreamFormatError) as raised:
+        map_search(envelope(broken_a, broken_b))
 
-    [record] = mapper_records(caplog)
-    assert record.levelno == logging.ERROR
-    assert "discarded=2" in record.getMessage()
+    assert "discarded=2" in raised.value.reason
+    assert "fields=['name:string_too_short', 'price.amount:string_pattern_mismatch']" in (
+        raised.value.reason
+    )
+    assert "abc" not in raised.value.reason
+    assert mapper_records(caplog) == []
+
+
+@pytest.mark.parametrize(
+    "body",
+    [{"productGroups": []}, {"productGroups": [{"decoratedProducts": []}, {}]}],
+    ids=["no-groups", "empty-groups"],
+)
+def test_a_search_without_products_is_not_a_format_error(body: dict) -> None:
+    # Spec 011 RF-2: real "no results" stays a 200 with an empty list.
+    assert map_search(AlcampoSearchResponse.model_validate(body)) == []
 
 
 def test_duplicates_are_not_counted_as_discarded(caplog: pytest.LogCaptureFixture) -> None:
@@ -156,11 +175,12 @@ def test_a_product_without_image_or_category_is_discarded(
 def test_a_product_missing_the_image_key_is_discarded() -> None:
     incomplete = {**first_raw_product(), "retailerProductId": "9"}
     del incomplete["image"]
+    # With a valid one beside it: alone, it would be a format error (spec 011 RF-1).
     raw = AlcampoSearchResponse.model_validate(
-        {"productGroups": [{"decoratedProducts": [incomplete]}]}
+        {"productGroups": [{"decoratedProducts": [first_raw_product(), incomplete]}]}
     )
 
-    assert map_search(raw) == []
+    assert [p.id for p in map_search(raw)] == ["54180"]
 
 
 # --- spec 011 RF-5: which field failed, never its value -------------------------

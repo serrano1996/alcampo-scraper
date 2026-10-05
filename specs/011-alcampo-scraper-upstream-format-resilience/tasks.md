@@ -23,7 +23,8 @@
 - **GREEN:** `map_search` reúne `ruta:tipo` de `ValidationError.errors()` (sin `input` ni `msg`) y las `unitName` fuera de `UNIT_SUFFIXES`.
 - **RF:** RF-4, RF-5, RF-6
 
-### [ ] T2 — Todo roto → `502` sin cache
+### [x] T2 — Todo roto → `502` sin cache
+> **Nota (2026-10-05):** RED real (colección: no existía `UpstreamFormatError`). GREEN: `UpstreamFormatError(UpstreamUnavailableError)`; `map_search` la lanza si llegaron productos y no queda ninguno, con motivo `all products malformed discarded=N fields=[…]` y sin log propio (el `502` registra el único `ERROR`, plan-D2). El servicio no cambia (plan-D1): sin cache, sin enfriamiento, y en un recorrido con la página 2 rota se para ahí con la 1 cacheada. `ChainedScraper` acepta `broken={páginas}` (productos sin imagen). **Regresiones, una a una:** `test_discarding_every_product_is_an_error` → `…_is_an_upstream_format_error` (prevista, plan §4: espera la excepción con `discarded=2` y los campos, sin el valor `abc`, y ningún log del mapper); **no prevista:** `test_a_product_missing_the_image_key_is_discarded` (spec 009 T2) tenía un único producto, roto, y ahora es error de formato; se le añade un producto válido al lado para que siga probando el descarte (espera `["54180"]` en vez de `[]`).
 - **RED:**
   - `tests/mappers/test_map_search.py`: todo roto → `UpstreamFormatError` con `discarded=N` y los campos en el motivo, y **ningún** log del mapper (plan-D2); sin productos (`productGroups` vacío o grupos sin productos) → `[]`, sin excepción (RF-2).
   - `tests/services/test_product_service.py`: todo roto → `UpstreamFormatError`, nada en cache y **sin** enfriamiento (plan-D4); recorrido en frío a la página 3 con la página 2 rota → `UpstreamFormatError`, solo la página 1 en cache (RF-3).

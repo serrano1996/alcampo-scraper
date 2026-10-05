@@ -18,9 +18,13 @@ def raw_product(page: int) -> dict[str, object]:
 class ChainedScraper:
     """`pages` pages chained by `tok-2`, `tok-3`...; tokens in `reject` get a 400."""
 
-    def __init__(self, pages: int, *, reject: set[str] | None = None) -> None:
+    def __init__(
+        self, pages: int, *, reject: set[str] | None = None, broken: set[int] | None = None
+    ) -> None:
         self.pages = pages
         self.reject = reject or set()
+        # Pages whose products changed format: no image (spec 011).
+        self.broken = broken or set()
         self.calls: list[str | None] = []
         self.page_sizes: list[int] = []
 
@@ -40,7 +44,15 @@ class ChainedScraper:
         has_next = page < self.pages
         return AlcampoSearchResponse.model_validate(
             {
-                "productGroups": [{"decoratedProducts": [raw_product(page)]}],
+                "productGroups": [
+                    {
+                        "decoratedProducts": [
+                            {**raw_product(page), "image": None}
+                            if page in self.broken
+                            else raw_product(page)
+                        ]
+                    }
+                ],
                 "metadata": {"nextPageToken": f"tok-{page + 1}"} if has_next else {},
             }
         )

@@ -21,6 +21,15 @@ class UpstreamUnavailableError(AlcampoScraperError):
         self.status_code = status_code
 
 
+class UpstreamFormatError(UpstreamUnavailableError):
+    """Raised when Alcampo sent products but none has the format the app needs.
+
+    Points to Alcampo changing its JSON: answering `200 []` would look like "no
+    results" and be cached (spec 011 RF-1). Not a WAF block, so no cooldown, and
+    not a throttle, so the 502 handler logs it as an ERROR (plan-D4).
+    """
+
+
 class UpstreamBlockedError(UpstreamUnavailableError):
     """Raised when Alcampo's AWS WAF answers with a challenge.
 

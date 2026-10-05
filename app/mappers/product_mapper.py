@@ -10,6 +10,7 @@ import logging
 
 from pydantic import JsonValue, ValidationError
 
+from app.exceptions import UpstreamFormatError
 from app.models.alcampo import AlcampoProduct, AlcampoSearchResponse, AlcampoUnitPrice
 from app.models.product import Product
 
@@ -54,10 +55,11 @@ def map_search(raw: AlcampoSearchResponse) -> list[Product]:
     (RF-9, spec-D7). Products repeated across groups are deduplicated by
     `retailerProductId`, keeping the first occurrence (RF-4, spec-D7).
 
-    Discards are logged once per search (spec 003 RF-14, plan-D9). Discarding
-    every product is an ERROR (RF-15): it looks like "no results" to the
-    consumer but points to Alcampo changing its JSON format. The log names the
-    fields that failed, never their values (spec 011 RF-5, plan-D3).
+    Discards are logged once per search (spec 003 RF-14, plan-D9), naming the
+    fields that failed, never their values (spec 011 RF-5, plan-D3). Discarding
+    every product raises `UpstreamFormatError` instead: an empty list would look
+    like "no results" and be cached, while it points to Alcampo changing its
+    JSON format (spec 011 RF-1). The 502 handler logs that single ERROR (plan-D2).
     """
     products: list[Product] = []
     seen_ids: set[str] = set()
@@ -82,10 +84,13 @@ def map_search(raw: AlcampoSearchResponse) -> list[Product]:
             if unit_name is not None and unit_name not in UNIT_SUFFIXES:
                 unknown_units.add(unit_name)
 
+    if discarded_ids and not products:
+        raise UpstreamFormatError(
+            f"all products malformed discarded={len(discarded_ids)} "
+            f"fields={sorted(failed_fields)!r}"
+        )
     if discarded_ids:
-        level = logging.ERROR if not products else logging.WARNING
-        logger.log(
-            level,
+        logger.warning(
             "discarded malformed products discarded=%d kept=%d ids=%r fields=%r",
             len(discarded_ids),
             len(products),

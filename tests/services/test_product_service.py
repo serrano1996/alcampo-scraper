@@ -12,6 +12,7 @@ from app.exceptions import (
     PageOutOfRangeError,
     PostalCodeNotServedError,
     UpstreamBlockedError,
+    UpstreamFormatError,
     UpstreamUnavailableError,
 )
 from app.models.alcampo import AlcampoSearchResponse
@@ -761,3 +762,34 @@ async def test_a_long_term_is_returned_as_cut_for_alcampo(
     )
 
     assert response.search.term == "a" * 49
+
+
+# --- spec 011 RF-1, RF-3: every product broken is Alcampo failing ---------------
+
+
+async def test_every_product_broken_fails_without_cache_or_cooldown(
+    redis: fakeredis.FakeAsyncRedis,
+) -> None:
+    broken = {**RAW_PRODUCT, "image": None}
+    raw = AlcampoSearchResponse.model_validate({"productGroups": [{"decoratedProducts": [broken]}]})
+    service, _ = make_service(FakeScraper(raw), redis)
+
+    with pytest.raises(UpstreamFormatError):
+        await service.search(ProductQuery(postal_code="28001", term="leche"))
+
+    assert await redis.keys("search:*") == []
+    # A format change is not a WAF block (plan-D4).
+    assert await WafCooldownRepository(redis).is_active() is False
+
+
+async def test_a_broken_page_on_the_way_fails_and_keeps_the_pages_before(
+    redis: fakeredis.FakeAsyncRedis,
+) -> None:
+    scraper = ChainedScraper(pages=5, broken={2})
+    service, _ = make_service(scraper, redis)  # type: ignore[arg-type]
+
+    with pytest.raises(UpstreamFormatError):
+        await service.search(ProductQuery(postal_code="28001", term="leche", page=3))
+
+    assert scraper.calls == [None, "tok-2"]  # stops there: no request for page 3
+    assert await redis.keys("search:*") == [b"search:5:leche:1:50"]
