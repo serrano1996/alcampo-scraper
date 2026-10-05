@@ -12,7 +12,8 @@
 
 ---
 
-### [ ] T1 — `/ready`
+### [x] T1 — `/ready`
+> **Nota (2026-10-05):** RED real (`404` en los 3 tests de `tests/integration/test_ready.py`). GREEN: `GET /ready` en `create_app`, `PING` por `resources(app).redis_circuit` (plan-D1); un `RedisError` (también `RedisCircuitOpenError`) → `redis_unavailable(…, "ready.ping", …)` y `503 {"status": "unavailable", "redis": "unreachable"}`; si no, `200 {"status": "ready"}`. Comprobado: sin `X-API-Key`, sin rutas de respx (no toca Alcampo), el cuerpo del `503` sin la URL ni el texto del error, `/health` `200` con Redis caído, y con el circuito abierto el segundo `/ready` no intenta Redis ni añade `WARNING`. Sin regresiones.
 - **RED** (`tests/integration/test_ready.py`, app real + fakeredis):
   - Redis bien → `200 {"status": "ready"}`, sin `X-API-Key`.
   - Redis caído (doble que falla) → `503 {"status": "unavailable", "redis": "unreachable"}`; el cuerpo no contiene la URL de Redis ni el mensaje del error; un `WARNING` `redis unavailable`.

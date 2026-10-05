@@ -7,11 +7,12 @@ from contextlib import asynccontextmanager
 import redis.asyncio as redis
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
+from redis.exceptions import RedisError
 
 from app.api.v1.products import router as products_router
 from app.core.config import get_settings
 from app.core.logging import configure_logging
-from app.core.state import AppResources
+from app.core.state import AppResources, resources
 from app.exceptions import (
     PageOutOfRangeError,
     PostalCodeNotServedError,
@@ -28,7 +29,7 @@ from app.services.rate_limiter import (
     LocalRateLimiter,
     OutboundRateLimiter,
 )
-from app.services.redis_circuit import RedisCircuitBreaker
+from app.services.redis_circuit import RedisCircuitBreaker, redis_unavailable
 from app.services.region_repository import RegionMemory, RegionRepository
 from app.services.region_service import REGION_RESOLUTIONS_KEY, RegionService
 from app.services.region_sessions import RegionSessions
@@ -194,6 +195,26 @@ def create_app() -> FastAPI:
     @app.get("/health")
     async def health() -> dict[str, str]:
         return {"status": "ok"}
+
+    @app.get("/ready")
+    async def ready(request: Request) -> JSONResponse:
+        """Whether this instance has Redis, as in Mercadona (spec 012 RF-1, RF-2).
+
+        Through the circuit breaker (spec-D2): while it is open, no PING, so a
+        probe every few seconds neither hammers a dead Redis nor floods the log.
+        The client's timeout (REDIS_TIMEOUT_SECONDS) bounds a hung one. Never
+        calls Alcampo: a third party must not mark every instance as not ready.
+        """
+        res = resources(request.app)
+        try:
+            await res.redis_circuit.call(lambda: res.redis.ping())
+        except RedisError as exc:
+            redis_unavailable(logger, "ready.ping", exc)
+            # Never the URL (it may hold a password) nor the error text.
+            return JSONResponse(
+                status_code=503, content={"status": "unavailable", "redis": "unreachable"}
+            )
+        return JSONResponse(content={"status": "ready"})
 
     return app
 
