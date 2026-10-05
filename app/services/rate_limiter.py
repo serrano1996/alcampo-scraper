@@ -39,16 +39,24 @@ class LocalRateLimiter:
     """
 
     def __init__(self) -> None:
-        self._sent: deque[float] = deque()
+        self._sent: deque[tuple[float, str]] = deque()
 
-    def acquire(self, *, now: float, limit: int, window_seconds: int) -> None:
+    def acquire(self, *, now: float, limit: int, window_seconds: int, slot: str) -> None:
         # Same boundary as ZREMRANGEBYSCORE -inf now-window: an entry exactly
         # `window_seconds` old has left the window.
-        while self._sent and self._sent[0] <= now - window_seconds:
+        while self._sent and self._sent[0][0] <= now - window_seconds:
             self._sent.popleft()
         if len(self._sent) >= limit:
             raise OutboundRateLimitedError("outbound rate limit reached")
-        self._sent.append(now)
+        self._sent.append((now, slot))
+
+    def release(self, slot: str) -> bool:
+        """Give `slot` back; `False` if this window does not hold it."""
+        for entry in self._sent:
+            if entry[1] == slot:
+                self._sent.remove(entry)
+                return True
+        return False
 
 
 class OutboundRateLimiter:
@@ -75,23 +83,37 @@ class OutboundRateLimiter:
         self._fallback = fallback if fallback is not None else LocalRateLimiter()
         self._circuit = circuit if circuit is not None else RedisCircuitBreaker(open_seconds=0)
 
-    async def acquire(self) -> None:
+    async def acquire(self) -> str:
         """Take one slot for a request about to be sent, or raise if none is left.
 
+        Returns the slot's id, to give it back with `release` (spec 010 plan-D2:
+        a request rejected by another window must not consume this one).
         Called before every real request, retries included. `limit == 0`
-        disables the limit and never touches Redis.
+        disables the limit, never touches Redis and returns `""`.
         """
         if self._limit == 0:
-            return
+            return ""
         now = self._now()
+        slot = uuid.uuid4().hex
         try:
-            await self._circuit.call(lambda: self._acquire_in_redis(now))
+            await self._circuit.call(lambda: self._acquire_in_redis(now, slot))
         except RedisError as exc:
             redis_unavailable(logger, f"rate_limit key={self._key}", exc)
-            self._fallback.acquire(now=now, limit=self._limit, window_seconds=self._window)
+            self._fallback.acquire(
+                now=now, limit=self._limit, window_seconds=self._window, slot=slot
+            )
+        return slot
 
-    async def _acquire_in_redis(self, now: float) -> None:
-        member = uuid.uuid4().hex
+    async def release(self, slot: str) -> None:
+        """Give back a slot taken by `acquire` (no-op for `""`)."""
+        if not slot or self._fallback.release(slot):
+            return
+        try:
+            await self._circuit.call(lambda: self._redis.zrem(self._key, slot))
+        except RedisError as exc:
+            redis_unavailable(logger, f"rate_limit.release key={self._key}", exc)
+
+    async def _acquire_in_redis(self, now: float, member: str) -> None:
         async with self._redis.pipeline(transaction=True) as pipe:
             pipe.zremrangebyscore(self._key, "-inf", now - self._window)
             pipe.zadd(self._key, {member: now})

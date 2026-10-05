@@ -181,3 +181,42 @@ async def test_limiters_sharing_a_fallback_share_its_quota(clock: FakeClock) -> 
 
     with pytest.raises(OutboundRateLimitedError):
         await second.acquire()
+
+
+# --- spec 010: a slot can be given back (plan-D2) -----------------------------
+
+
+async def test_acquire_returns_an_id_and_release_gives_the_slot_back(
+    redis: fakeredis.FakeAsyncRedis, clock: FakeClock
+) -> None:
+    limiter = make_limiter(redis, clock, limit=1)
+    slot = await limiter.acquire()
+    assert slot
+
+    await limiter.release(slot)
+
+    await limiter.acquire()  # the slot is free again
+    assert await redis.zcard(RATE_LIMIT_KEY) == 1
+
+
+async def test_a_disabled_limit_returns_no_id_and_release_does_nothing(
+    redis: fakeredis.FakeAsyncRedis, clock: FakeClock
+) -> None:
+    limiter = make_limiter(redis, clock, limit=0)
+
+    slot = await limiter.acquire()
+    await limiter.release(slot)
+
+    assert slot == ""
+    assert await redis.exists(RATE_LIMIT_KEY) == 0
+
+
+async def test_release_also_works_on_the_local_fallback(clock: FakeClock) -> None:
+    limiter = OutboundRateLimiter(
+        BrokenRedis(DOWN), limit=1, window_seconds=60, now=clock, fallback=LocalRateLimiter()
+    )
+    slot = await limiter.acquire()
+
+    await limiter.release(slot)
+
+    await limiter.acquire()  # would raise if the local slot were still taken

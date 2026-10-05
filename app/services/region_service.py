@@ -61,7 +61,7 @@ class SessionRegistry(Protocol):
 
 
 class ResolutionLimiter(Protocol):
-    async def acquire(self) -> None: ...
+    async def acquire(self) -> str: ...
 
 
 class CooldownGate(Protocol):

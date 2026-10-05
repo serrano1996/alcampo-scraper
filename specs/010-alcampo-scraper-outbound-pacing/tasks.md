@@ -19,7 +19,8 @@
 - **Regresión:** `.env.example` → **parar y pedir al usuario** las 4 variables nuevas (y el nuevo 10 de `ALCAMPO_RATE_LIMIT`).
 - **RF:** RF-1, RF-2, RF-3
 
-### [ ] T2 — `release` en el limitador
+### [x] T2 — `release` en el limitador
+> **Nota (2026-10-05):** RED real (`AttributeError: release` y `acquire` sin valor). `acquire()` devuelve el id del hueco (el mismo miembro del sorted set de Redis, o una entrada del respaldo local); `release(id)` lo quita del respaldo local si está ahí y, si no, de Redis (por el circuito; un fallo de Redis solo deja un aviso). Con límite 0, `""` y `release` sin efecto. `mypy` detectó el protocolo `ResolutionLimiter` de `RegionService` con `-> None`: pasa a `-> str`.
 - **RED:** `acquire()` devuelve un id; `release(id)` devuelve el hueco (en Redis y en el respaldo local); con límite 0, id vacío y `release` sin efecto.
 - **RF:** RF-1 (plan-D2)
 
