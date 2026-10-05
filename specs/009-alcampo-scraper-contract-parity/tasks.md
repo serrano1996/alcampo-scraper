@@ -1,6 +1,6 @@
 # Tasks 009 — Paridad de contrato con Mercadona y paginación
 
-- **Estado:** borrador, pendiente de revisión
+- **Estado:** aprobado (2026-10-05)
 - **Spec:** [spec.md](spec.md) · **Plan:** [plan.md](plan.md) (decisiones citadas como plan-Dn)
 - **Entrega:** 2 PRs: **PR 1** = T1–T4 (forma del contrato) · **PR 2** = T5–T7 (paginación).
 
@@ -15,7 +15,8 @@
 
 ## PR 1 — Forma del contrato
 
-### [ ] T1 — Parámetros de la búsqueda
+### [x] T1 — Parámetros de la búsqueda
+> **Nota (2026-10-05):** RED real (`ImportError: MAX_PAGE` y 4 casos de `page`/`page_size` sin `422`); el de `term` de 101 ya pasaba (máximo 50) y queda como red de seguridad del nuevo límite. GREEN: `ProductQuery.page` (1–`MAX_PAGE` = 20) y `page_size` (1–100, por defecto 50), `SearchTerm` hasta 100. **Aserciones cambiadas, una a una:** `test_invalid_term_raises` (51 → 101) y `test_term_at_max_length_is_valid` (50 → 100) en `tests/models/test_product.py`; `test_term_over_50_chars_returns_422` pasa a `test_term_over_100_chars_returns_422` (51 → 101) en `tests/api/test_products_route.py`. Integración nueva: los 5 casos fuera de rango → `422` sin tocar Alcampo ni Redis.
 - **RED:** `tests/models/test_product.py`: `page` por defecto 1, `page_size` por defecto 50; `page=0`, `page=21` (`MAX_PAGE`), `page_size=0`, `page_size=101` → `ValidationError`; `term` de 100 válido y de 101 inválido. Ruta: los mismos casos → `422` sin tocar Redis ni Alcampo.
 - **GREEN:** `ProductQuery.page` (`1 ≤ page ≤ MAX_PAGE`), `ProductQuery.page_size` (1–100), `SearchTerm` hasta 100; `MAX_PAGE = 20` como constante (spec-D2).
 - **Regresión:** el test de `term` de 51 → `422` pasa a 101; se anota.

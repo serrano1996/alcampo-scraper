@@ -4,6 +4,7 @@ import time
 from datetime import UTC, datetime
 
 import httpx
+import pytest
 from fastapi.testclient import TestClient
 
 from app.core.state import resources
@@ -197,6 +198,28 @@ async def test_invalid_postal_code_returns_422_without_touching_alcampo_or_redis
     route = mock_alcampo_search(respx_mock, json_body=load_fixture("alcampo_search_leche.json"))
 
     response = client.get("/api/v1/products", params={"postal_code": "2800", "term": "leche"})
+
+    assert response.status_code == 422
+    assert route.call_count == 0
+    assert await resources(client.app).redis.dbsize() == 0
+
+
+# --- spec 009 RF-1: invalid pagination -------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "params",
+    [{"page": "0"}, {"page": "21"}, {"page_size": "0"}, {"page_size": "101"}, {"term": "a" * 101}],
+    ids=["page-0", "page-21", "size-0", "size-101", "term-101"],
+)
+async def test_invalid_pagination_returns_422_without_touching_alcampo_or_redis(
+    client: TestClient, respx_mock, params: dict[str, str]
+) -> None:
+    route = mock_alcampo_search(respx_mock, json_body=load_fixture("alcampo_search_leche.json"))
+
+    response = client.get(
+        "/api/v1/products", params={"postal_code": "28001", "term": "leche", **params}
+    )
 
     assert response.status_code == 422
     assert route.call_count == 0

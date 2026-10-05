@@ -3,7 +3,13 @@ from datetime import UTC, datetime
 import pytest
 from pydantic import ValidationError
 
-from app.models.product import Product, ProductQuery, ProductSearchResponse, SearchMetadata
+from app.models.product import (
+    MAX_PAGE,
+    Product,
+    ProductQuery,
+    ProductSearchResponse,
+    SearchMetadata,
+)
 
 
 def test_term_is_stripped() -> None:
@@ -16,7 +22,7 @@ def test_term_is_stripped() -> None:
     "term",
     [
         "   ",
-        "a" * 51,
+        "a" * 101,  # spec 009: max 100, as in Mercadona (was 51 → 422)
     ],
 )
 def test_invalid_term_raises(term: str) -> None:
@@ -25,9 +31,9 @@ def test_invalid_term_raises(term: str) -> None:
 
 
 def test_term_at_max_length_is_valid() -> None:
-    query = ProductQuery(postal_code="28001", term="a" * 50)
+    query = ProductQuery(postal_code="28001", term="a" * 100)  # spec 009 (was 50)
 
-    assert query.term == "a" * 50
+    assert query.term == "a" * 100
 
 
 def test_empty_postal_code_raises() -> None:
@@ -84,3 +90,27 @@ def test_postal_code_that_is_not_5_digits_raises(postal_code: str) -> None:
 
 def test_postal_code_is_stripped_before_validation() -> None:
     assert ProductQuery(postal_code=" 28001 ", term="leche").postal_code == "28001"
+
+
+# --- spec 009 RF-1, RF-8: page and page_size, as in Mercadona -----------------
+
+
+def test_page_and_page_size_default_to_the_first_page_of_50() -> None:
+    query = ProductQuery(postal_code="28001", term="leche")
+
+    assert (query.page, query.page_size) == (1, 50)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [("page", 0), ("page", MAX_PAGE + 1), ("page_size", 0), ("page_size", 101)],
+)
+def test_page_or_page_size_out_of_range_raises(field: str, value: int) -> None:
+    with pytest.raises(ValidationError):
+        ProductQuery(postal_code="28001", term="leche", **{field: value})
+
+
+def test_the_last_reachable_page_and_the_largest_page_size_are_valid() -> None:
+    query = ProductQuery(postal_code="28001", term="leche", page=MAX_PAGE, page_size=100)
+
+    assert (query.page, query.page_size) == (20, 100)

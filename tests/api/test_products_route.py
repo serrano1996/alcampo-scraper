@@ -80,10 +80,11 @@ def test_missing_term_returns_422() -> None:
     assert response.status_code == 422
 
 
-def test_term_over_50_chars_returns_422() -> None:
+def test_term_over_100_chars_returns_422() -> None:
+    # spec 009 RF-3: max 100, as in Mercadona (was 50).
     client = make_client(FakeService(response=make_response()))
 
-    response = client.get("/api/v1/products", params={"postal_code": "28001", "term": "a" * 51})
+    response = client.get("/api/v1/products", params={"postal_code": "28001", "term": "a" * 101})
 
     assert response.status_code == 422
 
