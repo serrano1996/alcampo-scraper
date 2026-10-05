@@ -32,7 +32,12 @@
 - **Regresión:** plan §3, si aparece.
 - **RF:** RF-4, RF-5, RF-6
 
-### [ ] T3 — Tokens fuera de los logs, docs y verificación manual
+### [x] T3 — Tokens fuera de los logs, docs y verificación manual
+> **Nota (2026-10-05):** RED real (con una petición real de httpx vía respx, la línea traía `pageToken=tok-secreto`; ningún filtro instalado). GREEN: `PageTokenRedactor` (filtro del logger `httpx`, plan-D2) instalado una sola vez en `configure_logging`: `pageToken=<redacted>`, resto de la línea intacto (`HTTP Request: GET https://alcampo.test/search?q=leche&…`, estado). **Ajuste del test de idempotencia:** contar "filtros antes + 1" fallaba porque otros tests del mismo proceso ya instalan el filtro (cada `lifespan` configura el logging); pasa a exigir **exactamente un** `PageTokenRedactor`. **Mutación:** sin la guarda (`if True`) → dos filtros, el test falla; restaurado. README: `/ready` (contrato, circuito, aviso de spec-D1), públicos, `HTTP_TIMEOUT_SECONDS` en la tabla, línea de httpx con el token redactado.
+>
+> **Verificación manual (2026-10-05T10:02Z):** `docker compose` con override en el scratchpad (token sintético y `ALCAMPO_BASE_URL=https://alcampo.invalid`: **0 peticiones a Alcampo**). `/ready` → `200 {"status":"ready"}`; `docker compose stop redis` → `/ready` → `503 {"status":"unavailable","redis":"unreachable"}` (dos veces), `/health` → `200`; `docker compose start redis` + 14 s → `/ready` → `200`. Logs: un único `WARNING` de apertura del circuito y uno de `redis unavailable op=ready.ping` para todo el incidente. `docker compose down`; scratchpad limpio.
+>
+> **Pendiente del usuario:** `HTTP_TIMEOUT_SECONDS=10` en `.env.example` (`tests/core/test_env_example.py` falla hasta entonces). **Fin de la spec 012** en cuanto se añada.
 - **RED:** con `configure_logging` y una petición real de httpx a una URL con `pageToken=tok-secreto` (respx): la línea `HTTP Request` contiene `pageToken=<redacted>`, no `tok-secreto`, y conserva método, ruta, `q` y estado; dos llamadas a `configure_logging` → un solo filtro (plan-D2).
 - **GREEN:** `PageTokenRedactor` en `app/core/logging.py`.
 - README: `/ready` (contrato, circuito, aviso de spec-D1), `HTTP_TIMEOUT_SECONDS` en la tabla de variables, token redactado. `.env.example`: pedir al usuario que añada `HTTP_TIMEOUT_SECONDS=10`.

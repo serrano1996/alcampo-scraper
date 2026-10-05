@@ -11,6 +11,7 @@ the plan was written (spec 003 plan §2):
 """
 
 import logging
+import re
 import sys
 from collections.abc import Callable
 from contextvars import ContextVar
@@ -32,6 +33,25 @@ else:  # not subscriptable at runtime on every supported Python
 
 class _AppHandler(_StreamHandler):
     """Marks the handler installed by `configure_logging`, so it can be replaced alone."""
+
+
+_PAGE_TOKEN = re.compile(r"(pageToken=)[^&\s\"]+")
+
+
+class PageTokenRedactor(logging.Filter):
+    """Hides Alcampo's page token in httpx's request lines (spec 012 RF-7).
+
+    A logger filter, not a handler one (plan-D2): it runs before any handler,
+    `caplog`'s included, so no destination ever sees the token. The rest of the
+    line stays: it is how spacing and traffic are measured in manual checks.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        message = record.getMessage()
+        if "pageToken=" in message:
+            record.msg = _PAGE_TOKEN.sub(r"\1<redacted>", message)
+            record.args = ()
+        return True
 
 
 def _install_request_id_factory() -> None:
@@ -61,3 +81,7 @@ def configure_logging(level: str, *, stream: TextIO | None = None) -> None:
     handler.setFormatter(logging.Formatter(LOG_FORMAT))
     root.addHandler(handler)
     root.setLevel(level)
+
+    httpx_logger = logging.getLogger("httpx")
+    if not any(isinstance(f, PageTokenRedactor) for f in httpx_logger.filters):
+        httpx_logger.addFilter(PageTokenRedactor())

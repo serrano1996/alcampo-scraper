@@ -125,10 +125,11 @@ Alcampo cambia precio y catálogo según la región (la tienda que sirve): por e
 - **Timeouts:** conexión y operaciones cortan a los `REDIS_TIMEOUT_SECONDS` (2 s). Un Redis colgado ya no deja peticiones esperando para siempre.
 - **Redis caído o colgado → el servicio degrada, no se cae:** las búsquedas van a Alcampo sin cache (`200`) con un `WARNING "redis unavailable op=…"`. El límite de peticiones, el de resoluciones y el enfriamiento siguen actuando con un respaldo **local a cada proceso** (se pierde la coordinación entre instancias), y las regiones ya conocidas siguen en la memoria del proceso. `/health` no toca Redis.
 - **Circuit breaker:** tras el primer fallo, el servicio deja de intentar Redis durante `REDIS_CIRCUIT_OPEN_SECONDS` (10 s) y usa directamente los respaldos, sin esperar ningún timeout; luego lo vuelve a probar. Sin Redis, una búsqueda pasó de ~9 s a ~1 s. En los logs: un `WARNING "redis circuit open"` al abrirse y un `INFO "redis circuit closed"` al volver.
+- **`GET /ready`** dice si la instancia tiene Redis, con el mismo contrato que Mercadona ([spec 012](specs/012-alcampo-scraper-operational-robustness/spec.md)): `200 {"status": "ready"}` o `503 {"status": "unavailable", "redis": "unreachable"}`, sin la URL ni el error. Es público (sin `X-API-Key`), no llama a Alcampo y pasa por el circuit breaker: con el circuito abierto responde `503` al momento sin tocar Redis, y vuelve a `200` como mucho `REDIS_CIRCUIT_OPEN_SECONDS` después de que Redis se recupere. **Ojo:** sin Redis la app **sigue sirviendo** (sin cache); si un orquestador saca de servicio las instancias con `/ready` en `503`, con Redis caído se quedarían todas fuera. Para saber si el proceso está vivo, `/health`.
 
 ## Autenticación
 
-Todo lo que cuelga de `/api/v1/` exige la cabecera **`X-API-Key`** con un token válido. `/health`, `/docs`, `/redoc` y `/openapi.json` son públicos. Detalle en [`specs/004-alcampo-scraper-authentication`](specs/004-alcampo-scraper-authentication/spec.md).
+Todo lo que cuelga de `/api/v1/` exige la cabecera **`X-API-Key`** con un token válido. `/health`, `/ready`, `/docs`, `/redoc` y `/openapi.json` son públicos. Detalle en [`specs/004-alcampo-scraper-authentication`](specs/004-alcampo-scraper-authentication/spec.md).
 
 - **Tokens válidos:** variable `API_KEYS`, separados por comas (se ignoran espacios y entradas vacías). Admite varios a la vez, así que se puede **rotar sin cortes**: añade el nuevo, actualiza los clientes y quita el antiguo.
 - **Sin tokens configurados, nadie entra** (falla cerrado): toda petición a `/api/v1/` recibe `401` y al arrancar se registra un `WARNING` que lo avisa.
@@ -178,6 +179,7 @@ Invisibles para el consumidor, salvo algo más de latencia en los reintentos y `
 | `ALCAMPO_MIN_INTERVAL_MS` | `500` | Espaciado mínimo entre peticiones del mismo proceso. `0` = sin espaciado |
 | `ALCAMPO_INTERVAL_JITTER_MS` | `500` | Jitter máximo añadido al espaciado |
 | `SEARCH_TIMEOUT_SECONDS` | `15` | Tiempo máximo total de una búsqueda en Alcampo (y de una resolución de región). `≤ 0`: la app no arranca |
+| `HTTP_TIMEOUT_SECONDS` | `10` | Tiempo límite de cada petición a Alcampo (conexión, lectura, escritura y pool); superarlo es un error de transporte que se reintenta. `≤ 0`: la app no arranca |
 | `REDIS_TIMEOUT_SECONDS` | `2` | Timeout de conexión y de cada operación con Redis. `≤ 0`: la app no arranca |
 | `REDIS_CIRCUIT_OPEN_SECONDS` | `10` | Tras un fallo de Redis, cuánto tiempo se deja de intentar (se usan los respaldos locales). `0` = desactivado |
 | `REGION_CACHE_TTL_SECONDS` | `604800` | Cuánto se recuerda la región de un código postal (7 días) |
@@ -201,6 +203,7 @@ Formato: fecha y hora, nivel, `[request id]`, logger y mensaje. Fuera de una pet
 - **`LOG_LEVEL`** (`INFO` por defecto): `DEBUG`, `INFO`, `WARNING`, `ERROR` o `CRITICAL`, sin distinguir mayúsculas. Cualquier otro valor impide arrancar.
 - **Request id por petición.** Cada petición recibe un id propio que aparece en **todas** sus líneas de log y se devuelve en la cabecera **`X-Request-ID`** (también en `422`, `500` y `502`). Si un consumidor reporta un error, con ese id se encuentran todas las líneas de su petición. Un `X-Request-ID` enviado por el cliente se ignora, para que nadie pueda meter texto propio en los logs.
 - **Cada petición** deja una línea al empezar (método, ruta y parámetros) y otra al terminar (estado y duración).
+- **Peticiones a Alcampo:** httpx deja una línea `INFO` por petición (método, URL y estado), útil para medir el tráfico; el token de página aparece como `pageToken=<redacted>` (spec 012).
 
 Qué nivel tiene cada evento:
 

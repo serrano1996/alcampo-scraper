@@ -3,9 +3,11 @@ import logging
 import re
 from collections.abc import Iterator
 
+import httpx
 import pytest
+import respx
 
-from app.core.logging import configure_logging, request_id_var
+from app.core.logging import PageTokenRedactor, configure_logging, request_id_var
 
 LINE = re.compile(
     r"^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3} (?P<level>[A-Z]+) "
@@ -80,3 +82,44 @@ def test_level_filters_lower_records() -> None:
     logging.getLogger("x").warning("shown")
 
     assert [LINE.match(line).group("message") for line in lines(buffer)] == ["shown"]
+
+
+# --- spec 012 RF-7: page tokens never reach the logs ----------------------------
+
+
+@pytest.fixture
+def httpx_logger() -> Iterator[logging.Logger]:
+    """The `httpx` logger, with its filters restored afterwards (process-wide state)."""
+    logger = logging.getLogger("httpx")
+    filters = list(logger.filters)
+    yield logger
+    logger.filters[:] = filters
+
+
+@respx.mock
+async def test_the_page_token_is_redacted_from_httpx_request_lines(
+    httpx_logger: logging.Logger, caplog: pytest.LogCaptureFixture
+) -> None:
+    configure_logging("INFO", stream=io.StringIO())
+    respx.get("https://alcampo.test/search").mock(return_value=httpx.Response(200))
+
+    # A real httpx request, so the test follows httpx's own log format (plan R2).
+    async with httpx.AsyncClient() as client:
+        await client.get(
+            "https://alcampo.test/search", params={"q": "leche", "pageToken": "tok-secreto"}
+        )
+
+    [line] = [r.getMessage() for r in caplog.records if r.name == "httpx"]
+    assert "tok-secreto" not in line
+    assert "pageToken=<redacted>" in line
+    assert line.startswith("HTTP Request: GET https://alcampo.test/search?q=leche&")
+    assert "200" in line
+
+
+def test_configuring_twice_installs_one_redactor(httpx_logger: logging.Logger) -> None:
+    # Whatever ran before in this process (every app lifespan configures logging).
+    configure_logging("INFO", stream=io.StringIO())
+    configure_logging("INFO", stream=io.StringIO())
+
+    redactors = [f for f in httpx_logger.filters if isinstance(f, PageTokenRedactor)]
+    assert len(redactors) == 1
