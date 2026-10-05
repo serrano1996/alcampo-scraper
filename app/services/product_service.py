@@ -22,6 +22,7 @@ from app.mappers.product_mapper import map_search
 from app.models.alcampo import AlcampoSearchResponse
 from app.models.product import ProductQuery, ProductSearchResponse, SearchMetadata
 from app.services.in_flight import InFlightSearches
+from app.services.outbound import TrafficLog
 from app.services.region_repository import Region
 from app.services.search_cache import SearchCacheRepository, normalize_term
 from app.services.waf_cooldown import WafCooldownRepository
@@ -65,6 +66,7 @@ class ProductService:
         in_flight: InFlightSearches[ProductSearchResponse],
         regions: RegionFinder,
         sessions: SessionProvider,
+        traffic: TrafficLog,
         settings: Settings,
         clock: Clock = _default_clock,
     ) -> None:
@@ -74,6 +76,7 @@ class ProductService:
         self._in_flight = in_flight
         self._regions = regions
         self._sessions = sessions
+        self._traffic = traffic
         self._settings = settings
         self._clock = clock
 
@@ -159,10 +162,19 @@ class ProductService:
             base_seconds=self._settings.waf_cooldown_seconds,
             max_seconds=self._settings.waf_cooldown_max_seconds,
         )
+        # What this instance had sent lately: the data to tune the outbound limits
+        # with, instead of provoking more blocks (spec 010 RF-6).
+        recent = self._traffic.summary()
         if cooldown_s > 0:
-            logger.error("egress IP blocked by Alcampo WAF, cooldown_s=%d", cooldown_s)
+            logger.error(
+                "egress IP blocked by Alcampo WAF, cooldown_s=%d recent_traffic=%s",
+                cooldown_s,
+                recent,
+            )
         else:
-            logger.error("egress IP blocked by Alcampo WAF, cooldown disabled")
+            logger.error(
+                "egress IP blocked by Alcampo WAF, cooldown disabled recent_traffic=%s", recent
+            )
 
     async def _within_timeout(self, call: Awaitable[T], reason: str) -> T:
         """Await `call` with a total budget: attempts and waits included.

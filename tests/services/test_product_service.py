@@ -16,6 +16,7 @@ from app.exceptions import (
 from app.models.alcampo import AlcampoSearchResponse
 from app.models.product import ProductQuery
 from app.services.in_flight import InFlightSearches
+from app.services.outbound import TrafficLog
 from app.services.product_service import ProductService
 from app.services.region_repository import Region
 from app.services.search_cache import SearchCacheRepository
@@ -133,6 +134,7 @@ def make_service(
     search_timeout_seconds: float = 15,
     regions: FakeRegions | None = None,
     sessions: FakeSessions | None = None,
+    traffic: TrafficLog | None = None,
 ) -> tuple[ProductService, SearchCacheRepository]:
     settings = Settings(
         _env_file=None,
@@ -149,6 +151,7 @@ def make_service(
         in_flight=InFlightSearches(),
         regions=regions or FakeRegions(),
         sessions=sessions or FakeSessions(),
+        traffic=traffic or TrafficLog(),
         settings=settings,
         clock=clock,
     )
@@ -597,3 +600,27 @@ async def test_a_waf_challenge_while_resolving_the_region_starts_the_cooldown(
 
     assert await WafCooldownRepository(redis).is_active() is True
     assert any("blocked" in r.getMessage() for r in service_records(caplog))
+
+
+# --- spec 010 RF-6: the traffic breakdown of every challenge -------------------
+
+
+async def test_a_waf_challenge_logs_the_recent_outbound_traffic(
+    redis: fakeredis.FakeAsyncRedis, caplog: pytest.LogCaptureFixture
+) -> None:
+    traffic = TrafficLog()
+    for kind in ("search", "search", "search", "resolution", "resolution"):
+        traffic.record(kind)
+    traffic.record_status(400)
+    service, _ = make_service(
+        FailingScraper(UpstreamBlockedError("WAF challenge")), redis, traffic=traffic
+    )
+
+    with pytest.raises(UpstreamBlockedError):
+        await service.search(ProductQuery(postal_code="28001", term="leche"))
+
+    [error] = [r for r in service_records(caplog) if "blocked" in r.getMessage()]
+    message = error.getMessage()
+    assert "cooldown_s=180" in message
+    assert "recent_traffic=1m[search=3 resolution=2 session=0]" in message
+    assert "4xx_15m=1" in message

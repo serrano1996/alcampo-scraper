@@ -23,5 +23,6 @@ def get_product_service(request: Request) -> ProductService:
         in_flight=res.in_flight,
         regions=res.region_service,
         sessions=res.region_sessions,
+        traffic=res.gate.traffic,
         settings=res.settings,
     )

@@ -40,7 +40,8 @@
 - **Regresión (plan §4):** `integration_env` con espaciado y límites desactivados; helpers de scraper y sesión con una puerta desactivada.
 - **RF:** RF-1, RF-3, RF-5
 
-### [ ] T6 — Desglose en el challenge
+### [x] T6 — Desglose en el challenge
+> **Nota (2026-10-05):** RED real (31 fallos: `ProductService` sin `traffic`). El servicio recibe el `TrafficLog` de la puerta y el `ERROR` del challenge añade `recent_traffic=1m[…] 5m[…] 15m[…] 4xx_15m=N` (también con el enfriamiento desactivado). Las aserciones existentes (`cooldown_s=180`, etc.) siguen valiendo: el texto solo se amplía. Test de punta a punta añadido: con la app real, un challenge en la búsqueda tras resolver la región registra `1m[search=1 resolution=5 session=4]`, lo que confirma también la clasificación por ruta de plan-D5.
 - **RED:** tras tráfico simulado y un `400`, el `ERROR` del challenge incluye `recent_traffic` con los recuentos 1/5/15 min por tipo y los `4xx`.
 - **RF:** RF-6
 

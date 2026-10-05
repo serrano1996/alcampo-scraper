@@ -95,3 +95,21 @@ async def test_an_exhausted_long_window_rejects_new_searches(
     assert route.call_count == 0
     warnings = [r.getMessage() for r in records(caplog, "app.main", logging.WARNING)]
     assert any("outbound rate limit reached" in message for message in warnings)
+
+
+def test_a_challenge_logs_what_the_gate_actually_sent(
+    client: TestClient, respx_mock, caplog: pytest.LogCaptureFixture
+) -> None:
+    # spec 010 RF-6, end to end: region chain (steps 1-5), session confirmation
+    # (home, proposition, active, home) and the search that got the challenge.
+    mock_alcampo_search(respx_mock, status_code=202, headers={"x-amzn-waf-action": "challenge"})
+
+    response = client.get("/api/v1/products", params=SEARCH)
+
+    assert response.status_code == 502
+    [error] = [
+        r.getMessage()
+        for r in records(caplog, "app.services.product_service", logging.ERROR)
+        if "blocked" in r.getMessage()
+    ]
+    assert "recent_traffic=1m[search=1 resolution=5 session=4]" in error
