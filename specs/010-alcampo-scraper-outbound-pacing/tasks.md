@@ -1,6 +1,6 @@
 # Tasks 010 — Ritmo de salida hacia Alcampo
 
-- **Estado:** aprobado (2026-10-01)
+- **Estado:** completada (2026-10-05): T1–T7
 - **Spec:** [spec.md](spec.md) · **Plan:** [plan.md](plan.md)
 - **Entrega:** 2 PRs: **PR 1** = T1–T4 · **PR 2** = T5–T7.
 
@@ -45,7 +45,10 @@
 - **RED:** tras tráfico simulado y un `400`, el `ERROR` del challenge incluye `recent_traffic` con los recuentos 1/5/15 min por tipo y los `4xx`.
 - **RF:** RF-6
 
-### [ ] T7 — Docs y verificación manual
+### [x] T7 — Docs y verificación manual
+> **Nota (2026-10-05):** README: "Medidas antibaneo" con las dos ventanas (y por qué el límite corto bajó a 10), el espaciado y el aviso de `4xx`; tabla de variables (4 nuevas y el 10); limitación reescrita (los límites no están demostrados y cada challenge registra `recent_traffic`); el `ERROR` del challenge en la tabla de niveles; se quita la limitación "una resolución sale de golpe", ya resuelta.
+>
+> **Verificación manual (2026-10-05T08:18Z):** `docker compose` con los valores por defecto (10/60 s, 30/900 s, 500 ms + 500 ms), token sintético, 4 días después del bloqueo del 01-10. **1 búsqueda real** (`28001` + `agua`, 1 resolución con 1 destino) → `200` en **7,6 s** (por debajo de los 15 s del tiempo máximo). Las 10 peticiones a Alcampo salieron separadas **0,60–1,04 s** (antes, 1–3 s en total). Ningún `WARNING`, `ERROR` ni challenge; 0 apariciones del token. `docker compose down`; scratchpad limpio. **Fin del PR 2.**
 - README (límites revisados y por qué, espaciado, desglose en los challenges) y `.env.example` (ya hecho en T1).
 - **Verificación manual:** `docker compose`, **≥ 1 h después del bloqueo del 01-10**, 1 búsqueda real de un CP nuevo (1 resolución): comprobar en los logs que las ~10 peticiones salen espaciadas (~0,5–1 s) y la búsqueda termina en menos de 15 s. Sin provocar challenges.
 - **RF:** RNF-4. **Fin del PR 2.**

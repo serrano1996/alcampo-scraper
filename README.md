@@ -142,7 +142,9 @@ Invisibles para el consumidor, salvo algo más de latencia en los reintentos y `
 - **Enfriamiento creciente.** Si llega otro challenge antes de `WAF_COOLDOWN_MAX_SECONDS` (900 s) desde el anterior, la duración se duplica hasta ese tope: 180 → 360 → 720 → 900 s. Sin challenges recientes, vuelve a 180 s. Así no se repite el ciclo "challenge → espera corta → challenge".
 - **Búsquedas iguales simultáneas → 1 petición.** Si varias búsquedas del mismo término llegan mientras una ya está consultando Alcampo, esperan su resultado en lugar de repetir la petición (verificado con 10 simultáneas: 1 petición a Alcampo). Agrupa dentro de cada proceso; entre instancias protege el límite global.
 - **Término normalizado.** La cache y la petición a Alcampo no distinguen mayúsculas ni espacios repetidos: `Leche`, `LECHE` y `leche  entera` comparten entrada con `leche` y `leche entera`. Verificado en vivo que Alcampo devuelve exactamente lo mismo. La respuesta conserva el término tal como lo envió el cliente.
-- **Límite global de peticiones.** Como mucho `ALCAMPO_RATE_LIMIT` peticiones a Alcampo cada `ALCAMPO_RATE_WINDOW_SECONDS` (20 cada 60 s), contadas en Redis entre todas las instancias y reintentos incluidos (ventana deslizante). Agotado el cupo, las búsquedas **no cacheadas** responden `502` al instante sin salir a Alcampo; las **cacheadas** siguen respondiendo `200`. **El valor por defecto es una estimación prudente**: el umbral real del WAF para la búsqueda es desconocido. `ALCAMPO_RATE_LIMIT=0` lo desactiva.
+- **Límite global de peticiones, en dos ventanas.** Como mucho **10 peticiones por minuto** (`ALCAMPO_RATE_LIMIT` / `ALCAMPO_RATE_WINDOW_SECONDS`) y **30 cada 15 minutos** (`ALCAMPO_RATE_LIMIT_LONG` / `ALCAMPO_RATE_WINDOW_LONG_SECONDS`), contadas en Redis entre todas las instancias y reintentos incluidos (ventanas deslizantes). Agotado cualquiera de los dos, las búsquedas **no cacheadas** responden `502` al instante sin salir a Alcampo; las **cacheadas** siguen respondiendo `200`. El límite corto bajó de 20 a 10 y se añadió el largo porque el 2026-10-01 el WAF bloqueó la IP con **10 búsquedas en 15 minutos**, un tráfico que una ventana de un minuto nunca habría frenado ([spec 010](specs/010-alcampo-scraper-outbound-pacing/spec.md)). **Ningún valor está demostrado seguro.** `0` desactiva cada ventana.
+- **Peticiones espaciadas.** Entre dos peticiones del mismo proceso pasan al menos `ALCAMPO_MIN_INTERVAL_MS` (500 ms) más un jitter de hasta `ALCAMPO_INTERVAL_JITTER_MS` (500 ms). Una búsqueda normal (1 petición) no lo nota; la primera búsqueda de un código postal nuevo (~10 peticiones de resolución) pasa de 1–3 s a ~7 s. `ALCAMPO_MIN_INTERVAL_MS=0` lo desactiva.
+- **Errores provocados, a la vista.** Cualquier `4xx` de Alcampo que no sea `404` ni `429` deja un `WARNING` con el código, el endpoint y el tipo de petición: una petición inválida puede ser una señal de bot para el WAF (el bloqueo del 2026-10-01 llegó justo después de dos).
 - **Tiempo máximo por búsqueda.** Una búsqueda que no termina en `SEARCH_TIMEOUT_SECONDS` (15 s), intentos y esperas incluidos, se cancela y responde `502`. Antes el peor caso rondaba los 30 s.
 
 | Variable | Default | Descripción |
@@ -150,8 +152,12 @@ Invisibles para el consumidor, salvo algo más de latencia en los reintentos y `
 | `RETRY_JITTER_MAX_S` | `0.3` | Jitter máximo (s) por espera. `0` = sin jitter. Negativo: la app no arranca |
 | `WAF_COOLDOWN_SECONDS` | `180` | Duración del enfriamiento tras un challenge. `0` = desactivado. Negativo: la app no arranca |
 | `WAF_COOLDOWN_MAX_SECONDS` | `900` | Tope del enfriamiento creciente, y ventana en la que un challenge cuenta como reciente. Menor que `WAF_COOLDOWN_SECONDS`: la app no arranca |
-| `ALCAMPO_RATE_LIMIT` | `20` | Peticiones máximas a Alcampo por ventana, entre todas las instancias. `0` = sin límite. Negativo: la app no arranca |
+| `ALCAMPO_RATE_LIMIT` | `10` | Peticiones máximas a Alcampo por ventana, entre todas las instancias. `0` = sin límite. Negativo: la app no arranca |
 | `ALCAMPO_RATE_WINDOW_SECONDS` | `60` | Ventana del límite anterior. Menor que `1`: la app no arranca |
+| `ALCAMPO_RATE_LIMIT_LONG` | `30` | Peticiones máximas en la ventana larga, entre todas las instancias. `0` = sin límite |
+| `ALCAMPO_RATE_WINDOW_LONG_SECONDS` | `900` | Ventana larga (15 min). Menor que `1`: la app no arranca |
+| `ALCAMPO_MIN_INTERVAL_MS` | `500` | Espaciado mínimo entre peticiones del mismo proceso. `0` = sin espaciado |
+| `ALCAMPO_INTERVAL_JITTER_MS` | `500` | Jitter máximo añadido al espaciado |
 | `SEARCH_TIMEOUT_SECONDS` | `15` | Tiempo máximo total de una búsqueda en Alcampo (y de una resolución de región). `≤ 0`: la app no arranca |
 | `REDIS_TIMEOUT_SECONDS` | `2` | Timeout de conexión y de cada operación con Redis. `≤ 0`: la app no arranca |
 | `REDIS_CIRCUIT_OPEN_SECONDS` | `10` | Tras un fallo de Redis, cuánto tiempo se deja de intentar (se usan los respaldos locales). `0` = desactivado |
@@ -181,7 +187,7 @@ Qué nivel tiene cada evento:
 
 | Nivel | Eventos |
 |---|---|
-| `ERROR` | error no controlado (con traceback, responde `500`); `502` por Alcampo caído, reintentos agotados, `4xx` no reintentable o búsqueda que supera el tiempo máximo (`reason='search timeout'`); challenge del WAF (con la duración del enfriamiento); respuesta de Alcampo con JSON inválido o formato inesperado; **todos** los productos de una respuesta descartados (probable cambio de formato en Alcampo) |
+| `ERROR` | error no controlado (con traceback, responde `500`); `502` por Alcampo caído, reintentos agotados, `4xx` no reintentable o búsqueda que supera el tiempo máximo (`reason='search timeout'`); challenge del WAF (con la duración del enfriamiento y el tráfico reciente, `recent_traffic=…`); respuesta de Alcampo con JSON inválido o formato inesperado; **todos** los productos de una respuesta descartados (probable cambio de formato en Alcampo) |
 | `WARNING` | cada reintento; búsqueda rechazada sin llamar a Alcampo (`search throttled reason='WAF cooldown active'`, `'outbound rate limit reached'` o `'region resolution limit reached'`); Redis no disponible (`redis unavailable op=…`); algunos productos descartados; entrada de cache corrupta |
 | `INFO` | inicio y fin de cada petición; región de cada código postal (`region resolved … source=cache|resolved|shared`); sesión de región confirmada (`reason=new|renewal`); código postal sin servicio (`404`); origen de cada búsqueda: `search served source=hit` (cache), `miss` (Alcampo) o `shared` (resultado de otra búsqueda simultánea igual) |
 
@@ -192,7 +198,6 @@ En local, uvicorn sigue emitiendo su propio access log, sin request id (se desac
 ## Limitaciones conocidas
 
 - **El umbral del WAF para crear destinos es una hipótesis** (3–4 por ventana e IP, Fase 0). El límite de 2 cada 10 minutos es prudente, no medido. En un arranque en frío con muchos códigos postales nuevos, parte de ellos reciben `502` hasta que se van resolviendo.
-- **Una resolución sale de golpe:** las ~8 peticiones de un código postal nuevo se envían seguidas, en pocos segundos (la verificación en vivo las espació 30 s a mano). No se ha observado un bloqueo por ello, pero es tráfico más concentrado que el de la Fase 0.
 - **No se sabe cuánto vive un destino temporal** en Alcampo (se reutilizó a los 13 minutos). Si caduca, la región se olvida y se vuelve a resolver (con su coste).
 - **La región se lee del HTML de la portada de Alcampo.** Si cambia su forma, ninguna sesión se podrá confirmar y las búsquedas no cacheadas darán `502` (con un `ERROR` que indica el paso).
 - Las sesiones de región viven en memoria de cada proceso: con varias instancias, cada una confirma las suyas.
@@ -202,7 +207,7 @@ En local, uvicorn sigue emitiendo su propio access log, sin request id (se desac
 - **Imagen Docker no reproducible al 100 %:** `pyproject.toml` no fija versiones (no hay lockfile), así que dos builds en fechas distintas pueden instalar versiones distintas de las dependencias.
 - Docker sin orquestador: `Dockerfile` y `docker-compose.yml` locales, sin Kubernetes ni publicación en un registry. Hay CI (spec 006), pero no despliegue continuo.
 - El enfriamiento no supera el bloqueo del WAF, solo evita insistir. Si el bloqueo dura más que el enfriamiento aplicado, la siguiente búsqueda recibe otro challenge y el enfriamiento se duplica (hasta `WAF_COOLDOWN_MAX_SECONDS`).
-- **El límite de peticiones no conoce el umbral real del WAF** (la Fase 0 vio los bloqueos en otro endpoint). Si da `502` innecesarios o no evita bloqueos, ajústalo con los `WARNING` y las líneas `source=` de los logs.
+- **Los límites de salida no conocen el umbral real del WAF.** El 2026-10-01 hubo un bloqueo con menos tráfico que en otras pruebas sin bloqueo, así que el recuento de peticiones no lo explica todo (la hipótesis es que el WAF también puntúa respuestas de error). Para ajustarlos con datos, **cada challenge registra el tráfico de los 1, 5 y 15 minutos anteriores** (`recent_traffic=…`), por tipo (`search`, `resolution`, `session`) y con el número de `4xx`.
 - **Las búsquedas iguales solo se agrupan dentro de cada proceso.** Con varias instancias, cada una puede hacer su propia petición; las protege el límite global. Las líneas de log de una búsqueda compartida (reintentos, challenge) llevan el request id de la **primera** petición del grupo.
 - **Con varias instancias, sus relojes deben estar sincronizados (NTP):** el límite global usa la hora de cada instancia.
 
