@@ -129,6 +129,9 @@ CACHED_LECHE = ProductSearchResponse(
         strategy_used="api",
         scraped_at=datetime(2026, 9, 24, 10, 0, 0, tzinfo=UTC),
         total_results=0,
+        page=1,
+        page_size=50,
+        total_pages=0,
     ),
     products=[],
 )

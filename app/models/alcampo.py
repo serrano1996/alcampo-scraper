@@ -27,7 +27,7 @@ class AlcampoUnitPrice(BaseModel):
 class AlcampoImage(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
-    src: str | None = None
+    src: str = Field(min_length=1)
 
 
 class AlcampoProduct(BaseModel):
@@ -39,8 +39,10 @@ class AlcampoProduct(BaseModel):
     name: str = Field(min_length=1)
     price: AlcampoMoney
     unit_price: AlcampoUnitPrice | None = Field(default=None, alias="unitPrice")
-    image: AlcampoImage | None = None
-    category_path: list[str] = Field(default_factory=list, alias="categoryPath")
+    # Required, like Mercadona's non-null `image_url` and `category`: a product
+    # without them is discarded as malformed (spec 009 RF-11, spec-D4).
+    image: AlcampoImage
+    category_path: list[str] = Field(alias="categoryPath", min_length=1)
 
 
 class AlcampoProductGroup(BaseModel):

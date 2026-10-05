@@ -42,8 +42,9 @@ class Product(BaseModel):
     name: str
     price: float
     price_format: str | None
-    image_url: str | None
-    category: str | None
+    # Never null, as in Mercadona (spec 009 RF-11).
+    image_url: str
+    category: str
 
 
 class SearchMetadata(BaseModel):
@@ -57,6 +58,10 @@ class SearchMetadata(BaseModel):
     strategy_used: str
     scraped_at: datetime
     total_results: int
+    # Pagination, as in Mercadona (spec 009 RF-5).
+    page: int
+    page_size: int
+    total_pages: int
 
     @field_serializer("scraped_at")
     def serialize_scraped_at(self, value: datetime) -> str:
@@ -69,4 +74,4 @@ class ProductSearchResponse(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     search: SearchMetadata
-    products: list[Product] = Field(default_factory=list)
+    products: list[Product]

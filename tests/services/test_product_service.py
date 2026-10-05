@@ -30,6 +30,7 @@ RAW_PRODUCT = {
     "price": {"amount": "5.28", "currency": "EUR"},
     "unitPrice": {"price": {"amount": "0.88", "currency": "EUR"}, "unitName": "PER_LITRE"},
     "categoryPath": ["Leche, Huevos, Lácteos", "Leche", "Leche semidesnatada"],
+    "image": {"src": "https://img.test/54180.jpg"},  # required since spec 009 RF-11
 }
 
 

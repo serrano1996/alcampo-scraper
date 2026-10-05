@@ -42,8 +42,8 @@ def map_product(raw: AlcampoProduct) -> Product:
         name=raw.name,
         price=float(raw.price.amount),
         price_format=format_unit_price(raw.unit_price),
-        image_url=raw.image.src if raw.image else None,
-        category=raw.category_path[-1] if raw.category_path else None,
+        image_url=raw.image.src,
+        category=raw.category_path[-1],
     )
 
 

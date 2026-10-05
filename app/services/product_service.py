@@ -21,6 +21,7 @@ from app.exceptions import CooldownActiveError, UpstreamBlockedError, UpstreamUn
 from app.mappers.product_mapper import map_search
 from app.models.alcampo import AlcampoSearchResponse
 from app.models.product import ProductQuery, ProductSearchResponse, SearchMetadata
+from app.scrapers.alcampo_search import PAGE_SIZE
 from app.services.in_flight import InFlightSearches
 from app.services.outbound import TrafficLog
 from app.services.region_repository import Region
@@ -140,6 +141,10 @@ class ProductService:
                 strategy_used="api",
                 scraped_at=self._clock(),
                 total_results=len(products),
+                # A single page until pagination arrives (spec 009 T4/T5).
+                page=1,
+                page_size=PAGE_SIZE,
+                total_pages=1 if products else 0,
             ),
             products=products,
         )

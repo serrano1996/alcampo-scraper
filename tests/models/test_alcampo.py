@@ -72,13 +72,14 @@ def test_invalid_price_amount_raises(amount: str) -> None:
         AlcampoProduct.model_validate(raw)
 
 
-def test_product_without_category_path_defaults_to_empty_list() -> None:
+def test_product_without_category_path_is_invalid() -> None:
+    # spec 009 RF-11: the category is never null (as in Mercadona), so a product
+    # without it is malformed. Replaces spec 001's ..._defaults_to_empty_list.
     raw = dict(first_raw_product())
     del raw["categoryPath"]
 
-    product = AlcampoProduct.model_validate(raw)
-
-    assert product.category_path == []
+    with pytest.raises(ValidationError):
+        AlcampoProduct.model_validate(raw)
 
 
 def test_product_without_unit_price_is_none() -> None:

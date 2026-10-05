@@ -22,7 +22,8 @@
 - **Regresión:** el test de `term` de 51 → `422` pasa a 101; se anota.
 - **RF:** RF-1, RF-3 (validación), RF-8 (tope)
 
-### [ ] T2 — Forma de la respuesta y paridad con Mercadona
+### [x] T2 — Forma de la respuesta y paridad con Mercadona
+> **Nota (2026-10-05):** fixture `tests/fixtures/mercadona_search_response_schema.json` generada desde la app de Mercadona (commit `3126851`, su `main`). `tests/api/test_contract_parity.py` compara la **forma** resolviendo referencias (nombres de modelo distintos). RED real, y con una diferencia **no vista en el análisis**: en Mercadona `products` es obligatorio y aquí tenía `default_factory=list`. GREEN: `page`, `page_size`, `total_pages` en `SearchMetadata` (el servicio rellena por ahora `1`, `50` y `1`/`0`); `image_url` y `category` no nulos; `products` obligatorio; en el modelo crudo `image.src` y `categoryPath` obligatorios, así que un producto sin ellos se descarta y cuenta como mal formado sin código nuevo en el mapper. **Tests sustituidos (afirmaban lo contrario de RF-11):** `test_map_product_without_category_path_returns_none_category` y `…_without_image_returns_none_image_url` (por 4 casos de descarte en `test_map_search.py`), `test_product_optional_fields_accept_none` (por "solo `price_format` es opcional" + "`image_url`/`category` nulos → error") y `test_product_without_category_path_defaults_to_empty_list` (→ `…_is_invalid`). **Ajustes:** 6 construcciones de `SearchMetadata` en tests con los 3 campos nuevos; `None` → valores sintéticos en `image_url`/`category`; `RAW_PRODUCT` de `test_product_service.py` con imagen. Paridad: **en verde**.
 - **RED:**
   - `tests/fixtures/mercadona_search_response_schema.json`: esquema de `ProductSearchResponse` de Mercadona (copiado de su app; el 2026-10-01 ya se comparó).
   - `tests/api/test_contract_parity.py`: el esquema JSON de la respuesta de Alcampo coincide con la fixture en nombres de campos, tipos y obligatoriedad.

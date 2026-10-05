@@ -41,19 +41,35 @@ def test_empty_postal_code_raises() -> None:
         ProductQuery(postal_code="", term="leche")
 
 
-def test_product_optional_fields_accept_none() -> None:
+def test_price_format_is_the_only_optional_product_field() -> None:
+    # spec 009 RF-11: image_url and category are never null, as in Mercadona;
+    # price_format stays optional in both. Replaces spec 001's
+    # test_product_optional_fields_accept_none.
     product = Product(
         id="54180",
         name="Leche",
         price=5.28,
         price_format=None,
-        image_url=None,
-        category=None,
+        image_url="https://img.test/54180.jpg",
+        category="Leche semidesnatada",
     )
 
     assert product.price_format is None
-    assert product.image_url is None
-    assert product.category is None
+
+
+@pytest.mark.parametrize("field", ["image_url", "category"])
+def test_image_url_and_category_cannot_be_null(field: str) -> None:
+    values = {
+        "id": "54180",
+        "name": "Leche",
+        "price": 5.28,
+        "price_format": None,
+        "image_url": "https://img.test/54180.jpg",
+        "category": "Leche semidesnatada",
+    }
+
+    with pytest.raises(ValidationError):
+        Product(**{**values, field: None})
 
 
 def test_search_response_serializes_scraped_at_with_z_suffix() -> None:
@@ -65,6 +81,9 @@ def test_search_response_serializes_scraped_at_with_z_suffix() -> None:
             strategy_used="api",
             scraped_at=datetime(2026, 9, 24, 10, 0, 0, tzinfo=UTC),
             total_results=0,
+            page=1,
+            page_size=50,
+            total_pages=0,
         ),
         products=[],
     )

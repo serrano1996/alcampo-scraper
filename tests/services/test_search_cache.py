@@ -23,6 +23,9 @@ def make_response(postal_code: str = "28001") -> ProductSearchResponse:
             strategy_used="api",
             scraped_at=datetime(2026, 9, 24, 10, 0, 0, tzinfo=UTC),
             total_results=1,
+            page=1,
+            page_size=50,
+            total_pages=1,
         ),
         products=[
             Product(
@@ -30,8 +33,8 @@ def make_response(postal_code: str = "28001") -> ProductSearchResponse:
                 name="Leche",
                 price=5.28,
                 price_format="0.88 €/L",
-                image_url=None,
-                category=None,
+                image_url="https://img.test/54180.jpg",
+                category="Leche semidesnatada",
             )
         ],
     )

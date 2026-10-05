@@ -119,3 +119,45 @@ def test_clean_searches_log_nothing(caplog: pytest.LogCaptureFixture) -> None:
     map_search(AlcampoSearchResponse.model_validate(load_fixture("alcampo_search_no_results.json")))
 
     assert mapper_records(caplog) == []
+
+
+# --- spec 009 RF-11: image and category are never null, as in Mercadona ------
+# Replaces spec 001's test_map_product_without_{category_path,image}_returns_none_*:
+# a product without them is now discarded like any malformed one (spec-D4; 0 of
+# 100 real products lacked them, spec 009 §10).
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"image": None},
+        {"image": {"src": ""}},
+        {"categoryPath": []},
+    ],
+    ids=["no-image", "empty-image-src", "no-category"],
+)
+def test_a_product_without_image_or_category_is_discarded(
+    caplog: pytest.LogCaptureFixture, change: dict
+) -> None:
+    good = first_raw_product()
+    incomplete = {**first_raw_product(), "retailerProductId": "9", **change}
+    raw = AlcampoSearchResponse.model_validate(
+        {"productGroups": [{"decoratedProducts": [good, incomplete]}]}
+    )
+
+    products = map_search(raw)
+
+    assert [p.id for p in products] == [good["retailerProductId"]]
+    [warning] = mapper_records(caplog)
+    assert "discarded=1" in warning.getMessage()
+    assert "'9'" in warning.getMessage()
+
+
+def test_a_product_missing_the_image_key_is_discarded() -> None:
+    incomplete = {**first_raw_product(), "retailerProductId": "9"}
+    del incomplete["image"]
+    raw = AlcampoSearchResponse.model_validate(
+        {"productGroups": [{"decoratedProducts": [incomplete]}]}
+    )
+
+    assert map_search(raw) == []

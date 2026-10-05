@@ -59,23 +59,3 @@ def test_map_product_from_real_fixture() -> None:
         "https://www.compraonline.alcampo.es/images-v3/"
         "37ea0506-72ec-4543-93c8-a77bb916ec12/1aec1514-3cce-46d9-8133-20fdebbdb2cc/300x300.jpg"
     )
-
-
-def test_map_product_without_category_path_returns_none_category() -> None:
-    raw_dict = dict(first_raw_product())
-    del raw_dict["categoryPath"]
-    raw = AlcampoProduct.model_validate(raw_dict)
-
-    product = map_product(raw)
-
-    assert product.category is None
-
-
-def test_map_product_without_image_returns_none_image_url() -> None:
-    raw_dict = dict(first_raw_product())
-    del raw_dict["image"]
-    raw = AlcampoProduct.model_validate(raw_dict)
-
-    product = map_product(raw)
-
-    assert product.image_url is None
