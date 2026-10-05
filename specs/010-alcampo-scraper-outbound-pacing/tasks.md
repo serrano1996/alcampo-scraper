@@ -24,7 +24,8 @@
 - **RED:** `acquire()` devuelve un id; `release(id)` devuelve el hueco (en Redis y en el respaldo local); con límite 0, id vacío y `release` sin efecto.
 - **RF:** RF-1 (plan-D2)
 
-### [ ] T3 — `OutboundPacer`
+### [x] T3 — `OutboundPacer`
+> **Nota (2026-10-05):** RED real (`ModuleNotFoundError: app.services.outbound`). `OutboundPacer.wait_turn()` en `app/services/outbound.py`: un `asyncio.Lock` y la hora de la siguiente salida (`ahora + min + uniform(0, jitter)`); devuelve los segundos esperados. 5 tests con reloj y espera falsos (la espera avanza el reloj): la 1.ª no espera, la 2.ª espera min + jitter, el tiempo ya transcurrido descuenta, 4 concurrentes salen a 0,5 s una tras otra, y `min = 0` lo desactiva. **Mutación:** sin el lock, falla solo el test de concurrencia. Restaurado.
 - **RED:** con reloj, espera y `uniform` falsos: la 1.ª petición no espera; la 2.ª espera `min + jitter`; peticiones concurrentes salen en fila; `min = 0` → nunca espera.
 - **RF:** RF-3
 
