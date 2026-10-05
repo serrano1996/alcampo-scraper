@@ -23,3 +23,6 @@ htmlcov/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Local agent tooling (skill registry): per machine, never committed
+.atl/
