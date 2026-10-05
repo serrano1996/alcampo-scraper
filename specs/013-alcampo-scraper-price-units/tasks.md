@@ -23,7 +23,8 @@
 - **Regresión:** los casos de plan §3; se anotan.
 - **RF:** RF-1, RF-2, RF-3
 
-### [ ] T2 — Docs
+### [x] T2 — Docs
+> **Nota (2026-10-05):** README: la limitación de `price_format` reescrita (solo `PER_LITRE` y `PER_1KG`, vistas en vivo; el `PER_KG` supuesto dejaba sin precio unitario 90 de 100 productos de `arroz`; el resto, `null` + `WARNING`). Spec 001, decisión D8: nota que remite a esta spec. Sin código ni tests nuevos; sin verificación en vivo adicional (la captura de T1 lo fue). **Fin de la spec 013.**
 - README: la limitación de `price_format` reescrita (verificadas `PER_LITRE` y `PER_1KG`; el resto, `null` + `WARNING`); nota en la spec 001 (spec-D8) remitiendo a esta.
 - Sin verificación en vivo adicional: la captura de T1 lo es (spec §7).
 - **RF:** criterios de finalización

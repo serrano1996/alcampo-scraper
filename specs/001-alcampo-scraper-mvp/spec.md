@@ -153,7 +153,7 @@ Errores: `422` (validación, formato FastAPI) y `502` `{"detail": "Upstream serv
 | D5 | Challenge del WAF | Sin reintento; `502` inmediato | RF-18 |
 | D6 | `term` largo | `max_length=50` → `422` | RF-2 |
 | D7 | Robustez del mapeo | Descartar productos mal formados y deduplicar por `retailerProductId` (primera aparición) | RF-4, RF-9 |
-| D8 | Tabla de unidades | `PER_LITRE→L` (✅ verificado), `PER_KG→kg`, `PER_EACH→ud`, `PER_METER→m` (❌ sin verificar); cualquier otra → `null` | RF-7, RF-8 |
+| D8 | Tabla de unidades | `PER_LITRE→L` (✅ verificado), `PER_KG→kg`, `PER_EACH→ud`, `PER_METER→m` (❌ sin verificar); cualquier otra → `null`. **Corregida en la [spec 013](../013-alcampo-scraper-price-units/spec.md) (2026-10-05):** el nombre real es `PER_1KG`, no `PER_KG`; la tabla queda en `PER_LITRE` y `PER_1KG`, las únicas vistas en vivo | RF-7, RF-8 |
 | D9 | Importe de `price_format` | Tal como llega de Alcampo (`unitPrice.price.amount`), sin reformatear | RF-7 |
 
 ### Supuestos pendientes de confirmar (no bloquean el plan)
