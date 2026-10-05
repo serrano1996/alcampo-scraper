@@ -676,3 +676,26 @@ async def test_a_long_term_is_cut_to_50_characters_for_alcampo(
     await service.search(ProductQuery(postal_code="28001", term=term))
 
     assert scraper.calls == ["a" * 49]
+
+
+# --- spec 009 RF-4, RF-5: totals of the first page ------------------------------
+
+
+async def test_the_first_page_reports_the_estimated_total_and_pages(
+    redis: fakeredis.FakeAsyncRedis,
+) -> None:
+    # More pages behind (a token): the total is the categories' estimate (plan-D4).
+    raw = AlcampoSearchResponse.model_validate(
+        {
+            "productGroups": [{"decoratedProducts": [RAW_PRODUCT]}],
+            "metadata": {"nextPageToken": "tok-2"},
+            "additionalPageInfo": {"categories": [{"productCount": 535}, {"productCount": 134}]},
+        }
+    )
+    service, _ = make_service(FakeScraper(raw), redis)
+
+    result = await service.search(ProductQuery(postal_code="28001", term="leche"))
+
+    assert result.search.total_results == 669
+    assert result.search.total_pages == 14  # ceil(669 / 50)
+    assert result.search.page == 1

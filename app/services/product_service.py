@@ -24,6 +24,7 @@ from app.models.product import ProductQuery, ProductSearchResponse, SearchMetada
 from app.scrapers.alcampo_search import MAX_SENT_TERM_LENGTH, PAGE_SIZE
 from app.services.in_flight import InFlightSearches
 from app.services.outbound import TrafficLog
+from app.services.pagination import page_totals
 from app.services.region_repository import Region
 from app.services.search_cache import SearchCacheRepository, normalize_term
 from app.services.waf_cooldown import WafCooldownRepository
@@ -139,6 +140,8 @@ class ProductService:
             await self._on_waf_block()
             raise
         products = map_search(raw)
+        # Still the first page of PAGE_SIZE until the page walker arrives (T5).
+        totals = page_totals(raw, page=1, page_size=PAGE_SIZE, on_page=len(products))
         response = ProductSearchResponse(
             search=SearchMetadata(
                 postal_code=query.postal_code,
@@ -147,11 +150,11 @@ class ProductService:
                 warehouse=region.retailer_region_id,
                 strategy_used="api",
                 scraped_at=self._clock(),
-                total_results=len(products),
-                # A single page until pagination arrives (spec 009 T4/T5).
+                # Estimated, exact on the last page (spec 009 RF-4, RF-5).
+                total_results=totals.total_results,
                 page=1,
                 page_size=PAGE_SIZE,
-                total_pages=1 if products else 0,
+                total_pages=totals.total_pages,
             ),
             products=products,
         )

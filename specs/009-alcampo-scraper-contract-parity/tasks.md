@@ -39,7 +39,8 @@
 - **Regresión:** dobles `FakeScraper` con la firma nueva.
 - **RF:** RF-3 (envío), RF-7 (token)
 
-### [ ] T4 — Total y páginas
+### [x] T4 — Total y páginas
+> **Nota (2026-10-05):** RED real (`ModuleNotFoundError: app.services.pagination` y, en el servicio, `total_results == 1` en vez de 669). GREEN: `estimate_total`, `is_last_page` y `page_totals(raw, *, page, page_size, on_page) -> PageTotals` en `app/services/pagination.py`; el servicio los usa para la primera página (aún `PAGE_SIZE` hasta T5). **Concreción del plan-D4 (no lo contradice):** fuera de la última página, el total nunca baja de lo ya servido (`max(estimación, (page − 1) × size + n)`), porque la estimación puede quedarse corta (669 frente a 670 en vivo); test propio. "La propia página si es la última" con 0 resultados da 0 páginas (página 1 vacía → 0 y 0). Sin regresiones: los tests existentes usan respuestas sin `metadata` (última página), cuyo total exacto es el `len(products)` de antes.
 - **RED:** `tests/services/test_pagination.py`: `estimate_total` suma los `productCount` de primer nivel (y 0 sin categorías); en la última página (sin token) el total es exacto `(page − 1) × size + n`; `total_pages = min(ceil(total / size), MAX_PAGE)` o la propia página si es la última; página 1 vacía → 0 y 0.
 - **GREEN:** funciones puras en `app/services/pagination.py` (plan-D4) y su uso en el servicio para la primera página.
 - **RF:** RF-4, RF-5. **Fin del PR 1.**
