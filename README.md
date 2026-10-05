@@ -87,6 +87,7 @@ curl -H "X-API-Key: $ALCAMPO_API_KEY" \
 ```
 
 - `term` sin resultados → `200` con `products: []`, nunca un error.
+- **Alcampo cambia el formato** de un dato que la API usa (precio, imagen, categoría…) y **ningún** producto de la página es válido → `502 {"detail": "Upstream service unavailable"}`, sin guardar nada en cache: en cuanto Alcampo vuelve a la normalidad, la búsqueda funciona. Antes era un `200 []` cacheado 1 hora, indistinguible de "sin resultados" ([spec 011](specs/011-alcampo-scraper-upstream-format-resilience/spec.md)). Si solo fallan **algunos** productos, se devuelven los demás. Los cambios en campos que la API no usa no afectan.
 - Alcampo no responde (agotados los reintentos, un `4xx` no reintentable, el WAF de Alcampo bloqueando con un challenge, un [enfriamiento](#medidas-antibaneo) en curso, el [límite de peticiones](#medidas-antibaneo) agotado o una búsqueda que supera `SEARCH_TIMEOUT_SECONDS`) → `502 {"detail": "Upstream service unavailable"}`.
 - Parámetros inválidos (`postal_code` que no sean exactamente 5 dígitos, `term` vacío o de más de 100 caracteres, `page` fuera de 1–20, `page_size` fuera de 1–100) → `422`, sin llamar a Alcampo ni a Redis.
 - Página más allá de la última que tiene Alcampo para ese término → `404 {"detail": "Page out of range"}`.
@@ -205,8 +206,8 @@ Qué nivel tiene cada evento:
 
 | Nivel | Eventos |
 |---|---|
-| `ERROR` | error no controlado (con traceback, responde `500`); `502` por Alcampo caído, reintentos agotados, `4xx` no reintentable o búsqueda que supera el tiempo máximo (`reason='search timeout'`); challenge del WAF (con la duración del enfriamiento y el tráfico reciente, `recent_traffic=…`); respuesta de Alcampo con JSON inválido o formato inesperado; **todos** los productos de una respuesta descartados (probable cambio de formato en Alcampo) |
-| `WARNING` | cada reintento; búsqueda rechazada sin llamar a Alcampo (`search throttled reason='WAF cooldown active'`, `'outbound rate limit reached'` o `'region resolution limit reached'`); Redis no disponible (`redis unavailable op=…`); algunos productos descartados; entrada de cache corrupta |
+| `ERROR` | error no controlado (con traceback, responde `500`); `502` por Alcampo caído, reintentos agotados, `4xx` no reintentable o búsqueda que supera el tiempo máximo (`reason='search timeout'`); challenge del WAF (con la duración del enfriamiento y el tráfico reciente, `recent_traffic=…`); respuesta de Alcampo con JSON inválido o formato inesperado; **todos** los productos de una página descartados, con los campos que fallaron (`reason="all products malformed discarded=50 fields=['price.amount:string_type']"`, probable cambio de formato en Alcampo) |
+| `WARNING` | cada reintento; búsqueda rechazada sin llamar a Alcampo (`search throttled reason='WAF cooldown active'`, `'outbound rate limit reached'` o `'region resolution limit reached'`); Redis no disponible (`redis unavailable op=…`); algunos productos descartados (con sus ids y los campos que fallaron, `fields=[…]`, nunca sus valores); unidad de precio desconocida (`unknown price units units=[…]`); entrada de cache corrupta |
 | `INFO` | inicio y fin de cada petición; región de cada código postal (`region resolved … source=cache|resolved|shared`); sesión de región confirmada (`reason=new|renewal`); código postal sin servicio (`404`); origen de cada búsqueda: `search served source=hit` (cache), `miss` (Alcampo) o `shared` (resultado de otra búsqueda simultánea igual) |
 
 **Nunca se registran** cookies de Alcampo, cabeceras completas, el cuerpo de las respuestas de Alcampo ni la `X-API-Key` (ni los tokens de `API_KEYS`). Los valores que envía el cliente se registran escapados (`%r`), así que un salto de línea no puede fabricar líneas falsas.
@@ -219,7 +220,8 @@ En local, uvicorn sigue emitiendo su propio access log, sin request id (se desac
 - **No se sabe cuánto vive un destino temporal** en Alcampo (se reutilizó a los 13 minutos). Si caduca, la región se olvida y se vuelve a resolver (con su coste).
 - **La región se lee del HTML de la portada de Alcampo.** Si cambia su forma, ninguna sesión se podrá confirmar y las búsquedas no cacheadas darán `502` (con un `ERROR` que indica el paso).
 - Las sesiones de región viven en memoria de cada proceso: con varias instancias, cada una confirma las suyas.
-- **`price_format` solo está verificado para `PER_LITRE`.** Las unidades `PER_KG`, `PER_EACH` y `PER_METER` se infieren del bundle web de Alcampo, no de una respuesta real observada.
+- **`price_format` solo está verificado para `PER_LITRE`.** Las unidades `PER_KG`, `PER_EACH` y `PER_METER` se infieren del bundle web de Alcampo, no de una respuesta real observada. Cualquier otra da `price_format: null` y un `WARNING` `unknown price units`: si aparece en los logs, es una unidad real que se puede añadir a la tabla.
+- **Un cambio de formato que rompa solo parte de los productos sigue dando `200`** con los válidos (un `WARNING` dice qué campos fallaron); solo cuando no queda ninguno se responde `502`.
 - Autenticación de servicio a servicio con un secreto compartido: sin cuentas de usuario, OAuth2/JWT ni cuotas por token (fuera de alcance en la spec 004).
 - Logs solo en texto plano: sin JSON ni integración con plataformas de observabilidad (fuera de alcance en la spec 003).
 - **Imagen Docker no reproducible al 100 %:** `pyproject.toml` no fija versiones (no hay lockfile), así que dos builds en fechas distintas pueden instalar versiones distintas de las dependencias.

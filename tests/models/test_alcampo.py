@@ -1,9 +1,11 @@
 import json
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
 
+from app.mappers.product_mapper import map_search
 from app.models.alcampo import AlcampoProduct, AlcampoSearchResponse
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
@@ -110,3 +112,37 @@ def test_last_page_and_missing_counts_are_optional() -> None:
     assert raw.metadata is not None
     assert raw.metadata.next_page_token is None
     assert raw.additional_page_info is None
+
+
+# --- spec 011 RF-7: fields the app does not use can change freely ---------------
+
+UNUSED_REMOVED = ("brand", "productId", "promotions", "available", "images")
+UNUSED_RETYPED = {"available": "yes", "brand": 42, "promotions": {"changed": True}}
+
+
+def real_products_with(change: Callable[[dict], None]) -> AlcampoSearchResponse:
+    """The real `leche` response with `change` applied to every product."""
+    body = load_fixture("alcampo_search_leche.json")
+    for group in body["productGroups"]:
+        for product in group["decoratedProducts"]:
+            change(product)
+    return AlcampoSearchResponse.model_validate(body)
+
+
+def remove_unused(product: dict) -> None:
+    for name in UNUSED_REMOVED:
+        product.pop(name, None)
+
+
+def retype_unused(product: dict) -> None:
+    product.update(UNUSED_RETYPED)
+
+
+@pytest.mark.parametrize("change", [remove_unused, retype_unused], ids=["removed", "retyped"])
+def test_unused_fields_do_not_change_the_products(change: Callable[[dict], None]) -> None:
+    original = map_search(
+        AlcampoSearchResponse.model_validate(load_fixture("alcampo_search_leche.json"))
+    )
+
+    assert map_search(real_products_with(change)) == original
+    assert len(original) == 3
