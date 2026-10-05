@@ -248,3 +248,21 @@ def test_known_price_units_are_not_warned(caplog: pytest.LogCaptureFixture) -> N
     map_search(envelope(product("1"), product("2", unitPrice=unit_price("PER_1KG"))))
 
     assert mapper_records(caplog) == []
+
+
+# --- spec 013 RF-1: real per-kilo prices ----------------------------------------
+
+
+def test_real_per_kilo_prices_are_formatted(caplog: pytest.LogCaptureFixture) -> None:
+    # Captured live on 2026-10-05 (90 PER_1KG and 10 PER_LITRE of 100), trimmed.
+    raw = AlcampoSearchResponse.model_validate(load_fixture("alcampo_search_arroz.json"))
+
+    products = map_search(raw)
+
+    assert [(p.id, p.price_format) for p in products] == [
+        ("205192", "1.14 €/kg"),
+        ("20842", "1.88 €/kg"),
+        ("204978", "1.08 €/kg"),
+        ("649849", "1.10 €/L"),
+    ]
+    assert mapper_records(caplog) == []  # no unknown units

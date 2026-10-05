@@ -1,0 +1,424 @@
+{
+  "productGroups": [
+    {
+      "type": "personalized",
+      "otherProductIds": [],
+      "name": "fop.headertitle.personalised",
+      "clusterCategories": [],
+      "decoratedProducts": [
+        {
+          "productId": "bc12c907-d4a5-4425-b788-624b9a8fb8ac",
+          "retailerProductId": "205192",
+          "type": "REGULAR",
+          "name": "PRODUCTO ECONÓMICO ALCAMPO Arroz largo de categoria primera 1 kg.",
+          "brand": "PRODUCTO ECONÓMICO ALCAMPO",
+          "packSizeDescription": "1000g",
+          "price": {
+            "amount": "1.14",
+            "currency": "EUR"
+          },
+          "unitPrice": {
+            "price": {
+              "amount": "1.14",
+              "currency": "EUR"
+            },
+            "unit": "fop.price.per.kg",
+            "unitName": "PER_1KG"
+          },
+          "available": true,
+          "isVerifiedPurchase": false,
+          "quantityInBasket": 0,
+          "maxQuantityReached": false,
+          "taxCodesDisplayNames": [],
+          "imageConfig": {
+            "availableFormats": [
+              "jpg",
+              "webp"
+            ],
+            "availableResolutions": [
+              "100x100",
+              "150x150",
+              "200x200",
+              "300x300",
+              "350x350",
+              "410x410",
+              "500x500",
+              "640x640",
+              "800x800",
+              "960x960",
+              "1120x1120",
+              "1280x1280"
+            ]
+          },
+          "image": {
+            "src": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/300x300.jpg",
+            "description": "PRODUCTO ECONÓMICO ALCAMPO Arroz largo de categoria primera 1 kg.",
+            "fopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/100x100.webp 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/150x150.webp 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/200x200.webp 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/350x350.webp 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/410x410.webp 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/100x100.jpg 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/150x150.jpg 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/200x200.jpg 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/350x350.jpg 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/410x410.jpg 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/500x500.jpg 500w",
+            "bopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/640x640.webp 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/800x800.webp 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/960x960.webp 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/1120x1120.webp 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/1280x1280.webp 1280w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/500x500.jpg 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/640x640.jpg 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/800x800.jpg 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/960x960.jpg 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/1120x1120.jpg 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/1280x1280.jpg 1280w",
+            "imageId": "34a12f74-d808-4144-bc55-905b5ac84acb"
+          },
+          "images": [
+            {
+              "src": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/500x500.jpg",
+              "description": "PRODUCTO ECONÓMICO ALCAMPO Arroz largo de categoria primera 1 kg.",
+              "fopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/100x100.webp 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/150x150.webp 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/200x200.webp 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/350x350.webp 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/410x410.webp 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/100x100.jpg 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/150x150.jpg 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/200x200.jpg 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/350x350.jpg 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/410x410.jpg 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/500x500.jpg 500w",
+              "bopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/640x640.webp 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/800x800.webp 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/960x960.webp 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/1120x1120.webp 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/1280x1280.webp 1280w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/500x500.jpg 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/640x640.jpg 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/800x800.jpg 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/960x960.jpg 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/1120x1120.jpg 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb/1280x1280.jpg 1280w",
+              "imageId": "34a12f74-d808-4144-bc55-905b5ac84acb"
+            },
+            {
+              "src": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/500x500.jpg",
+              "description": "PRODUCTO ECONÓMICO ALCAMPO Arroz largo de categoria primera 1 kg.",
+              "fopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/100x100.webp 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/150x150.webp 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/200x200.webp 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/350x350.webp 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/410x410.webp 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/100x100.jpg 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/150x150.jpg 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/200x200.jpg 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/350x350.jpg 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/410x410.jpg 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/500x500.jpg 500w",
+              "bopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/640x640.webp 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/800x800.webp 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/960x960.webp 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/1120x1120.webp 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/1280x1280.webp 1280w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/500x500.jpg 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/640x640.jpg 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/800x800.jpg 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/960x960.jpg 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/1120x1120.jpg 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31/1280x1280.jpg 1280w",
+              "imageId": "0b153afc-da73-4b39-8826-ddf9db974b31"
+            }
+          ],
+          "imageIds": [
+            "34a12f74-d808-4144-bc55-905b5ac84acb",
+            "0b153afc-da73-4b39-8826-ddf9db974b31"
+          ],
+          "imagePaths": [
+            "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/34a12f74-d808-4144-bc55-905b5ac84acb",
+            "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0b153afc-da73-4b39-8826-ddf9db974b31"
+          ],
+          "iconAttributes": [
+            {
+              "label": "Alcampo Económico",
+              "file": "icon_alcampo_economic_product"
+            }
+          ],
+          "icons": [],
+          "basketLines": [],
+          "timeRestricted": false,
+          "alternatives": [],
+          "isInShoppingList": false,
+          "isInCurrentCatalog": true,
+          "ratingSummary": {
+            "overallRating": "5.0",
+            "count": 1
+          },
+          "retailerFinancingPlanIds": [
+            "022",
+            "025",
+            "026",
+            "027",
+            "016",
+            "021"
+          ],
+          "alcohol": false,
+          "categoryPath": [
+            "Alimentación",
+            "Arroz y Legumbres",
+            "Arroz",
+            "Arroz para cocinar"
+          ],
+          "isNew": false
+        },
+        {
+          "productId": "e8180f80-5d6b-4a44-895f-ef863fa0a038",
+          "retailerProductId": "20842",
+          "type": "REGULAR",
+          "name": "SOS Arroz redondo 1 kg.",
+          "brand": "SOS",
+          "packSizeDescription": "1000g",
+          "price": {
+            "amount": "1.88",
+            "currency": "EUR"
+          },
+          "unitPrice": {
+            "price": {
+              "amount": "1.88",
+              "currency": "EUR"
+            },
+            "unit": "fop.price.per.kg",
+            "unitName": "PER_1KG"
+          },
+          "available": true,
+          "isVerifiedPurchase": false,
+          "quantityInBasket": 0,
+          "maxQuantityReached": false,
+          "taxCodesDisplayNames": [],
+          "imageConfig": {
+            "availableFormats": [
+              "jpg",
+              "webp"
+            ],
+            "availableResolutions": [
+              "100x100",
+              "150x150",
+              "200x200",
+              "300x300",
+              "350x350",
+              "410x410",
+              "500x500",
+              "640x640",
+              "800x800",
+              "960x960",
+              "1120x1120",
+              "1280x1280"
+            ]
+          },
+          "image": {
+            "src": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/300x300.jpg",
+            "description": "SOS Arroz redondo 1 kg.",
+            "fopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/100x100.webp 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/150x150.webp 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/200x200.webp 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/350x350.webp 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/410x410.webp 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/100x100.jpg 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/150x150.jpg 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/200x200.jpg 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/350x350.jpg 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/410x410.jpg 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/500x500.jpg 500w",
+            "bopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/640x640.webp 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/800x800.webp 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/960x960.webp 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/1120x1120.webp 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/1280x1280.webp 1280w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/500x500.jpg 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/640x640.jpg 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/800x800.jpg 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/960x960.jpg 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/1120x1120.jpg 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/1280x1280.jpg 1280w",
+            "imageId": "d90e02b0-6185-438f-9d0e-12cb4d4cc144"
+          },
+          "images": [
+            {
+              "src": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/500x500.jpg",
+              "description": "SOS Arroz redondo 1 kg.",
+              "fopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/100x100.webp 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/150x150.webp 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/200x200.webp 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/350x350.webp 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/410x410.webp 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/100x100.jpg 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/150x150.jpg 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/200x200.jpg 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/350x350.jpg 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/410x410.jpg 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/500x500.jpg 500w",
+              "bopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/640x640.webp 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/800x800.webp 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/960x960.webp 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/1120x1120.webp 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/1280x1280.webp 1280w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/500x500.jpg 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/640x640.jpg 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/800x800.jpg 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/960x960.jpg 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/1120x1120.jpg 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144/1280x1280.jpg 1280w",
+              "imageId": "d90e02b0-6185-438f-9d0e-12cb4d4cc144"
+            }
+          ],
+          "imageIds": [
+            "d90e02b0-6185-438f-9d0e-12cb4d4cc144"
+          ],
+          "imagePaths": [
+            "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/d90e02b0-6185-438f-9d0e-12cb4d4cc144"
+          ],
+          "iconAttributes": [],
+          "icons": [],
+          "basketLines": [],
+          "timeRestricted": false,
+          "alternatives": [],
+          "isInShoppingList": false,
+          "isInCurrentCatalog": true,
+          "ratingSummary": {
+            "overallRating": "0.0",
+            "count": 0
+          },
+          "retailerFinancingPlanIds": [
+            "022",
+            "025",
+            "026",
+            "027",
+            "016",
+            "021"
+          ],
+          "alcohol": false,
+          "categoryPath": [
+            "Alimentación",
+            "Arroz y Legumbres",
+            "Arroz",
+            "Arroz para cocinar"
+          ],
+          "isNew": false
+        },
+        {
+          "productId": "242a0526-b824-4cfe-9a77-169e084faa70",
+          "retailerProductId": "204978",
+          "type": "REGULAR",
+          "name": "PRODUCTO ECONÓMICO ALCAMPO Arroz redondo de categoria primera 1 kg.",
+          "brand": "PRODUCTO ECONOMICO ALCAMPO",
+          "packSizeDescription": "1000g",
+          "price": {
+            "amount": "1.08",
+            "currency": "EUR"
+          },
+          "unitPrice": {
+            "price": {
+              "amount": "1.08",
+              "currency": "EUR"
+            },
+            "unit": "fop.price.per.kg",
+            "unitName": "PER_1KG"
+          },
+          "available": true,
+          "isVerifiedPurchase": false,
+          "quantityInBasket": 0,
+          "maxQuantityReached": false,
+          "taxCodesDisplayNames": [],
+          "imageConfig": {
+            "availableFormats": [
+              "jpg",
+              "webp"
+            ],
+            "availableResolutions": [
+              "100x100",
+              "150x150",
+              "200x200",
+              "300x300",
+              "350x350",
+              "410x410",
+              "500x500",
+              "640x640",
+              "800x800",
+              "960x960",
+              "1120x1120",
+              "1280x1280"
+            ]
+          },
+          "image": {
+            "src": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/300x300.jpg",
+            "description": "PRODUCTO ECONÓMICO ALCAMPO Arroz redondo de categoria primera 1 kg.",
+            "fopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/100x100.webp 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/150x150.webp 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/200x200.webp 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/350x350.webp 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/410x410.webp 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/100x100.jpg 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/150x150.jpg 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/200x200.jpg 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/350x350.jpg 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/410x410.jpg 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/500x500.jpg 500w",
+            "bopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/640x640.webp 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/800x800.webp 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/960x960.webp 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/1120x1120.webp 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/1280x1280.webp 1280w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/500x500.jpg 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/640x640.jpg 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/800x800.jpg 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/960x960.jpg 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/1120x1120.jpg 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/1280x1280.jpg 1280w",
+            "imageId": "c13661cb-cde3-4fbc-8aef-aa137164ed5f"
+          },
+          "images": [
+            {
+              "src": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/500x500.jpg",
+              "description": "PRODUCTO ECONÓMICO ALCAMPO Arroz redondo de categoria primera 1 kg.",
+              "fopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/100x100.webp 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/150x150.webp 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/200x200.webp 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/350x350.webp 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/410x410.webp 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/100x100.jpg 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/150x150.jpg 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/200x200.jpg 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/350x350.jpg 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/410x410.jpg 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/500x500.jpg 500w",
+              "bopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/640x640.webp 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/800x800.webp 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/960x960.webp 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/1120x1120.webp 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/1280x1280.webp 1280w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/500x500.jpg 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/640x640.jpg 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/800x800.jpg 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/960x960.jpg 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/1120x1120.jpg 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f/1280x1280.jpg 1280w",
+              "imageId": "c13661cb-cde3-4fbc-8aef-aa137164ed5f"
+            },
+            {
+              "src": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/500x500.jpg",
+              "description": "PRODUCTO ECONÓMICO ALCAMPO Arroz redondo de categoria primera 1 kg.",
+              "fopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/100x100.webp 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/150x150.webp 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/200x200.webp 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/350x350.webp 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/410x410.webp 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/100x100.jpg 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/150x150.jpg 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/200x200.jpg 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/350x350.jpg 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/410x410.jpg 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/500x500.jpg 500w",
+              "bopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/640x640.webp 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/800x800.webp 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/960x960.webp 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/1120x1120.webp 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/1280x1280.webp 1280w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/500x500.jpg 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/640x640.jpg 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/800x800.jpg 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/960x960.jpg 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/1120x1120.jpg 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4/1280x1280.jpg 1280w",
+              "imageId": "0365326b-09d5-42f5-b8d1-1965be5f41f4"
+            }
+          ],
+          "imageIds": [
+            "c13661cb-cde3-4fbc-8aef-aa137164ed5f",
+            "0365326b-09d5-42f5-b8d1-1965be5f41f4"
+          ],
+          "imagePaths": [
+            "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/c13661cb-cde3-4fbc-8aef-aa137164ed5f",
+            "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/0365326b-09d5-42f5-b8d1-1965be5f41f4"
+          ],
+          "iconAttributes": [
+            {
+              "label": "Alcampo Económico",
+              "file": "icon_alcampo_economic_product"
+            }
+          ],
+          "icons": [],
+          "basketLines": [],
+          "timeRestricted": false,
+          "alternatives": [],
+          "isInShoppingList": false,
+          "isInCurrentCatalog": true,
+          "ratingSummary": {
+            "overallRating": "5.0",
+            "count": 1
+          },
+          "retailerFinancingPlanIds": [
+            "022",
+            "025",
+            "026",
+            "027",
+            "016",
+            "021"
+          ],
+          "alcohol": false,
+          "categoryPath": [
+            "Alimentación",
+            "Arroz y Legumbres",
+            "Arroz",
+            "Arroz para cocinar"
+          ],
+          "isNew": false
+        },
+        {
+          "productId": "12eea771-0b3b-490c-90ca-aaa25e23c154",
+          "retailerProductId": "649849",
+          "type": "REGULAR",
+          "name": "AUCHAN Bebida de arroz con alto contenido de calcio y vitamina D 6 x 1 l. Producto Alcampo",
+          "brand": "PRODUCTO ALCAMPO",
+          "packSizeDescription": "6000ml",
+          "price": {
+            "amount": "6.60",
+            "currency": "EUR"
+          },
+          "unitPrice": {
+            "price": {
+              "amount": "1.10",
+              "currency": "EUR"
+            },
+            "unit": "fop.price.per.litre",
+            "unitName": "PER_LITRE"
+          },
+          "available": true,
+          "isVerifiedPurchase": false,
+          "quantityInBasket": 0,
+          "maxQuantityReached": false,
+          "taxCodesDisplayNames": [],
+          "imageConfig": {
+            "availableFormats": [
+              "jpg",
+              "webp"
+            ],
+            "availableResolutions": [
+              "100x100",
+              "150x150",
+              "200x200",
+              "300x300",
+              "350x350",
+              "410x410",
+              "500x500",
+              "640x640",
+              "800x800",
+              "960x960",
+              "1120x1120",
+              "1280x1280"
+            ]
+          },
+          "image": {
+            "src": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/300x300.jpg",
+            "description": "AUCHAN Bebida de arroz con alto contenido de calcio y vitamina D 6 x 1 l. Producto Alcampo",
+            "fopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/100x100.webp 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/150x150.webp 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/200x200.webp 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/350x350.webp 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/410x410.webp 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/100x100.jpg 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/150x150.jpg 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/200x200.jpg 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/350x350.jpg 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/410x410.jpg 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/500x500.jpg 500w",
+            "bopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/640x640.webp 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/800x800.webp 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/960x960.webp 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/1120x1120.webp 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/1280x1280.webp 1280w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/500x500.jpg 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/640x640.jpg 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/800x800.jpg 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/960x960.jpg 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/1120x1120.jpg 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/1280x1280.jpg 1280w",
+            "imageId": "a12ace79-2653-49cc-b24a-106129355ce3"
+          },
+          "images": [
+            {
+              "src": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/500x500.jpg",
+              "description": "AUCHAN Bebida de arroz con alto contenido de calcio y vitamina D 6 x 1 l. Producto Alcampo",
+              "fopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/100x100.webp 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/150x150.webp 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/200x200.webp 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/350x350.webp 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/410x410.webp 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/100x100.jpg 100w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/150x150.jpg 150w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/200x200.jpg 200w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/350x350.jpg 350w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/410x410.jpg 410w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/500x500.jpg 500w",
+              "bopSrcset": "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/300x300.webp 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/500x500.webp 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/640x640.webp 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/800x800.webp 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/960x960.webp 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/1120x1120.webp 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/1280x1280.webp 1280w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/300x300.jpg 300w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/500x500.jpg 500w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/640x640.jpg 640w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/800x800.jpg 800w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/960x960.jpg 960w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/1120x1120.jpg 1120w, https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3/1280x1280.jpg 1280w",
+              "imageId": "a12ace79-2653-49cc-b24a-106129355ce3"
+            }
+          ],
+          "imageIds": [
+            "a12ace79-2653-49cc-b24a-106129355ce3"
+          ],
+          "imagePaths": [
+            "https://www.compraonline.alcampo.es/images-v3/37ea0506-72ec-4543-93c8-a77bb916ec12/a12ace79-2653-49cc-b24a-106129355ce3"
+          ],
+          "iconAttributes": [
+            {
+              "label": "Vegano",
+              "file": "icon_vegan"
+            },
+            {
+              "label": "Producto Alcampo",
+              "file": "icon_alcampo_product"
+            }
+          ],
+          "icons": [],
+          "basketLines": [],
+          "timeRestricted": false,
+          "alternatives": [],
+          "isInShoppingList": false,
+          "isInCurrentCatalog": true,
+          "ratingSummary": {
+            "overallRating": "0.0",
+            "count": 0
+          },
+          "retailerFinancingPlanIds": [
+            "022",
+            "025",
+            "026",
+            "027",
+            "016",
+            "021"
+          ],
+          "alcohol": false,
+          "categoryPath": [
+            "Veganos",
+            "Bebidas veganas",
+            "Bebidas de arroz veganas"
+          ],
+          "isNew": false
+        }
+      ]
+    }
+  ]
+}
