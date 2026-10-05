@@ -12,7 +12,8 @@
 
 ---
 
-### [ ] T1 — Lockfiles
+### [x] T1 — Lockfiles
+> **Nota (2026-10-05):** RED real (`FileNotFoundError` de los dos lockfiles). GREEN: `scripts/lock.sh` (plan-D1: `python:3.11-slim`, `pip-tools==7.6.1`, `--generate-hashes --allow-unsafe --strip-extras --no-emit-index-url`, `--upgrade` opcional, `pwd -W` + `MSYS_NO_PATHCONV` en Git Bash; borra `*.egg-info`/`build` al acabar). Generados en 2 min 53 s: `requirements.lock` 25 paquetes (incluido `uvloop`, Linux), `requirements-dev.lock` 45; todos con hashes; ninguna herramienta de `dev` en el de producción. `tests/infra/test_lockfiles.py` (5 tests, sin red): directas fijadas, en rango y con hash; producción sin `dev`; toda línea del lock fijada con hash. **Mutación:** `redis==7.0.0` en el lock → `redis==7.0.0 out of range`; restaurado. Nota: la cabecera que escribe `pip-compile` muestra `--no-index` (lo traduce de `--no-emit-index-url`); el comando que vale es `scripts/lock.sh`.
 - **RED:** `tests/infra/test_lockfiles.py` (plan-D4): existen los dos; cada dependencia directa fijada con `==`, dentro de su rango y con hash; el de producción sin dependencias de `dev`; el de desarrollo con todas.
 - **GREEN:** `scripts/lock.sh` (plan-D1) y los dos lockfiles generados con él (contenedor `python:3.11-slim`, sin tocar Alcampo; sí PyPI).
 - **RF:** RF-1, RF-2, RF-5
