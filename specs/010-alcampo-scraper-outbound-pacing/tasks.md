@@ -29,7 +29,8 @@
 - **RED:** con reloj, espera y `uniform` falsos: la 1.ª petición no espera; la 2.ª espera `min + jitter`; peticiones concurrentes salen en fila; `min = 0` → nunca espera.
 - **RF:** RF-3
 
-### [ ] T4 — `TrafficLog`
+### [x] T4 — `TrafficLog`
+> **Nota (2026-10-05):** RED real (`ImportError: TrafficLog`). `TrafficLog` en `app/services/outbound.py`: `record(kind)` al salir una petición (`search`, `resolution`, `session`), `record_status(status)` al llegar la respuesta (solo guarda los `4xx`), y `summary()` con los recuentos 1/5/15 min por tipo y los `4xx` de 15 min. `str(summary)` es un único campo de log (`1m[search=1 …] … 4xx_15m=1`). Las entradas de más de 15 min se descartan, así que la memoria no crece sin límite (un test lo comprueba con `len`). 5 tests con reloj falso. **Fin del PR 1.**
 - **RED:** `record(kind)` y `record_status(...)`; `summary()` con recuentos 1/5/15 min por tipo y `4xx`; las entradas de más de 15 min se descartan.
 - **RF:** RF-6. **Fin del PR 1.**
 
