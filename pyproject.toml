@@ -49,6 +49,10 @@ select = ["E", "F", "W", "I", "B", "UP", "ANN", "ASYNC", "RUF"]
 asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "function"
 testpaths = ["tests"]
+# Tests share helpers as `tests.…` (doubles, the integration harness). Plain
+# `pytest`, as CI runs it, does not put the root on sys.path; `python -m pytest`
+# does, which hid the problem locally.
+pythonpath = ["."]
 # Any warning fails the suite: a deprecation is caught the day it appears
 # (spec 006 RF-11). No exceptions are needed today.
 filterwarnings = ["error"]
