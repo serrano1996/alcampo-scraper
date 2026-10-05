@@ -52,7 +52,7 @@ mypy                            # tipos, estricto, sobre app/ (obligatorio antes
 ## Uso del endpoint
 
 ```
-GET /api/v1/products?postal_code=<5 dígitos>&term=<texto, 1-50 caracteres>
+GET /api/v1/products?postal_code=<5 dígitos>&term=<texto, 1-100 caracteres>[&page=1][&page_size=50]
 ```
 
 ```bash
@@ -68,7 +68,10 @@ curl -H "X-API-Key: $ALCAMPO_API_KEY" \
     "warehouse": "11",
     "strategy_used": "api",
     "scraped_at": "2026-09-24T10:00:00Z",
-    "total_results": 1
+    "total_results": 1,
+    "page": 1,
+    "page_size": 50,
+    "total_pages": 1
   },
   "products": [
     {
@@ -85,8 +88,23 @@ curl -H "X-API-Key: $ALCAMPO_API_KEY" \
 
 - `term` sin resultados → `200` con `products: []`, nunca un error.
 - Alcampo no responde (agotados los reintentos, un `4xx` no reintentable, el WAF de Alcampo bloqueando con un challenge, un [enfriamiento](#medidas-antibaneo) en curso, el [límite de peticiones](#medidas-antibaneo) agotado o una búsqueda que supera `SEARCH_TIMEOUT_SECONDS`) → `502 {"detail": "Upstream service unavailable"}`.
-- Parámetros inválidos (`postal_code` que no sean exactamente 5 dígitos, `term` vacío o de más de 50 caracteres) → `422`, sin llamar a Alcampo ni a Redis.
+- Parámetros inválidos (`postal_code` que no sean exactamente 5 dígitos, `term` vacío o de más de 100 caracteres, `page` fuera de 1–20, `page_size` fuera de 1–100) → `422`, sin llamar a Alcampo ni a Redis.
+- Página más allá de la última que tiene Alcampo para ese término → `404 {"detail": "Page out of range"}`.
 - Código postal que Alcampo no conoce o donde no reparte (p. ej. `99999`, Ceuta `51001`, Melilla `52001`) → `404 {"detail": "Postal code not served by Alcampo"}`.
+
+La respuesta tiene **exactamente la forma de la de Mercadona** (mismos campos, tipos y obligatoriedad); un test lo comprueba contra una copia de su esquema ([spec 009](specs/009-alcampo-scraper-contract-parity/spec.md)). En concreto:
+
+- `search.term` es el **término que se buscó**: normalizado (minúsculas, espacios repetidos colapsados) y recortado a 50 caracteres, como hace la propia web de Alcampo. `Leche` devuelve `"term": "leche"`.
+- `image_url` y `category` **nunca son `null`**: un producto sin imagen o sin categoría se descarta (en 100 productos reales no apareció ninguno).
+
+## Paginación
+
+`page` (1–20, por defecto 1) y `page_size` (1–100, por defecto 50), como en Mercadona. Sin parámetros, la respuesta de siempre: la primera página de 50.
+
+- **Alcampo pagina con un cursor**, no por número: cada página trae el token de la siguiente, y ese token **solo vale en la sesión que lo recibió**. El servicio guarda los tokens en la sesión de cada región, así que pedir las páginas en orden cuesta **1 petición por página**. Saltar a una página lejana en frío recorre las anteriores (la página 5 son 5 peticiones), y todas quedan cacheadas.
+- **Recorridos profundos y límites:** cada página del recorrido pasa por los [límites de salida](#medidas-antibaneo). Llegar en frío a la página 20 son 20 peticiones y la ventana corta admite 10 por minuto, así que el recorrido **se corta con `502`**. No se pierde lo hecho: el siguiente intento sigue desde la última página conocida.
+- **`total_results` es una estimación** (la suma de los recuentos por categoría que da Alcampo; en vivo, 669 frente a 670 reales) y es **exacto en la última página**. `total_pages` se calcula a partir de él, con un tope de 20.
+- Al renovarse la sesión de una región (cada 50 minutos), sus tokens se pierden: la siguiente página no cacheada vuelve a recorrer desde la primera.
 
 ## Región por código postal
 
@@ -99,7 +117,7 @@ Alcampo cambia precio y catálogo según la región (la tienda que sirve): por e
   - un código postal inexistente o sin servicio se detecta antes de crear el destino: no consume cupo.
 - **Alcampo guarda la región en la sesión, no en la petición.** El servicio mantiene **una sesión por región** (sus cookies, en memoria del proceso) y la comprueba al confirmarla: si la página no muestra la región esperada, responde `502` antes que devolver precios de otra región.
 - **La sesión se renueva cada 50 minutos** (`SESSION_MAX_AGE_SECONDS`) reutilizando su destino: 4 peticiones y ningún destino nuevo.
-- Los códigos postales de una misma región comparten sesión y cache (`search:{región}:{término}`).
+- Los códigos postales de una misma región comparten sesión y cache (`search:{región}:{término}:{página}:{tamaño}`).
 
 ## Redis
 
@@ -141,7 +159,7 @@ Invisibles para el consumidor, salvo algo más de latencia en los reintentos y `
 - **Enfriamiento tras el WAF.** El bloqueo real de Alcampo es su AWS WAF, que bloquea la IP de salida durante 2–4 minutos. Tras un challenge, el servicio deja de llamar a Alcampo durante `WAF_COOLDOWN_SECONDS` (180 s por defecto): las búsquedas **no cacheadas** responden `502` al instante, y las **cacheadas** siguen respondiendo `200`. La marca es global (una clave en Redis), así que la comparten todas las instancias. `WAF_COOLDOWN_SECONDS=0` lo desactiva.
 - **Enfriamiento creciente.** Si llega otro challenge antes de `WAF_COOLDOWN_MAX_SECONDS` (900 s) desde el anterior, la duración se duplica hasta ese tope: 180 → 360 → 720 → 900 s. Sin challenges recientes, vuelve a 180 s. Así no se repite el ciclo "challenge → espera corta → challenge".
 - **Búsquedas iguales simultáneas → 1 petición.** Si varias búsquedas del mismo término llegan mientras una ya está consultando Alcampo, esperan su resultado en lugar de repetir la petición (verificado con 10 simultáneas: 1 petición a Alcampo). Agrupa dentro de cada proceso; entre instancias protege el límite global.
-- **Término normalizado.** La cache y la petición a Alcampo no distinguen mayúsculas ni espacios repetidos: `Leche`, `LECHE` y `leche  entera` comparten entrada con `leche` y `leche entera`. Verificado en vivo que Alcampo devuelve exactamente lo mismo. La respuesta conserva el término tal como lo envió el cliente.
+- **Término normalizado.** La cache y la petición a Alcampo no distinguen mayúsculas ni espacios repetidos: `Leche`, `LECHE` y `leche  entera` comparten entrada con `leche` y `leche entera`. Verificado en vivo que Alcampo devuelve exactamente lo mismo. Desde la spec 009 la respuesta devuelve el término normalizado (el que se buscó), como Mercadona.
 - **Límite global de peticiones, en dos ventanas.** Como mucho **10 peticiones por minuto** (`ALCAMPO_RATE_LIMIT` / `ALCAMPO_RATE_WINDOW_SECONDS`) y **30 cada 15 minutos** (`ALCAMPO_RATE_LIMIT_LONG` / `ALCAMPO_RATE_WINDOW_LONG_SECONDS`), contadas en Redis entre todas las instancias y reintentos incluidos (ventanas deslizantes). Agotado cualquiera de los dos, las búsquedas **no cacheadas** responden `502` al instante sin salir a Alcampo; las **cacheadas** siguen respondiendo `200`. El límite corto bajó de 20 a 10 y se añadió el largo porque el 2026-10-01 el WAF bloqueó la IP con **10 búsquedas en 15 minutos**, un tráfico que una ventana de un minuto nunca habría frenado ([spec 010](specs/010-alcampo-scraper-outbound-pacing/spec.md)). **Ningún valor está demostrado seguro.** `0` desactiva cada ventana.
 - **Peticiones espaciadas.** Entre dos peticiones del mismo proceso pasan al menos `ALCAMPO_MIN_INTERVAL_MS` (500 ms) más un jitter de hasta `ALCAMPO_INTERVAL_JITTER_MS` (500 ms). Una búsqueda normal (1 petición) no lo nota; la primera búsqueda de un código postal nuevo (~10 peticiones de resolución) pasa de 1–3 s a ~7 s. `ALCAMPO_MIN_INTERVAL_MS=0` lo desactiva.
 - **Errores provocados, a la vista.** Cualquier `4xx` de Alcampo que no sea `404` ni `429` deja un `WARNING` con el código, el endpoint y el tipo de petición: una petición inválida puede ser una señal de bot para el WAF (el bloqueo del 2026-10-01 llegó justo después de dos).
@@ -210,6 +228,7 @@ En local, uvicorn sigue emitiendo su propio access log, sin request id (se desac
 - **Los límites de salida no conocen el umbral real del WAF.** El 2026-10-01 hubo un bloqueo con menos tráfico que en otras pruebas sin bloqueo, así que el recuento de peticiones no lo explica todo (la hipótesis es que el WAF también puntúa respuestas de error). Para ajustarlos con datos, **cada challenge registra el tráfico de los 1, 5 y 15 minutos anteriores** (`recent_traffic=…`), por tipo (`search`, `resolution`, `session`) y con el número de `4xx`.
 - **Las búsquedas iguales solo se agrupan dentro de cada proceso.** Con varias instancias, cada una puede hacer su propia petición; las protege el límite global. Las líneas de log de una búsqueda compartida (reintentos, challenge) llevan el request id de la **primera** petición del grupo.
 - **Con varias instancias, sus relojes deben estar sincronizados (NTP):** el límite global usa la hora de cada instancia.
+- **Paginación:** `total_results` es una estimación salvo en la última página; los tokens de página viven en la sesión de cada proceso, así que con varias instancias cada una recorre las suyas; y una página profunda en frío puede cortarse con `502` por la ventana corta (ver [Paginación](#paginación)).
 
 Detalle completo de lo verificado en vivo: [Fase 0](docs/investigacion/fase-0-alcampo.md).
 
