@@ -379,3 +379,23 @@ def test_zero_disables_the_long_window_and_the_spacing(
     monkeypatch.setenv(name, "0")
 
     assert getattr(Settings(_env_file=None), name.lower()) == 0
+
+
+# --- spec 012 RF-4: HTTP timeout towards Alcampo ---------------------------------
+
+
+def test_http_timeout_defaults_to_the_previous_constant(monkeypatch: pytest.MonkeyPatch) -> None:
+    set_required(monkeypatch)
+
+    assert Settings(_env_file=None).http_timeout_seconds == 10  # spec-D3: no change
+
+
+@pytest.mark.parametrize("raw", ["0", "-1"])
+def test_a_non_positive_http_timeout_fails(monkeypatch: pytest.MonkeyPatch, raw: str) -> None:
+    set_required(monkeypatch)
+    monkeypatch.setenv("HTTP_TIMEOUT_SECONDS", raw)
+
+    with pytest.raises(ValidationError) as exc_info:
+        Settings(_env_file=None)
+
+    assert "http_timeout_seconds" in str(exc_info.value)

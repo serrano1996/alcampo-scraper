@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     alcampo_min_interval_ms: int = Field(default=500, ge=0)
     alcampo_interval_jitter_ms: int = Field(default=500, ge=0)
     search_timeout_seconds: float = Field(default=15, gt=0)
+    # Each request to Alcampo: connect, read, write and pool (spec 012 RF-4).
+    # 10, the value of the former constant (spec-D3).
+    http_timeout_seconds: float = Field(default=10, gt=0)
     # Cap of the growing cooldown, and how long a challenge counts as "recent" (RF-8).
     waf_cooldown_max_seconds: int = Field(default=900, ge=0)
     # Redis (spec 007 RF-14): without timeouts a hung Redis hangs every request.

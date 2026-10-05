@@ -206,3 +206,29 @@ def test_a_streamed_response_is_finished_only_after_its_body(
     )
     ours = [r for r in caplog.records if r.name == "app.test_stream"]
     assert [r.request_id for r in ours] == [request_id]
+
+
+def test_an_error_after_the_response_started_is_logged_and_re_raised(
+    integration_env: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    # Spec 012 RF-6: the 200 is already on its way, so it cannot become a 500.
+    caplog.set_level(logging.INFO)
+    app = create_app()
+
+    async def chunks() -> AsyncIterator[bytes]:
+        yield b"first chunk"
+        raise RuntimeError("broken stream")
+
+    @app.get("/stream")
+    async def stream() -> StreamingResponse:
+        return StreamingResponse(chunks())
+
+    with TestClient(app) as client, pytest.raises(RuntimeError, match="broken stream"):
+        client.get("/stream")
+
+    [error] = [r for r in caplog.records if r.levelno == logging.ERROR]
+    assert error.getMessage() == "unhandled error"
+    assert error.exc_info is not None
+    assert error.request_id != "-"
+    [finished] = request_records(caplog, "request finished")
+    assert "status=200" in finished.getMessage()  # no 500 sent after the 200

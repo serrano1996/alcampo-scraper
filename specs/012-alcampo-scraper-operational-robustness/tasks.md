@@ -22,7 +22,8 @@
 - **GREEN:** la ruta en `create_app` (plan-D1).
 - **RF:** RF-1, RF-2, RF-3
 
-### [ ] T2 — `HTTP_TIMEOUT_SECONDS` y rama del middleware
+### [x] T2 — `HTTP_TIMEOUT_SECONDS` y rama del middleware
+> **Nota (2026-10-05):** RED real en 4 tests (ajuste por defecto 10, `0` y `-1` rechazados, cliente con 3 s en conexión, lectura, escritura y pool). GREEN: `Settings.http_timeout_seconds = Field(default=10, gt=0)`; `create_http_client` lo usa y desaparece `REQUEST_TIMEOUT_SECONDS`. Middleware (RF-6): `test_an_error_after_the_response_started_is_logged_and_re_raised` en `tests/integration/test_logging_integration.py` (streaming que lanza tras el primer trozo → la excepción llega al cliente de test, `ERROR` `unhandled error` con traceback y request id, `request finished status=200`); **mutación:** `raise` → `return` da `DID NOT RAISE RuntimeError`; restaurado. **Regresión adelantada de T3:** `tests/core/test_env_example.py::test_env_example_documents_every_setting` exige la variable en `.env.example`, que edita el usuario: añadida por el usuario (`HTTP_TIMEOUT_SECONDS=10`). El test que usaba `REQUEST_TIMEOUT_SECONDS` no existía (leía `10.0` directamente) y sigue pasando.
 - **RED:**
   - `Settings`: por defecto 10; `0` y negativo → error al arrancar.
   - `create_http_client(settings)` con `http_timeout_seconds=3` → `client.timeout` con 3 en conexión, lectura, escritura y pool.

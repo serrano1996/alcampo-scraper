@@ -105,3 +105,19 @@ async def test_outgoing_request_has_referer_and_no_origin() -> None:
     request = route.calls.last.request
     assert request.headers["Referer"] == "https://www.compraonline.alcampo.es/"
     assert "Origin" not in request.headers
+
+
+async def test_the_http_timeout_comes_from_settings() -> None:
+    # Spec 012 RF-4: connect, read, write and pool, all from HTTP_TIMEOUT_SECONDS.
+    settings = Settings(
+        _env_file=None,
+        alcampo_base_url="https://alcampo.test",
+        redis_url="redis://localhost:6379/0",
+        http_timeout_seconds=3,
+    )
+    client = create_http_client(settings)
+    try:
+        timeout = client.timeout
+        assert (timeout.connect, timeout.read, timeout.write, timeout.pool) == (3, 3, 3, 3)
+    finally:
+        await client.aclose()

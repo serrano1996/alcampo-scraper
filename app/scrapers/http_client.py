@@ -17,8 +17,6 @@ import httpx
 
 from app.core.config import Settings
 
-REQUEST_TIMEOUT_SECONDS = 10.0
-
 # Constant on purpose (plan-D11): it imitates the real browser, not our config.
 # Deriving it from ALCAMPO_BASE_URL would leak a fake Referer if the base URL
 # pointed to a proxy. No `Origin`: browsers do not send it on same-origin GETs.
@@ -53,7 +51,7 @@ def create_http_client(
     """Build the single `httpx.AsyncClient` used for the lifetime of the app."""
     return httpx.AsyncClient(
         base_url=settings.alcampo_base_url,
-        timeout=REQUEST_TIMEOUT_SECONDS,
+        timeout=settings.http_timeout_seconds,
         headers={
             "User-Agent": choose(USER_AGENTS),
             "Accept": "application/json",
