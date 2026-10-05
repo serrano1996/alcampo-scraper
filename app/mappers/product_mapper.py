@@ -56,35 +56,54 @@ def map_search(raw: AlcampoSearchResponse) -> list[Product]:
 
     Discards are logged once per search (spec 003 RF-14, plan-D9). Discarding
     every product is an ERROR (RF-15): it looks like "no results" to the
-    consumer but points to Alcampo changing its JSON format.
+    consumer but points to Alcampo changing its JSON format. The log names the
+    fields that failed, never their values (spec 011 RF-5, plan-D3).
     """
     products: list[Product] = []
     seen_ids: set[str] = set()
     discarded_ids: list[str | None] = []
+    failed_fields: set[str] = set()
+    unknown_units: set[str] = set()
 
     for group in raw.product_groups:
         for raw_product in group.decorated_products:
             try:
                 product_data = AlcampoProduct.model_validate(raw_product)
-            except ValidationError:
+            except ValidationError as exc:
                 discarded_ids.append(_raw_product_id(raw_product))
+                failed_fields.update(_failed_fields(exc))
                 continue
 
             if product_data.retailer_product_id in seen_ids:
                 continue
             seen_ids.add(product_data.retailer_product_id)
             products.append(map_product(product_data))
+            unit_name = product_data.unit_price.unit_name if product_data.unit_price else None
+            if unit_name is not None and unit_name not in UNIT_SUFFIXES:
+                unknown_units.add(unit_name)
 
     if discarded_ids:
         level = logging.ERROR if not products else logging.WARNING
         logger.log(
             level,
-            "discarded malformed products discarded=%d kept=%d ids=%r",
+            "discarded malformed products discarded=%d kept=%d ids=%r fields=%r",
             len(discarded_ids),
             len(products),
             discarded_ids,
+            sorted(failed_fields),
         )
+    if unknown_units:
+        # Only PER_LITRE is verified live: real traffic tells which others exist
+        # (spec 011 RF-6, spec-D3). They still map to `price_format: None`.
+        logger.warning("unknown price units units=%r", sorted(unknown_units))
     return products
+
+
+def _failed_fields(exc: ValidationError) -> set[str]:
+    """`path:type` of each error, with Alcampo's field names; never the input (plan-D3)."""
+    return {
+        ".".join(str(part) for part in error["loc"]) + ":" + error["type"] for error in exc.errors()
+    }
 
 
 def _raw_product_id(raw_product: JsonValue) -> str | None:

@@ -13,7 +13,8 @@
 
 ---
 
-### [ ] T1 — Qué campo falló y unidades desconocidas
+### [x] T1 — Qué campo falló y unidades desconocidas
+> **Nota (2026-10-05):** RED real en 3 tests (log sin `fields=`, sin aviso de unidades); `test_known_price_units_are_not_warned` ya pasaba y queda como guarda contra falsos avisos. GREEN: `_failed_fields()` reúne `ruta:tipo` de `ValidationError.errors()` con los nombres de Alcampo (`loc` usa los alias: `image`, `price.amount`), sin `input` ni `msg`; el log de descartes añade `fields=[…]` ordenado y sin repetir (el valor `5.28` no aparece, comprobado); `WARNING` `unknown price units units=[…]` una vez por página mapeada. Sin regresiones: el resto del mensaje de descartes no cambia.
 - **RED:** `tests/mappers/test_map_search.py`:
   - 1 producto sin `image` y otro con `price.amount` numérico entre válidos → `WARNING` con `fields=['image:missing', 'price.amount:string_type']` (ordenados, sin repetir) además de los ids; **el valor** (`5.28`) **no** aparece en el log (plan-D3).
   - dos productos con el mismo fallo → el campo aparece una vez.

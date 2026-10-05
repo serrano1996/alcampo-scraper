@@ -161,3 +161,70 @@ def test_a_product_missing_the_image_key_is_discarded() -> None:
     )
 
     assert map_search(raw) == []
+
+
+# --- spec 011 RF-5: which field failed, never its value -------------------------
+
+
+def product(product_id: str, **changes: object) -> dict:
+    """The first real product with another id and some fields replaced or removed (None)."""
+    data = {**first_raw_product(), "retailerProductId": product_id}
+    for key, value in changes.items():
+        if value is None:
+            data.pop(key, None)
+        else:
+            data[key] = value
+    return data
+
+
+def test_the_discard_warning_names_the_failed_fields_without_values(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    no_image = product("2", image=None)
+    numeric_price = product("3", price={"amount": 5.28, "currency": "EUR"})
+
+    map_search(envelope(product("1"), no_image, numeric_price))
+
+    [record] = mapper_records(caplog)
+    message = record.getMessage()
+    assert record.levelno == logging.WARNING
+    assert "fields=['image:missing', 'price.amount:string_type']" in message
+    assert "5.28" not in message  # the value received is Alcampo's data (plan-D3)
+
+
+def test_a_field_failing_in_several_products_is_named_once(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    map_search(envelope(product("1"), product("2", image=None), product("3", image=None)))
+
+    [record] = mapper_records(caplog)
+    assert "fields=['image:missing']" in record.getMessage()
+
+
+# --- spec 011 RF-6: unknown price units ----------------------------------------
+
+
+def unit_price(unit_name: str) -> dict:
+    return {"price": {"amount": "0.88", "currency": "EUR"}, "unitName": unit_name}
+
+
+def test_an_unknown_price_unit_is_warned_once_per_search(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    raw = envelope(
+        product("1", unitPrice=unit_price("PER_100G")),
+        product("2", unitPrice=unit_price("PER_100G")),
+    )
+
+    products = map_search(raw)
+
+    assert [p.price_format for p in products] == [None, None]
+    [record] = mapper_records(caplog)
+    assert record.levelno == logging.WARNING
+    assert record.getMessage() == "unknown price units units=['PER_100G']"
+
+
+def test_known_price_units_are_not_warned(caplog: pytest.LogCaptureFixture) -> None:
+    map_search(envelope(product("1"), product("2", unitPrice=unit_price("PER_KG"))))
+
+    assert mapper_records(caplog) == []
