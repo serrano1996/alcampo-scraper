@@ -89,3 +89,24 @@ def test_product_without_unit_price_is_none() -> None:
     product = AlcampoProduct.model_validate(raw)
 
     assert product.unit_price is None
+
+
+# --- spec 009 RF-4, RF-7: cursor and category counts (verified live, spec §10) ---
+
+
+def test_search_response_reads_the_next_page_token_and_category_counts() -> None:
+    raw = AlcampoSearchResponse.model_validate(load_fixture("alcampo_search_leche.json"))
+
+    assert raw.metadata is not None
+    assert raw.metadata.next_page_token == "cf78cbe4-2f2e-4db6-b72a-617e8d6a9350"
+    assert raw.additional_page_info is not None
+    assert raw.additional_page_info.categories[0].product_count == 535
+
+
+def test_last_page_and_missing_counts_are_optional() -> None:
+    # The last page arrives with `metadata: {}` and no token (spec §10, `quinoa`).
+    raw = AlcampoSearchResponse.model_validate({"productGroups": [], "metadata": {}})
+
+    assert raw.metadata is not None
+    assert raw.metadata.next_page_token is None
+    assert raw.additional_page_info is None

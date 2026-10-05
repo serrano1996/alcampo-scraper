@@ -21,7 +21,7 @@ from app.exceptions import CooldownActiveError, UpstreamBlockedError, UpstreamUn
 from app.mappers.product_mapper import map_search
 from app.models.alcampo import AlcampoSearchResponse
 from app.models.product import ProductQuery, ProductSearchResponse, SearchMetadata
-from app.scrapers.alcampo_search import PAGE_SIZE
+from app.scrapers.alcampo_search import MAX_SENT_TERM_LENGTH, PAGE_SIZE
 from app.services.in_flight import InFlightSearches
 from app.services.outbound import TrafficLog
 from app.services.region_repository import Region
@@ -35,7 +35,14 @@ logger = logging.getLogger(__name__)
 
 
 class SearchScraper(Protocol):
-    async def search(self, term: str, *, client: httpx.AsyncClient) -> AlcampoSearchResponse: ...
+    async def search(
+        self,
+        term: str,
+        *,
+        client: httpx.AsyncClient,
+        page_size: int = ...,
+        page_token: str | None = ...,
+    ) -> AlcampoSearchResponse: ...
 
 
 class RegionFinder(Protocol):
@@ -125,7 +132,7 @@ class ProductService:
             # The normalized term, so the request does not depend on the client's
             # spelling (spec 008 RF-2, plan-D1); the response keeps query.term.
             raw = await self._within_timeout(
-                self._scraper.search(normalize_term(query.term), client=session.client),
+                self._scraper.search(sent_term(query.term), client=session.client),
                 "search timeout",
             )
         except UpstreamBlockedError:
@@ -208,3 +215,8 @@ def _for_query(response: ProductSearchResponse, query: ProductQuery) -> ProductS
             )
         }
     )
+
+
+def sent_term(term: str) -> str:
+    """What Alcampo receives: normalized, at most 50 characters (spec 009 RF-3, plan-D5)."""
+    return normalize_term(term)[:MAX_SENT_TERM_LENGTH].strip()

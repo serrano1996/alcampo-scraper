@@ -32,7 +32,8 @@
 - **Regresión:** fixtures y modelos de tests con imagen y categoría; se anota cada cambio.
 - **RF:** RF-5 (forma), RF-11; criterio de paridad
 
-### [ ] T3 — Modelo crudo y scraper paginable
+### [x] T3 — Modelo crudo y scraper paginable
+> **Nota (2026-10-05):** RED real en 4 tests (modelo sin `metadata`/`additionalPageInfo`, `search()` sin `page_size`/`page_token`, término de 80 enviado entero). `test_the_first_page_sends_no_page_token` ya pasaba (nunca se enviaba token) y queda como red de seguridad. GREEN: `AlcampoSearchMetadata.next_page_token`, `AlcampoAdditionalPageInfo.categories[].product_count`, todo opcional; `search(…, page_size=PAGE_SIZE, page_token=None)` con `pageToken` solo si hay token; `sent_term()` = `normalize_term(term)[:50].strip()` (`MAX_SENT_TERM_LENGTH`). Claves de cache y de agrupación sin cambios hasta T5/T6. **Regresión:** los 5 dobles de `test_product_service.py` con la firma nueva; ninguna aserción cambiada.
 - **RED:** el modelo crudo lee `metadata.nextPageToken` (opcional) y `additionalPageInfo.categories[].productCount` (opcional); `search(term, client=…, page_size=…, page_token=…)` envía `maxPageSize`/`maxProductsToDecorate` = `page_size` y `pageToken` solo si hay token; el servicio envía `normalize_term(term)[:50].strip()` (un término de 60 → 50 caracteres, sin espacio final).
 - **GREEN:** modelo y scraper (plan-D5).
 - **Regresión:** dobles `FakeScraper` con la firma nueva.

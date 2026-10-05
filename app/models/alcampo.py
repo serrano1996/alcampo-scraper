@@ -53,12 +53,40 @@ class AlcampoProductGroup(BaseModel):
     decorated_products: list[JsonValue] = Field(default_factory=list, alias="decoratedProducts")
 
 
+class AlcampoSearchMetadata(BaseModel):
+    """Paging cursor. The last page arrives as `metadata: {}` (spec 009 §10)."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    # Bound to the session that received it (spec 009 plan-D1).
+    next_page_token: str | None = Field(default=None, alias="nextPageToken", min_length=1)
+
+
+class AlcampoCategoryCount(BaseModel):
+    """A category of the results; top-level counts add up to the estimated total."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    product_count: int | None = Field(default=None, alias="productCount", ge=0)
+
+
+class AlcampoAdditionalPageInfo(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    categories: list[AlcampoCategoryCount] = Field(default_factory=list)
+
+
 class AlcampoSearchResponse(BaseModel):
     """Envelope returned by `GET /api/webproductpagews/v6/product-pages/search`."""
 
     model_config = ConfigDict(extra="ignore")
 
     product_groups: list[AlcampoProductGroup] = Field(alias="productGroups")
+    # Optional: pagination (spec 009 RF-4, RF-7) must not break the single page.
+    metadata: AlcampoSearchMetadata | None = None
+    additional_page_info: AlcampoAdditionalPageInfo | None = Field(
+        default=None, alias="additionalPageInfo"
+    )
 
 
 # --- Postal code -> region chain (spec 007, Fase 0 §3, verified live in plan §2) ---

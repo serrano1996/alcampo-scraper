@@ -260,3 +260,35 @@ async def test_the_search_is_announced_and_its_answer_reported_to_the_gate() -> 
 
     assert gate.kinds == ["search"]
     assert gate.answers == [("search", SEARCH_PATH, 200)]
+
+
+# --- spec 009 RF-1, RF-7: page size and page token -----------------------------
+
+
+@respx.mock
+async def test_search_sends_the_page_size_and_the_page_token() -> None:
+    route = respx.get(SEARCH_URL).mock(
+        return_value=httpx.Response(200, json=load_fixture("alcampo_search_leche.json"))
+    )
+    scraper, client = make_scraper()
+    async with client:
+        await scraper.search("leche", client=client, page_size=10, page_token="tok-2")
+
+    params = route.calls.last.request.url.params
+    assert params["maxPageSize"] == "10"
+    assert params["maxProductsToDecorate"] == "10"
+    assert params["pageToken"] == "tok-2"
+
+
+@respx.mock
+async def test_the_first_page_sends_no_page_token() -> None:
+    route = respx.get(SEARCH_URL).mock(
+        return_value=httpx.Response(200, json=load_fixture("alcampo_search_leche.json"))
+    )
+    scraper, client = make_scraper()
+    async with client:
+        await scraper.search("leche", client=client)
+
+    params = route.calls.last.request.url.params
+    assert "pageToken" not in params
+    assert params["maxPageSize"] == "50"

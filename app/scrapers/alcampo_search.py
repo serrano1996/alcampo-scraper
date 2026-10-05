@@ -14,6 +14,8 @@ from app.services.outbound import OutboundGate
 
 SEARCH_PATH = "/api/webproductpagews/v6/product-pages/search"
 PAGE_SIZE = 50
+# Alcampo's own web client sends at most 50 characters (Fase 0 §1, spec 009 spec-D6).
+MAX_SENT_TERM_LENGTH = 50
 
 logger = logging.getLogger(__name__)
 
@@ -25,18 +27,29 @@ class AlcampoSearchScraper:
         self._settings = settings
         self._gate = gate
 
-    async def search(self, term: str, *, client: httpx.AsyncClient) -> AlcampoSearchResponse:
-        """Return the raw, validated search envelope for `term` (a single page).
+    async def search(
+        self,
+        term: str,
+        *,
+        client: httpx.AsyncClient,
+        page_size: int = PAGE_SIZE,
+        page_token: str | None = None,
+    ) -> AlcampoSearchResponse:
+        """Return the raw, validated search envelope for one page of `term`.
 
         `client` carries the cookies of a session confirmed in the wanted region:
         Alcampo takes the region from the session, not from the request (spec 007 RF-9).
+        `page_token` is the previous page's `nextPageToken`, valid only in that
+        same session (spec 009 RF-7); the first page goes without one.
         """
         params: dict[str, str | int] = {
             "q": term,
             "tag": "web",
-            "maxPageSize": PAGE_SIZE,
-            "maxProductsToDecorate": PAGE_SIZE,
+            "maxPageSize": page_size,
+            "maxProductsToDecorate": page_size,
         }
+        if page_token is not None:
+            params["pageToken"] = page_token
         # Relative URL for logs only (spec 003 plan-D7); contains the term, so it
         # is always logged with %r (RF-18).
         url = str(httpx.URL(SEARCH_PATH, params=params))

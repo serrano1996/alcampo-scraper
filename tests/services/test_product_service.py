@@ -39,7 +39,14 @@ class FakeScraper:
         self.response = response
         self.calls: list[str] = []
 
-    async def search(self, term: str, *, client: object = None) -> AlcampoSearchResponse:
+    async def search(
+        self,
+        term: str,
+        *,
+        client: object = None,
+        page_size: int = 50,
+        page_token: str | None = None,
+    ) -> AlcampoSearchResponse:
         self.calls.append(term)
         return self.response
 
@@ -49,7 +56,14 @@ class FailingScraper:
         self.error = error
         self.calls: list[str] = []
 
-    async def search(self, term: str, *, client: object = None) -> AlcampoSearchResponse:
+    async def search(
+        self,
+        term: str,
+        *,
+        client: object = None,
+        page_size: int = 50,
+        page_token: str | None = None,
+    ) -> AlcampoSearchResponse:
         self.calls.append(term)
         raise self.error
 
@@ -67,7 +81,14 @@ class HangingScraper:
     def __init__(self) -> None:
         self.cancelled = False
 
-    async def search(self, term: str, *, client: object = None) -> AlcampoSearchResponse:
+    async def search(
+        self,
+        term: str,
+        *,
+        client: object = None,
+        page_size: int = 50,
+        page_token: str | None = None,
+    ) -> AlcampoSearchResponse:
         try:
             await asyncio.Event().wait()
         except asyncio.CancelledError:
@@ -85,7 +106,14 @@ class GatedScraper:
         self.error = error
         self.calls: list[str] = []
 
-    async def search(self, term: str, *, client: object = None) -> AlcampoSearchResponse:
+    async def search(
+        self,
+        term: str,
+        *,
+        client: object = None,
+        page_size: int = 50,
+        page_token: str | None = None,
+    ) -> AlcampoSearchResponse:
         self.calls.append(term)
         await self.gate.wait()
         if self.error is not None:
@@ -532,7 +560,14 @@ class RecordingScraper(FakeScraper):
         super().__init__(response)
         self.clients: list[object] = []
 
-    async def search(self, term: str, *, client: object = None) -> AlcampoSearchResponse:
+    async def search(
+        self,
+        term: str,
+        *,
+        client: object = None,
+        page_size: int = 50,
+        page_token: str | None = None,
+    ) -> AlcampoSearchResponse:
         self.clients.append(client)
         return await super().search(term, client=client)
 
@@ -625,3 +660,19 @@ async def test_a_waf_challenge_logs_the_recent_outbound_traffic(
     assert "cooldown_s=180" in message
     assert "recent_traffic=1m[search=3 resolution=2 session=0]" in message
     assert "4xx_15m=1" in message
+
+
+# --- spec 009 RF-3: Alcampo receives at most 50 characters ----------------------
+
+
+async def test_a_long_term_is_cut_to_50_characters_for_alcampo(
+    redis: fakeredis.FakeAsyncRedis,
+) -> None:
+    # As Alcampo's own web client does (Fase 0 §1); no trailing space after the cut.
+    scraper = FakeScraper(make_raw_response(has_products=True))
+    service, _ = make_service(scraper, redis)
+    term = "a" * 49 + " " + "b" * 30  # 80 characters, the 50th is a space
+
+    await service.search(ProductQuery(postal_code="28001", term=term))
+
+    assert scraper.calls == ["a" * 49]
