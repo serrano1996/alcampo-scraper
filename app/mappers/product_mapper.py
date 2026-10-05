@@ -1,9 +1,11 @@
 """Maps raw Alcampo payloads (`app.models.alcampo`) to public API schemas (`app.models.product`).
 
-Unit table (spec-D8): only PER_LITRE is verified live (Fase 0). PER_KG, PER_EACH
-and PER_METER are inferred from the web bundle's translation keys
-(`fop.price.per.each`, `.meter`, ...) and NOT observed in a real response.
-Any other unit name degrades to `price_format: None` (RF-8) instead of failing.
+Unit table: only unit names seen in real responses, each with its fixture
+(spec 013 RF-2): PER_LITRE (`alcampo_search_leche.json`, Fase 0) and PER_1KG
+(`alcampo_search_arroz.json`, 2026-10-05). The PER_KG, PER_EACH and PER_METER
+guessed in spec 001 (spec-D8) were dropped: PER_KG proved wrong. Any other unit
+degrades to `price_format: None` (RF-8) with a WARNING (spec 011 RF-6), the way
+new real units are found.
 """
 
 import logging
@@ -18,9 +20,7 @@ logger = logging.getLogger(__name__)
 
 UNIT_SUFFIXES: dict[str, str] = {
     "PER_LITRE": "L",
-    "PER_KG": "kg",
-    "PER_EACH": "ud",
-    "PER_METER": "m",
+    "PER_1KG": "kg",
 }
 
 

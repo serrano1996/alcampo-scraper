@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from app.mappers.product_mapper import format_unit_price, map_product
+from app.mappers.product_mapper import UNIT_SUFFIXES, format_unit_price, map_product
 from app.models.alcampo import AlcampoMoney, AlcampoProduct, AlcampoUnitPrice
 
 FIXTURES = Path(__file__).parents[1] / "fixtures"
@@ -24,13 +24,24 @@ def unit_price(amount: str | None, unit_name: str | None) -> AlcampoUnitPrice:
     [
         ("0.88", "PER_LITRE", "0.88 €/L"),
         ("0.80", "PER_LITRE", "0.80 €/L"),
-        ("3.50", "PER_KG", "3.50 €/kg"),
-        ("1.20", "PER_EACH", "1.20 €/ud"),
-        ("2.00", "PER_METER", "2.00 €/m"),
+        # Seen live on 2026-10-05, not the guessed PER_KG (spec 013 RF-1).
+        ("3.50", "PER_1KG", "3.50 €/kg"),
     ],
 )
 def test_format_unit_price_known_units(amount: str, unit_name: str, expected: str) -> None:
     assert format_unit_price(unit_price(amount, unit_name)) == expected
+
+
+def test_the_unit_table_holds_only_units_seen_live() -> None:
+    # Each one with a real fixture: leche (PER_LITRE), arroz (PER_1KG). Adding a
+    # unit means adding its evidence too (spec 013 RF-2, plan-D3).
+    assert UNIT_SUFFIXES.keys() == {"PER_LITRE", "PER_1KG"}
+
+
+@pytest.mark.parametrize("unit_name", ["PER_KG", "PER_EACH", "PER_METER"])
+def test_guessed_units_never_seen_are_unknown(unit_name: str) -> None:
+    # Guessed in spec 001 (spec-D8); PER_KG proved wrong (spec 013 spec-D1).
+    assert format_unit_price(unit_price("1.00", unit_name)) is None
 
 
 def test_format_unit_price_unknown_unit_returns_none() -> None:

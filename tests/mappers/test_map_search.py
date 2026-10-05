@@ -245,6 +245,6 @@ def test_an_unknown_price_unit_is_warned_once_per_search(
 
 
 def test_known_price_units_are_not_warned(caplog: pytest.LogCaptureFixture) -> None:
-    map_search(envelope(product("1"), product("2", unitPrice=unit_price("PER_KG"))))
+    map_search(envelope(product("1"), product("2", unitPrice=unit_price("PER_1KG"))))
 
     assert mapper_records(caplog) == []
