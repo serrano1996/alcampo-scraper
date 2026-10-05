@@ -62,7 +62,8 @@
 - **Regresión:** claves `search:5:leche` → `search:5:leche:1:50` en los tests de cache, auth y límites.
 - **RF:** RF-6, RF-7, RF-8, RF-9
 
-### [ ] T6 — `search.term` normalizado
+### [x] T6 — `search.term` normalizado
+> **Nota (2026-10-05):** RED real en 4 tests. GREEN: la respuesta lleva `term` = término enviado (`sent_term`); `_for_query` ya solo reetiqueta el código postal, porque la entrada de cache está indexada por el término enviado y es la misma para todos sus clientes. **Aserciones cambiadas (cambia plan-D1 de la spec 008 por spec-D5), una a una, en `tests/services/test_product_service.py`:** `test_other_case_hits_the_cache_and_keeps_the_client_term` → `…_returns_the_normalized_term` (`"Leche"` → `"leche"`); `test_miss_sends_the_normalized_term_and_keeps_the_client_term` → `test_miss_sends_and_returns_the_normalized_term` (`"LECHE   entera"` → `"leche entera"`); `test_spelling_variants_share_the_request_and_keep_their_own_term` → `…_and_the_normalized_term` (`"Leche"` → `"leche"`). Nuevo: un término de 80 caracteres devuelve los 49 cortados (`"a" * 49`). Ningún test de integración afirmaba la grafía del cliente.
 - **RED:** `Leche` → `search.term == "leche"`; en cache y en respuestas compartidas también.
 - **GREEN:** el servicio devuelve el término enviado (plan-D5).
 - **Regresión:** los tests de la spec 008 que esperaban la grafía del cliente (`"Leche"`, `"LECHE   entera"`) pasan al normalizado; se anota cada uno (cambia la decisión plan-D1 de la 008 por spec-D5).

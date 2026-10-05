@@ -123,29 +123,36 @@ class ProductService:
 
             async def keep(page: int, raw: AlcampoSearchResponse) -> None:
                 # Pages walked through were paid for: cached too (spec 009 RF-9).
-                await self._store(self._response(query, region, raw, page), region, term, page)
+                response = self._response(query, region, term, raw, page)
+                await self._store(response, region, term, page)
 
             # The normalized term, so the request does not depend on the client's
-            # spelling (spec 008 RF-2, plan-D1); the response keeps query.term.
+            # spelling (spec 008 RF-2, plan-D1), and what search.term says (spec 009 RF-10).
             raw = await self._walker.walk(
                 session, term, page=query.page, page_size=query.page_size, on_passed=keep
             )
         except UpstreamBlockedError:
             await self._on_waf_block()
             raise
-        response = self._response(query, region, raw, query.page)
+        response = self._response(query, region, term, raw, query.page)
         await self._store(response, region, term, query.page)
         return response
 
     def _response(
-        self, query: ProductQuery, region: Region, raw: AlcampoSearchResponse, page: int
+        self,
+        query: ProductQuery,
+        region: Region,
+        term: str,
+        raw: AlcampoSearchResponse,
+        page: int,
     ) -> ProductSearchResponse:
         products = map_search(raw)
         totals = page_totals(raw, page=page, page_size=query.page_size, on_page=len(products))
         return ProductSearchResponse(
             search=SearchMetadata(
                 postal_code=query.postal_code,
-                term=query.term,
+                # The term actually searched, as in Mercadona (spec 009 RF-10, spec-D5).
+                term=term,
                 # The region's real id (spec 007 RF-13): "5" is Vaguada, "32" Telde...
                 warehouse=region.retailer_region_id,
                 strategy_used="api",
@@ -211,17 +218,15 @@ class ProductService:
 
 
 def _for_query(response: ProductSearchResponse, query: ProductQuery) -> ProductSearchResponse:
-    """The same results, labelled with this caller's postal code and term.
+    """The same results, labelled with this caller's postal code.
 
-    Cached and shared responses were built for another request; the client
-    still sees what it asked for (spec 001, spec 008 RF-2).
+    Cached and shared responses were built for another request, maybe from
+    another postal code of the same region (spec 001). The term needs no
+    relabelling: it is the one sent, the same for every caller of the entry
+    (spec 009 RF-10, spec-D5).
     """
     return response.model_copy(
-        update={
-            "search": response.search.model_copy(
-                update={"postal_code": query.postal_code, "term": query.term}
-            )
-        }
+        update={"search": response.search.model_copy(update={"postal_code": query.postal_code})}
     )
 
 

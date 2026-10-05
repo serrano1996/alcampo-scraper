@@ -423,7 +423,7 @@ async def test_recent_second_waf_block_logs_the_doubled_cooldown(
 # --- spec 008 RF-2: normalized term -------------------------------------------
 
 
-async def test_other_case_hits_the_cache_and_keeps_the_client_term(
+async def test_other_case_hits_the_cache_and_returns_the_normalized_term(
     redis: fakeredis.FakeAsyncRedis,
 ) -> None:
     scraper = FakeScraper(make_raw_response(has_products=True))
@@ -434,10 +434,11 @@ async def test_other_case_hits_the_cache_and_keeps_the_client_term(
     response = await service.search(ProductQuery(postal_code="28001", term="Leche"))
 
     assert scraper.calls == []
-    assert response.search.term == "Leche"
+    # The term actually searched, as Mercadona does (spec 009 RF-10, spec-D5).
+    assert response.search.term == "leche"
 
 
-async def test_miss_sends_the_normalized_term_and_keeps_the_client_term(
+async def test_miss_sends_and_returns_the_normalized_term(
     redis: fakeredis.FakeAsyncRedis,
 ) -> None:
     scraper = FakeScraper(make_raw_response(has_products=True))
@@ -446,7 +447,7 @@ async def test_miss_sends_the_normalized_term_and_keeps_the_client_term(
     response = await service.search(ProductQuery(postal_code="28001", term="LECHE   entera"))
 
     assert scraper.calls == ["leche entera"]
-    assert response.search.term == "LECHE   entera"
+    assert response.search.term == "leche entera"
 
 
 # --- spec 008 RF-7: search timeout ---------------------------------------------
@@ -504,7 +505,7 @@ async def test_simultaneous_identical_misses_call_alcampo_once(
     assert sorted(origins(caplog)) == ["miss"] + ["shared"] * 9
 
 
-async def test_spelling_variants_share_the_request_and_keep_their_own_term(
+async def test_spelling_variants_share_the_request_and_the_normalized_term(
     redis: fakeredis.FakeAsyncRedis,
 ) -> None:
     scraper = GatedScraper(make_raw_response(has_products=True))
@@ -517,7 +518,7 @@ async def test_spelling_variants_share_the_request_and_keep_their_own_term(
 
     assert scraper.calls == ["leche"]
     assert (await lower).search.term == "leche"
-    assert (await upper).search.term == "Leche"
+    assert (await upper).search.term == "leche"
     assert (await upper).search.postal_code == "08001"
 
 
@@ -744,3 +745,19 @@ async def test_a_page_past_the_last_one_is_not_cached(
         await service.search(ProductQuery(postal_code="28001", term="leche", page=4))
 
     assert sorted(await redis.keys("search:*")) == [b"search:5:leche:1:50", b"search:5:leche:2:50"]
+
+
+# --- spec 009 RF-10: search.term is the term actually searched ------------------
+
+
+async def test_a_long_term_is_returned_as_cut_for_alcampo(
+    redis: fakeredis.FakeAsyncRedis,
+) -> None:
+    scraper = FakeScraper(make_raw_response(has_products=True))
+    service, _ = make_service(scraper, redis)
+
+    response = await service.search(
+        ProductQuery(postal_code="28001", term="A" * 49 + " " + "b" * 30)
+    )
+
+    assert response.search.term == "a" * 49
