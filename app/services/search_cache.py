@@ -26,8 +26,9 @@ def normalize_term(term: str) -> str:
     return " ".join(term.split()).casefold()
 
 
-def _cache_key(*, warehouse: str, term: str) -> str:
-    return f"search:{warehouse}:{normalize_term(term)}"
+def _cache_key(*, warehouse: str, term: str, page: int, page_size: int) -> str:
+    # One entry per page and page size (spec 009 RF-9).
+    return f"search:{warehouse}:{normalize_term(term)}:{page}:{page_size}"
 
 
 class SearchCacheRepository:
@@ -37,9 +38,11 @@ class SearchCacheRepository:
         self._redis = redis
         self._circuit = circuit if circuit is not None else RedisCircuitBreaker(open_seconds=0)
 
-    async def get(self, *, warehouse: str, term: str) -> ProductSearchResponse | None:
+    async def get(
+        self, *, warehouse: str, term: str, page: int, page_size: int
+    ) -> ProductSearchResponse | None:
         """Return the cached response, or `None` on a miss or corrupted value (plan-D8)."""
-        key = _cache_key(warehouse=warehouse, term=term)
+        key = _cache_key(warehouse=warehouse, term=term, page=page, page_size=page_size)
         try:
             raw = await self._circuit.call(lambda: self._redis.get(key))
         except RedisError as exc:
@@ -60,13 +63,15 @@ class SearchCacheRepository:
         *,
         warehouse: str,
         term: str,
+        page: int,
+        page_size: int,
         response: ProductSearchResponse,
         ttl_seconds: int,
     ) -> None:
         try:
             await self._circuit.call(
                 lambda: self._redis.set(
-                    _cache_key(warehouse=warehouse, term=term),
+                    _cache_key(warehouse=warehouse, term=term, page=page, page_size=page_size),
                     response.model_dump_json(),
                     ex=ttl_seconds,
                 )

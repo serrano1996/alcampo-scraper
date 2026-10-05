@@ -186,7 +186,7 @@ async def test_each_postal_code_is_searched_in_its_own_region(
     assert canarias.json()["search"]["warehouse"] == "32"
     assert alcampo.search_regions == ["5", "32"]  # the session really was in each region
     redis = resources(app_client.app).redis
-    assert sorted(await redis.keys("search:*")) == [b"search:32:agua", b"search:5:agua"]
+    assert sorted(await redis.keys("search:*")) == [b"search:32:agua:1:50", b"search:5:agua:1:50"]
 
 
 def test_a_known_postal_code_costs_no_chain_and_its_region_is_shared(

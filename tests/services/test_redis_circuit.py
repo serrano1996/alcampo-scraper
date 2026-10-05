@@ -167,8 +167,10 @@ async def test_the_search_cache_skips_redis_while_open(
     redis = CountingBrokenRedis(DOWN)
     repo = SearchCacheRepository(redis, circuit=await opened_breaker())
 
-    assert await repo.get(warehouse="5", term="leche") is None
-    await repo.set(warehouse="5", term="leche", response=CACHED, ttl_seconds=60)
+    assert await repo.get(warehouse="5", term="leche", page=1, page_size=50) is None
+    await repo.set(
+        warehouse="5", term="leche", page=1, page_size=50, response=CACHED, ttl_seconds=60
+    )
 
     assert redis.attempts == 0
     assert skipped_quietly(caplog)

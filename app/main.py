@@ -13,6 +13,7 @@ from app.core.config import get_settings
 from app.core.logging import configure_logging
 from app.core.state import AppResources
 from app.exceptions import (
+    PageOutOfRangeError,
     PostalCodeNotServedError,
     UpstreamThrottledError,
     UpstreamUnavailableError,
@@ -183,6 +184,12 @@ def create_app() -> FastAPI:
         return JSONResponse(
             status_code=404, content={"detail": "Postal code not served by Alcampo"}
         )
+
+    @app.exception_handler(PageOutOfRangeError)
+    async def page_out_of_range_handler(request: Request, exc: PageOutOfRangeError) -> JSONResponse:
+        # The search ended before that page: an answer, not a failure (spec 009 RF-6).
+        logger.info("page out of range page=%d term=%r", exc.page, request.query_params.get("term"))
+        return JSONResponse(status_code=404, content={"detail": "Page out of range"})
 
     @app.get("/health")
     async def health() -> dict[str, str]:

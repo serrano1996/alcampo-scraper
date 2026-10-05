@@ -107,11 +107,19 @@ class AlcampoSessionClient:
         self._settings = settings
         self._gate = gate
         self._home: HomeState | None = None
+        # Page tokens are bound to this session (spec 009 §10): they live and die
+        # with it, so a renewed session never reuses them (plan-D1).
+        self._cursors: dict[tuple[str, int, int], str] = {}
 
     @property
     def client(self) -> httpx.AsyncClient:
         """The HTTP client holding this session's cookies (used to search its region)."""
         return self._client
+
+    @property
+    def cursors(self) -> dict[tuple[str, int, int], str]:
+        """Page tokens of this session: (sent term, page size, page) -> token."""
+        return self._cursors
 
     @property
     def home(self) -> HomeState:

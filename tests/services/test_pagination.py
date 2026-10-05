@@ -1,10 +1,20 @@
-"""Spec 009 RF-4, RF-5: total results and pages from Alcampo's paging data (plan-D4)."""
+"""Spec 009: totals (RF-4, RF-5, plan-D4) and walking Alcampo's cursor (RF-6, RF-7, plan-D2)."""
+
+from collections.abc import Awaitable
 
 import pytest
 
+from app.exceptions import PageOutOfRangeError, UpstreamUnavailableError
 from app.models.alcampo import AlcampoSearchResponse
 from app.models.product import MAX_PAGE
-from app.services.pagination import PageTotals, estimate_total, page_totals
+from app.services.pagination import (
+    CursorKey,
+    PageTotals,
+    PageWalker,
+    estimate_total,
+    page_totals,
+)
+from tests.services.pagination_doubles import ChainedScraper
 
 
 def raw(
@@ -74,3 +84,112 @@ def test_an_estimate_below_what_was_already_seen_is_raised() -> None:
     totals = page_totals(raw(counts=[3]), page=2, page_size=50, on_page=50)
 
     assert totals == PageTotals(total_results=100, total_pages=2)
+
+
+# --- spec 009 RF-6, RF-7: walking the cursor (plan-D1, plan-D2) -----------------
+
+
+class Session:
+    def __init__(self) -> None:
+        self.client = "client"
+        self.cursors: dict[CursorKey, str] = {}
+
+
+def page_of(raw: AlcampoSearchResponse) -> int:
+    product = raw.product_groups[0].decorated_products[0]
+    assert isinstance(product, dict)
+    return int(str(product["retailerProductId"]).removeprefix("p"))
+
+
+async def walk(
+    scraper: ChainedScraper, session: Session, page: int
+) -> tuple[AlcampoSearchResponse, list[int]]:
+    passed: list[int] = []
+
+    async def on_passed(number: int, raw: AlcampoSearchResponse) -> None:
+        passed.append(number)
+
+    async def bound(call: Awaitable[AlcampoSearchResponse]) -> AlcampoSearchResponse:
+        return await call
+
+    walker = PageWalker(scraper, bound=bound)
+    raw = await walker.walk(session, "leche", page=page, page_size=50, on_passed=on_passed)
+    return raw, passed
+
+
+async def test_a_cold_page_walks_from_the_first_one() -> None:
+    scraper, session = ChainedScraper(pages=5), Session()
+
+    raw, passed = await walk(scraper, session, page=3)
+
+    assert page_of(raw) == 3
+    assert scraper.calls == [None, "tok-2", "tok-3"]
+    assert passed == [1, 2]  # the pages paid for on the way, for the cache (RF-9)
+    assert session.cursors == {
+        ("leche", 50, 2): "tok-2",
+        ("leche", 50, 3): "tok-3",
+        ("leche", 50, 4): "tok-4",
+    }
+
+
+async def test_known_tokens_cost_a_single_request() -> None:
+    scraper, session = ChainedScraper(pages=5), Session()
+    await walk(scraper, session, page=2)
+    scraper.calls.clear()
+
+    raw, passed = await walk(scraper, session, page=3)
+
+    assert page_of(raw) == 3
+    assert scraper.calls == ["tok-3"]
+    assert passed == []
+
+
+async def test_tokens_are_per_term_and_page_size() -> None:
+    scraper, session = ChainedScraper(pages=5), Session()
+    session.cursors[("agua", 50, 3)] = "tok-3"
+    session.cursors[("leche", 10, 3)] = "tok-3"
+
+    await walk(scraper, session, page=3)
+
+    assert scraper.calls == [None, "tok-2", "tok-3"]
+
+
+async def test_a_page_past_the_last_one_is_out_of_range() -> None:
+    scraper, session = ChainedScraper(pages=3), Session()
+
+    passed: list[int] = []
+
+    async def on_passed(number: int, raw: AlcampoSearchResponse) -> None:
+        passed.append(number)
+
+    async def bound(call: Awaitable[AlcampoSearchResponse]) -> AlcampoSearchResponse:
+        return await call
+
+    with pytest.raises(PageOutOfRangeError):
+        await PageWalker(scraper, bound=bound).walk(
+            session, "leche", page=5, page_size=50, on_passed=on_passed
+        )
+
+    assert scraper.calls == [None, "tok-2", "tok-3"]
+    assert passed == [1, 2, 3]  # all paid for, so all cached; nothing for page 5
+
+
+async def test_a_renewed_session_walks_again() -> None:
+    # Tokens are bound to the session (spec §10): a new one starts empty (plan-D1).
+    scraper = ChainedScraper(pages=5)
+    await walk(scraper, Session(), page=3)
+    scraper.calls.clear()
+
+    await walk(scraper, Session(), page=3)
+
+    assert scraper.calls == [None, "tok-2", "tok-3"]
+
+
+async def test_a_rejected_token_is_forgotten() -> None:
+    scraper, session = ChainedScraper(pages=5, reject={"tok-3"}), Session()
+    session.cursors[("leche", 50, 3)] = "tok-3"
+
+    with pytest.raises(UpstreamUnavailableError):
+        await walk(scraper, session, page=3)
+
+    assert ("leche", 50, 3) not in session.cursors

@@ -9,6 +9,7 @@ from app.core.security import require_api_key
 from app.exceptions import (
     CooldownActiveError,
     OutboundRateLimitedError,
+    PageOutOfRangeError,
     PostalCodeNotServedError,
     UpstreamBlockedError,
     UpstreamUnavailableError,
@@ -184,3 +185,23 @@ def test_postal_code_not_served_returns_404_logged_as_info(
     served = [r for r in caplog.records if r.name == "app.main"]
     assert [r.levelno for r in served] == [logging.INFO]
     assert "'51001'" in served[0].getMessage()
+
+
+# --- spec 009 RF-6: a page past the last one ------------------------------------
+
+
+def test_page_out_of_range_returns_404_logged_as_info(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level(logging.INFO)
+    client = make_client(FakeService(error=PageOutOfRangeError(page=7)))
+
+    response = client.get(
+        "/api/v1/products", params={"postal_code": "28001", "term": "quinoa", "page": 7}
+    )
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "Page out of range"}
+    assert response.headers["X-Request-ID"]
+    served = [r for r in caplog.records if r.name == "app.main"]
+    assert [r.levelno for r in served] == [logging.INFO]

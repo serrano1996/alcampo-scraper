@@ -9,6 +9,7 @@ import pytest
 from app.core.config import Settings
 from app.exceptions import (
     CooldownActiveError,
+    PageOutOfRangeError,
     PostalCodeNotServedError,
     UpstreamBlockedError,
     UpstreamUnavailableError,
@@ -21,6 +22,7 @@ from app.services.product_service import ProductService
 from app.services.region_repository import Region
 from app.services.search_cache import SearchCacheRepository
 from app.services.waf_cooldown import WAF_COOLDOWN_KEY, WafCooldownRepository
+from tests.services.pagination_doubles import ChainedScraper
 
 FIXED_NOW = datetime(2026, 9, 24, 10, 0, 0, tzinfo=UTC)
 
@@ -143,6 +145,7 @@ class FakeRegions:
 class FakeSession:
     def __init__(self, region: Region) -> None:
         self.client = f"client-of-{region.retailer_region_id}"
+        self.cursors: dict[tuple[str, int, int], str] = {}
 
 
 class FakeSessions:
@@ -222,7 +225,7 @@ async def test_miss_stores_the_response_in_cache(redis: fakeredis.FakeAsyncRedis
 
     await service.search(ProductQuery(postal_code="28001", term="leche"))
 
-    cached = await cache.get(warehouse="5", term="leche")
+    cached = await cache.get(warehouse="5", term="leche", page=1, page_size=50)
     assert cached is not None
     assert cached.search.total_results == 1
 
@@ -237,7 +240,7 @@ async def test_empty_search_returns_empty_products_and_is_cached(
 
     assert result.products == []
     assert result.search.total_results == 0
-    cached = await cache.get(warehouse="5", term="xqzwvkjhgf")
+    cached = await cache.get(warehouse="5", term="xqzwvkjhgf", page=1, page_size=50)
     assert cached is not None
 
 
@@ -286,7 +289,7 @@ async def test_scraper_error_propagates_and_nothing_is_cached(
     with pytest.raises(UpstreamUnavailableError):
         await service.search(ProductQuery(postal_code="28001", term="leche"))
 
-    assert await cache.get(warehouse="5", term="leche") is None
+    assert await cache.get(warehouse="5", term="leche", page=1, page_size=50) is None
 
 
 async def test_blocked_scraper_activates_the_cooldown_and_propagates(
@@ -463,7 +466,7 @@ async def test_search_that_exceeds_the_timeout_fails_and_is_cancelled(
     assert exc_info.value.reason == "search timeout"
     assert not isinstance(exc_info.value, UpstreamBlockedError)
     assert scraper.cancelled is True
-    assert await cache.get(warehouse="5", term="leche") is None
+    assert await cache.get(warehouse="5", term="leche", page=1, page_size=50) is None
 
 
 # --- spec 008 RF-1, RF-11: simultaneous identical searches and origin log -----
@@ -586,7 +589,7 @@ async def test_the_search_goes_out_with_the_region_session(
     assert scraper.clients == ["client-of-32"]
     assert sessions.asked == ["32"]
     assert response.search.warehouse == "32"
-    assert await redis.exists("search:32:leche") == 1
+    assert await redis.exists("search:32:leche:1:50") == 1
 
 
 async def test_two_regions_never_share_a_cache_entry(redis: fakeredis.FakeAsyncRedis) -> None:
@@ -699,3 +702,45 @@ async def test_the_first_page_reports_the_estimated_total_and_pages(
     assert result.search.total_results == 669
     assert result.search.total_pages == 14  # ceil(669 / 50)
     assert result.search.page == 1
+
+
+# --- spec 009 RF-6, RF-9: pages, their cache entries and the end ---------------
+
+
+async def test_a_page_walks_the_cursor_and_caches_every_page_paid_for(
+    redis: fakeredis.FakeAsyncRedis,
+) -> None:
+    scraper = ChainedScraper(pages=5)
+    service, _ = make_service(scraper, redis)  # type: ignore[arg-type]
+
+    result = await service.search(ProductQuery(postal_code="28001", term="leche", page=2))
+
+    assert [p.id for p in result.products] == ["p2"]
+    assert result.search.page == 2
+    assert scraper.calls == [None, "tok-2"]
+    assert sorted(await redis.keys("search:*")) == [b"search:5:leche:1:50", b"search:5:leche:2:50"]
+
+
+async def test_the_page_size_reaches_alcampo_and_the_response(
+    redis: fakeredis.FakeAsyncRedis,
+) -> None:
+    scraper = ChainedScraper(pages=5)
+    service, _ = make_service(scraper, redis)  # type: ignore[arg-type]
+
+    result = await service.search(ProductQuery(postal_code="28001", term="leche", page_size=10))
+
+    assert scraper.page_sizes == [10]
+    assert result.search.page_size == 10
+    assert await redis.keys("search:*") == [b"search:5:leche:1:10"]
+
+
+async def test_a_page_past_the_last_one_is_not_cached(
+    redis: fakeredis.FakeAsyncRedis,
+) -> None:
+    scraper = ChainedScraper(pages=2)
+    service, _ = make_service(scraper, redis)  # type: ignore[arg-type]
+
+    with pytest.raises(PageOutOfRangeError):
+        await service.search(ProductQuery(postal_code="28001", term="leche", page=4))
+
+    assert sorted(await redis.keys("search:*")) == [b"search:5:leche:1:50", b"search:5:leche:2:50"]

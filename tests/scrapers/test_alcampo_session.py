@@ -384,3 +384,15 @@ async def test_each_step_goes_through_the_gate_with_its_kind(http: httpx.AsyncCl
     assert gate.kinds == ["session", "resolution", "session", "session"]
     assert [status for _, _, status in gate.answers] == [200, 200, 200, 401]
     assert gate.answers[-1][:2] == ("session", "/api/customersessions/v2/sessions/active")
+
+
+# --- spec 009 RF-7: page tokens live and die with the session (plan-D1) ---------
+
+
+def test_a_new_session_knows_no_page_tokens(http: httpx.AsyncClient) -> None:
+    session = AlcampoSessionClient(client=http, settings=settings(), gate=gate_for())
+
+    assert session.cursors == {}
+    session.cursors[("leche", 50, 2)] = "tok-2"
+    other = AlcampoSessionClient(client=http, settings=settings(), gate=gate_for())
+    assert other.cursors == {}

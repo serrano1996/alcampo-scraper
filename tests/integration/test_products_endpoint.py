@@ -148,7 +148,7 @@ async def test_exhausted_rate_limit_rejects_new_searches_but_serves_the_cache(
     with TestClient(create_app(), headers={"X-API-Key": TEST_API_KEY}) as client:
         redis = resources(client.app).redis
         await seed_region(redis)
-        await redis.set("search:5:leche", CACHED_LECHE.model_dump_json(), ex=3600)
+        await redis.set("search:5:leche:1:50", CACHED_LECHE.model_dump_json(), ex=3600)
         await redis.zadd("ratelimit:alcampo", {"someone-else": time.time()})
 
         first = client.get("/api/v1/products", params={"postal_code": "28001", "term": "leche"})

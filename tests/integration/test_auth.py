@@ -154,7 +154,7 @@ async def test_rejection_happens_before_cache_cooldown_and_alcampo(
 ) -> None:
     route = mock_alcampo_search(respx_mock, json_body=load_fixture("alcampo_search_leche.json"))
     redis = resources(anon_client.app).redis
-    await redis.set("search:5:leche", CACHED_RESPONSE.model_dump_json())
+    await redis.set("search:5:leche:1:50", CACHED_RESPONSE.model_dump_json())
     await redis.set("waf:cooldown", "1")
 
     response = anon_client.get("/api/v1/products", params=SEARCH)

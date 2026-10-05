@@ -75,3 +75,15 @@ class RegionResolutionLimitedError(UpstreamThrottledError):
     §5), so new resolutions have a limit of their own, stricter than the global
     one (spec 007 RF-8). A foreseen degradation: WARNING and the standard 502.
     """
+
+
+class PageOutOfRangeError(AlcampoScraperError):
+    """Raised when the requested page is past the last one Alcampo has for the term.
+
+    Not an upstream failure: the search ended before that page. It maps to a 404
+    with our own detail (spec 009 RF-6).
+    """
+
+    def __init__(self, page: int) -> None:
+        super().__init__(f"page {page}")
+        self.page = page
