@@ -5,7 +5,8 @@ DOCKERIGNORE = Path(__file__).parents[2] / ".dockerignore"
 # Allowlist (spec 005 RF-5, RNF-3, plan-D5): anything not readmitted stays out of
 # the build context, so a new secret file (another .env, a credentials.json...)
 # can never reach the image by default.
-READMITTED = {"pyproject.toml", "app/"}
+# requirements.lock: the pinned, hashed dependencies (spec 014 RF-3).
+READMITTED = {"pyproject.toml", "requirements.lock", "app/"}
 EXCLUDED_AGAIN = ["**/__pycache__/", "**/*.py[cod]"]
 
 

@@ -47,7 +47,13 @@ mypy                            # tipos, estricto, sobre app/ (obligatorio antes
 
 - **Warnings = errores:** la suite falla ante cualquier warning (`filterwarnings = error`), así una deprecación se ve el día que aparece. Hoy no hay ninguna excepción.
 - **Versiones acotadas:** cada dependencia tiene límite superior de versión mayor (`<1` para las `0.x`); subir una versión mayor es una decisión explícita.
-- **CI:** `.github/workflows/ci.yml` ejecuta en cada push y pull request, con Python 3.11, `ruff check`, `ruff format --check`, `mypy`, `pytest -q` y `docker build`. **Aún no se ha ejecutado en GitHub** (el repositorio no tiene remoto): sus comandos se validan en local.
+- **Dependencias fijadas** ([spec 014](specs/014-alcampo-scraper-lockfile/spec.md)): `requirements.lock` (producción) y `requirements-dev.lock` (con el extra `dev`) fijan **todas** las dependencias, transitivas incluidas, con versión exacta y hashes. La imagen Docker y la CI instalan desde ellos (`--require-hashes`), así que dos builds del mismo commit llevan lo mismo. Se generan para Linux y Python 3.11 (la imagen y la CI), por eso en local se sigue instalando con `pip install -e ".[dev]"`. **No se editan a mano:**
+  ```bash
+  scripts/lock.sh            # tras tocar las dependencias de pyproject.toml: añade o quita lo que cambió
+  scripts/lock.sh --upgrade  # subir todo a lo último dentro de cada rango (decisión explícita)
+  ```
+  Necesita Docker; tarda unos 3 minutos. Si `pyproject.toml` declara algo que el lock no tiene, la CI falla en `pip check`.
+- **CI:** `.github/workflows/ci.yml` ejecuta en cada push y pull request ([GitHub Actions](https://github.com/serrano1996/alcampo-scraper/actions)), en `ubuntu-24.04` con Python 3.11: instala desde `requirements-dev.lock`, `pip check`, `ruff check`, `ruff format --check`, `mypy`, `pytest -q` y `docker build`. Usa `pytest` a secas, como aquí: `python -m pytest` añade la raíz a `sys.path` y escondió durante días un fallo que solo veía la CI.
 
 ## Uso del endpoint
 
@@ -227,7 +233,6 @@ En local, uvicorn sigue emitiendo su propio access log, sin request id (se desac
 - **Un cambio de formato que rompa solo parte de los productos sigue dando `200`** con los válidos (un `WARNING` dice qué campos fallaron); solo cuando no queda ninguno se responde `502`.
 - Autenticación de servicio a servicio con un secreto compartido: sin cuentas de usuario, OAuth2/JWT ni cuotas por token (fuera de alcance en la spec 004).
 - Logs solo en texto plano: sin JSON ni integración con plataformas de observabilidad (fuera de alcance en la spec 003).
-- **Imagen Docker no reproducible al 100 %:** `pyproject.toml` no fija versiones (no hay lockfile), así que dos builds en fechas distintas pueden instalar versiones distintas de las dependencias.
 - Docker sin orquestador: `Dockerfile` y `docker-compose.yml` locales, sin Kubernetes ni publicación en un registry. Hay CI (spec 006), pero no despliegue continuo.
 - El enfriamiento no supera el bloqueo del WAF, solo evita insistir. Si el bloqueo dura más que el enfriamiento aplicado, la siguiente búsqueda recibe otro challenge y el enfriamiento se duplica (hasta `WAF_COOLDOWN_MAX_SECONDS`).
 - **Los límites de salida no conocen el umbral real del WAF.** El 2026-10-01 hubo un bloqueo con menos tráfico que en otras pruebas sin bloqueo, así que el recuento de peticiones no lo explica todo (la hipótesis es que el WAF también puntúa respuestas de error). Para ajustarlos con datos, **cada challenge registra el tráfico de los 1, 5 y 15 minutos anteriores** (`recent_traffic=…`), por tipo (`search`, `resolution`, `session`) y con el número de `4xx`.

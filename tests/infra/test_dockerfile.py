@@ -54,9 +54,18 @@ def test_installs_the_project_without_dev_dependencies() -> None:
     installs = [args for args in args_of("RUN") if "pip install" in args]
 
     assert installs
-    # The project itself (`.`), never an extra such as `.[dev]`.
-    assert all(args.split()[-1] == "." for args in installs)
-    assert not any("[" in args for args in installs)
+    # Never an extra such as `.[dev]`, nor the dev lock.
+    assert not any("[" in args or "requirements-dev.lock" in args for args in installs)
+
+
+def test_installs_the_pinned_dependencies_then_the_project_alone() -> None:
+    # Spec 014 RF-3, plan-D2: exact versions checked by hash, then the package
+    # without resolving anything again.
+    installs = " && ".join(args for args in args_of("RUN") if "pip install" in args)
+
+    assert "--require-hashes -r requirements.lock" in installs
+    assert "--no-deps ." in installs
+    assert installs.index("requirements.lock") < installs.index("--no-deps .")
 
 
 def test_runs_as_an_unprivileged_user() -> None:

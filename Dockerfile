@@ -11,11 +11,16 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 WORKDIR /build
+# Exact versions checked by hash (spec 014 RF-3), in their own layer: it is
+# rebuilt only when the lock changes, not on every code change.
+COPY requirements.lock ./
+RUN pip install --no-cache-dir --require-hashes -r requirements.lock
 COPY pyproject.toml ./
 COPY app/ ./app/
-# Plain `.` (no [dev] extra): pytest, ruff, respx and fakeredis never get in.
-# The wheel already contains app/, so the code travels inside the venv (plan-D1).
-RUN pip install --no-cache-dir .
+# The project alone (`--no-deps`): nothing is resolved again (plan-D2). Plain
+# `.`, no [dev] extra: pytest, ruff, respx and fakeredis never get in. The
+# wheel already contains app/, so the code travels inside the venv (plan-D1).
+RUN pip install --no-cache-dir --no-deps .
 
 # ---- runtime: only the venv, run by an unprivileged user ----
 FROM python:3.11-slim

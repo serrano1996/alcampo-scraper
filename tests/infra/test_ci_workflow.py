@@ -1,7 +1,7 @@
-"""Contract of the CI workflow (spec 006 RF-9, plan-D5).
+"""Contract of the CI workflow (spec 006 RF-9, plan-D5; spec 014).
 
-The repository has no remote yet, so the workflow has never run on GitHub:
-this test checks what it would run, and the same commands run locally.
+It runs on GitHub (serrano1996/alcampo-scraper) on every push; this test pins
+what it runs, and the same commands run locally.
 """
 
 from pathlib import Path
@@ -49,5 +49,22 @@ def test_runs_every_check_that_closes_a_task(workflow: dict, command: str) -> No
     assert any(command in run for run in commands(workflow))
 
 
-def test_installs_the_dev_extra(workflow: dict) -> None:
-    assert any('pip install -e ".[dev]"' in run for run in commands(workflow))
+def test_installs_the_pinned_dev_dependencies(workflow: dict) -> None:
+    # Spec 014 RF-4: the dev lock with hashes, the package alone, then `pip check`
+    # fails if pyproject.toml declares something the lock lacks (plan-D3).
+    runs = "\n".join(commands(workflow))
+
+    assert "pip install --require-hashes -r requirements-dev.lock" in runs
+    assert "pip install --no-deps -e ." in runs
+    assert "pip check" in runs
+    assert runs.index("requirements-dev.lock") < runs.index("--no-deps -e .")
+    assert runs.index("--no-deps -e .") < runs.index("pip check")
+
+
+def test_uses_current_actions_on_a_fixed_runner(workflow: dict) -> None:
+    # Spec 014 RF-6: v7 (Node 24), and no silent jump to the next Ubuntu.
+    uses = [step.get("uses", "") for job in workflow["jobs"].values() for step in job["steps"]]
+
+    assert "actions/checkout@v7" in uses
+    assert "actions/setup-python@v7" in uses
+    assert [job["runs-on"] for job in workflow["jobs"].values()] == ["ubuntu-24.04"]

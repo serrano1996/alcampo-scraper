@@ -12,17 +12,26 @@ permissions:
 
 jobs:
   checks:
-    runs-on: ubuntu-latest
+    # Fixed: no silent jump to the next Ubuntu (spec 014 RF-6).
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
           cache: pip
+          # The cache follows the lock, not the default requirements*.txt.
+          cache-dependency-path: requirements-dev.lock
 
+      # Spec 014 RF-4: the pinned dev dependencies with hashes, the package
+      # alone, and `pip check` fails if pyproject.toml declares something the
+      # lock lacks (regenerate it with scripts/lock.sh).
       - name: Install
-        run: pip install -e ".[dev]"
+        run: |
+          pip install --require-hashes -r requirements-dev.lock
+          pip install --no-deps -e .
+          pip check
 
       - name: Lint
         run: ruff check .
