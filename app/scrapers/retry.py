@@ -75,7 +75,9 @@ async def send_with_retry(
     """Call `send`, retrying transient failures with exponential backoff.
 
     - 2xx (without a WAF challenge header): returned immediately (RF-3).
-    - 5xx, 429, transport errors: retried up to `max_attempts` (RF-15).
+    - 5xx, 429, request errors: retried up to `max_attempts` (RF-15). Any
+      `httpx.RequestError`, not only transport ones: a badly compressed body
+      (`DecodingError`) or a redirect loop must not become a 500 (spec 015 RF-1).
       Exhausting retries raises `UpstreamUnavailableError` (RF-17).
     - Any other 4xx: raises immediately, no retry (RF-16).
     - A WAF challenge (`x-amzn-waf-action` header, arrives as an empty 202)
@@ -115,12 +117,12 @@ async def send_with_retry(
             wait = retry_after + uniform(0, jitter_max)
         return min(wait, MAX_RETRY_AFTER_WAIT_SECONDS)
 
-    last_transport_error: httpx.TransportError | None = None
+    last_transport_error: httpx.RequestError | None = None
 
     for attempt in range(1, max_attempts + 1):
         try:
             response = await send()
-        except httpx.TransportError as exc:
+        except httpx.RequestError as exc:
             last_transport_error = exc
             reason = type(exc).__name__
             if attempt == max_attempts:

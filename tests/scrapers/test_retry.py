@@ -434,3 +434,41 @@ async def test_exhausted_5xx_has_no_status_code() -> None:
         )
 
     assert exc_info.value.status_code is None
+
+
+# --- Spec 015 RF-1: request errors that are not transport errors (F1, plan-D1) ---
+
+REQUEST = httpx.Request("GET", "https://alcampo.test/")
+
+
+def not_transport_errors() -> list[httpx.RequestError]:
+    return [
+        httpx.DecodingError("Error -3 while decompressing data", request=REQUEST),
+        httpx.TooManyRedirects("Exceeded maximum allowed redirects.", request=REQUEST),
+    ]
+
+
+@pytest.mark.parametrize("error", not_transport_errors(), ids=["decoding", "redirects"])
+async def test_a_request_error_is_retried(error: httpx.RequestError) -> None:
+    sleep = FakeSleep()
+
+    response = await send_with_retry(
+        sequence(error, make_response(200)), max_attempts=3, base_delay=0.5, sleep=sleep
+    )
+
+    assert response.status_code == 200
+    assert sleep.calls == [0.5]
+
+
+@pytest.mark.parametrize("error", not_transport_errors(), ids=["decoding", "redirects"])
+async def test_exhausted_request_errors_raise_upstream_unavailable(
+    error: httpx.RequestError, caplog: pytest.LogCaptureFixture
+) -> None:
+    # Before: the httpx error escaped and the API answered 500.
+    with pytest.raises(UpstreamUnavailableError):
+        await send_with_retry(
+            sequence(error, error, error), max_attempts=3, base_delay=0.5, sleep=FakeSleep()
+        )
+
+    errors = [r.getMessage() for r in caplog.records if r.levelno == logging.ERROR]
+    assert errors == [f"retries exhausted attempts=3 reason={type(error).__name__} url='-'"]
