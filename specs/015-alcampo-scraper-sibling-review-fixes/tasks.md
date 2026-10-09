@@ -94,3 +94,8 @@ Revisión adversarial de `7f59eae..HEAD` antes del PR: 0 CRITICAL, 2 WARNING, 6 
 - **GREEN:** `_is_secret_name` normaliza con NFKC + `casefold()` y quita `-`, `_`, `.` y espacios (W1). `lock.sh` acepta como mucho un argumento (S3).
 - **Docs:** README y spec §6: el traceback de uvicorn en un error con la respuesta ya empezada, como límite conocido (W2).
 - **Hecho:** W1, S3 y S5 corregidos; W2 documentado en el README (limitaciones conocidas) y en la spec §6. En el test, el nombre de ancho completo va como escapes Unicode, porque ruff (RUF001) rechaza caracteres ambiguos en el código.
+
+- **CI en GitHub (2026-10-09, run 37914860459, tras el push de `cd2669a`):** ✅ `success`.
+  - **Instalación:** `setuptools 84.0.0` desde el lock de build, el paquete construido sin aislamiento y `pip check` sin errores.
+  - **Tests:** **577 en 7,03 s** con Python 3.11, sin saltarse ninguno, incluidos los de `lock.sh` con `PATH` vacío en Linux.
+  - **`docker build`** en verde.
