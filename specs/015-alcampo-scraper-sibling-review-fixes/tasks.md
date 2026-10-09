@@ -30,9 +30,10 @@ Formato de commit: `<tipo>(015-alcampo-scraper-sibling-review-fixes): <descripci
 - **GREEN:** `exclude=True`.
 - **RF:** RF-3
 
-### [ ] T4 — Redacción y parámetros del log (F4, F5)
+### [x] T4 — Redacción y parámetros del log (F4, F5)
 - **RED:** `test_request_context.py`: los nombres de la spec §5 se redactan y los de la API no; los valores repetidos aparecen todos; la query se corta a 500 caracteres (plan-D3).
 - **GREEN:** `request_context.py`.
+- **Nota:** la línea `request started` pasa de `params={'term': 'leche'}` a `params=[('term', 'leche')]` (una lista de pares, para que los parámetros repetidos no se pierdan). Se han actualizado las dos aserciones de integración que dependían del formato anterior (`test_auth.py`, `test_logging_integration.py`).
 - **RF:** RF-4, RF-5
 
 ### [ ] T5 — El `500` sin el mensaje (F10)

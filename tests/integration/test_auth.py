@@ -130,7 +130,7 @@ def test_key_sent_in_the_url_is_redacted_from_app_logs(
     # Only the app's own records: the test client's httpx logs its own request URL.
     app_text = "\n".join(r.getMessage() for r in caplog.records if r.name.startswith("app."))
     assert "secret-in-url" not in app_text
-    assert "'api_key': '***'" in app_text
+    assert "('api_key', '***')" in app_text
 
 
 CACHED_RESPONSE = ProductSearchResponse(

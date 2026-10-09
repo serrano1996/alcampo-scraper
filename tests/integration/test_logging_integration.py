@@ -48,7 +48,7 @@ def test_request_is_logged_at_start_and_end_with_one_request_id(
     assert finished.request_id == started.request_id
     assert "GET" in started.getMessage()
     assert "'/api/v1/products'" in started.getMessage()
-    assert "'term': 'leche'" in started.getMessage()
+    assert "('term', 'leche')" in started.getMessage()
     assert "status=200" in finished.getMessage()
     assert "duration_ms=" in finished.getMessage()
     assert response.headers["X-Request-ID"] == started.request_id
