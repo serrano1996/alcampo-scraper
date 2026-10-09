@@ -6,7 +6,7 @@ DOCKERIGNORE = Path(__file__).parents[2] / ".dockerignore"
 # the build context, so a new secret file (another .env, a credentials.json...)
 # can never reach the image by default.
 # requirements.lock: the pinned, hashed dependencies (spec 014 RF-3).
-READMITTED = {"pyproject.toml", "requirements.lock", "app/"}
+READMITTED = {"pyproject.toml", "requirements.lock", "requirements-build.lock", "app/"}
 EXCLUDED_AGAIN = ["**/__pycache__/", "**/*.py[cod]"]
 
 

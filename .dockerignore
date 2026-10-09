@@ -6,6 +6,7 @@
 
 !pyproject.toml
 !requirements.lock
+!requirements-build.lock
 !app/
 
 # Readmitting app/ also readmits local bytecode: keep it out.

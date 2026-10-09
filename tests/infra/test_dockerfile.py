@@ -63,9 +63,10 @@ def test_installs_the_pinned_dependencies_then_the_project_alone() -> None:
     # without resolving anything again.
     installs = " && ".join(args for args in args_of("RUN") if "pip install" in args)
 
-    assert "--require-hashes -r requirements.lock" in installs
-    assert "--no-deps ." in installs
-    assert installs.index("requirements.lock") < installs.index("--no-deps .")
+    assert "--require-hashes -r requirements.lock -r requirements-build.lock" in installs
+    # Built with the hashed setuptools already installed, nothing fetched (spec 015 RF-6).
+    assert "--no-deps --no-build-isolation ." in installs
+    assert installs.index("requirements.lock") < installs.index("--no-deps")
 
 
 def test_runs_as_an_unprivileged_user() -> None:

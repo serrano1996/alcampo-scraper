@@ -54,11 +54,14 @@ def test_installs_the_pinned_dev_dependencies(workflow: dict) -> None:
     # fails if pyproject.toml declares something the lock lacks (plan-D3).
     runs = "\n".join(commands(workflow))
 
-    assert "pip install --require-hashes -r requirements-dev.lock" in runs
-    assert "pip install --no-deps -e ." in runs
+    assert (
+        "pip install --require-hashes -r requirements-dev.lock -r requirements-build.lock" in runs
+    )
+    # The editable build uses the hashed setuptools, nothing fetched (spec 015 RF-6).
+    assert "pip install --no-deps --no-build-isolation -e ." in runs
     assert "pip check" in runs
-    assert runs.index("requirements-dev.lock") < runs.index("--no-deps -e .")
-    assert runs.index("--no-deps -e .") < runs.index("pip check")
+    assert runs.index("requirements-dev.lock") < runs.index("--no-build-isolation -e .")
+    assert runs.index("--no-build-isolation -e .") < runs.index("pip check")
 
 
 def test_uses_current_actions_on_a_fixed_runner(workflow: dict) -> None:

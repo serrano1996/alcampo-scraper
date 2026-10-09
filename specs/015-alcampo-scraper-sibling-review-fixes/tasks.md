@@ -41,9 +41,17 @@ Formato de commit: `<tipo>(015-alcampo-scraper-sibling-review-fixes): <descripci
 - **GREEN:** `request_context.py`.
 - **RF:** RF-10
 
-### [ ] T6 — `setuptools` con hash (F6)
+### [x] T6 — `setuptools` con hash (F6)
 - **RED:** `tests/infra`: el lock de build existe y fija con hash `[build-system].requires`; el `Dockerfile` y la CI lo instalan con `--require-hashes` y construyen con `--no-build-isolation`; `.dockerignore` lo readmite; `lock.sh` rechaza opciones desconocidas (plan-D5).
 - **GREEN:** `lock.sh` y ejecutarlo (Docker, PyPI), `Dockerfile`, `ci.yml`, `.dockerignore`. Comprobar `docker build` con el daemon.
+- **Incidente en el RED:**
+  - La primera versión del test ejecutaba el `lock.sh` vulnerable con `--upgrade; touch /src/pwned`. Llegó a Docker y lanzó `pip-compile --upgrade`, que dejó un `requirements.txt` sin seguimiento en la raíz. Lo borré; los locks no cambiaron y el `touch` no llegó a crear nada.
+  - Eso **confirma la inyección** del `lock.sh` anterior.
+  - El test definitivo usa un payload inofensivo (`--upgrade; false`) y un `PATH` vacío: un script que no rechace la opción no llega a Docker y falla con 127. Por eso el `case` va antes de cualquier comando externo, también antes de `dirname`.
+- **Comprobado:**
+  - `scripts/lock.sh` genera `requirements-build.lock` (`setuptools 84.0.0` con hashes) y no cambia los otros dos locks.
+  - `docker build` funciona: instala `setuptools` del lock y construye `alcampo-scraper 0.1.0` sin aislamiento.
+  - README actualizado.
 - **RF:** RF-6
 
 ### [ ] T7 — Circuito: una sola prueba (F7)

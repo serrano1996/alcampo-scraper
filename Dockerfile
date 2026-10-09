@@ -12,15 +12,18 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 WORKDIR /build
 # Exact versions checked by hash (spec 014 RF-3), in their own layer: it is
-# rebuilt only when the lock changes, not on every code change.
-COPY requirements.lock ./
-RUN pip install --no-cache-dir --require-hashes -r requirements.lock
+# rebuilt only when the lock changes, not on every code change. The build
+# backend (setuptools) is hashed too: otherwise building the package below
+# would fetch it unhashed into an isolated env (spec 015 RF-6).
+COPY requirements.lock requirements-build.lock ./
+RUN pip install --no-cache-dir --require-hashes -r requirements.lock -r requirements-build.lock
 COPY pyproject.toml ./
 COPY app/ ./app/
-# The project alone (`--no-deps`): nothing is resolved again (plan-D2). Plain
+# The project alone (`--no-deps`), built with the setuptools just installed
+# (`--no-build-isolation`): nothing is resolved nor fetched again (plan-D2). Plain
 # `.`, no [dev] extra: pytest, ruff, respx and fakeredis never get in. The
 # wheel already contains app/, so the code travels inside the venv (plan-D1).
-RUN pip install --no-cache-dir --no-deps .
+RUN pip install --no-cache-dir --no-deps --no-build-isolation .
 
 # ---- runtime: only the venv, run by an unprivileged user ----
 FROM python:3.11-slim

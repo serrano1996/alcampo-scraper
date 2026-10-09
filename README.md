@@ -47,12 +47,12 @@ mypy                            # tipos, estricto, sobre app/ (obligatorio antes
 
 - **Warnings = errores:** la suite falla ante cualquier warning (`filterwarnings = error`), así una deprecación se ve el día que aparece. Hoy no hay ninguna excepción.
 - **Versiones acotadas:** cada dependencia tiene límite superior de versión mayor (`<1` para las `0.x`); subir una versión mayor es una decisión explícita.
-- **Dependencias fijadas** ([spec 014](specs/014-alcampo-scraper-lockfile/spec.md)): `requirements.lock` (producción) y `requirements-dev.lock` (con el extra `dev`) fijan **todas** las dependencias, transitivas incluidas, con versión exacta y hashes. La imagen Docker y la CI instalan desde ellos (`--require-hashes`), así que dos builds del mismo commit llevan lo mismo. Se generan para Linux y Python 3.11 (la imagen y la CI), por eso en local se sigue instalando con `pip install -e ".[dev]"`. **No se editan a mano:**
+- **Dependencias fijadas** ([spec 014](specs/014-alcampo-scraper-lockfile/spec.md)): `requirements.lock` (producción) y `requirements-dev.lock` (con el extra `dev`) fijan **todas** las dependencias, transitivas incluidas, con versión exacta y hashes; `requirements-build.lock` fija igual la herramienta que construye el paquete (`setuptools`, de `[build-system]`, [spec 015](specs/015-alcampo-scraper-sibling-review-fixes/spec.md)). La imagen Docker y la CI instalan desde ellos (`--require-hashes`) y construyen el paquete sin aislamiento (`--no-build-isolation`), así que nada se descarga sin hash y dos builds del mismo commit llevan lo mismo. Se generan para Linux y Python 3.11 (la imagen y la CI), por eso en local se sigue instalando con `pip install -e ".[dev]"`. **No se editan a mano:**
   ```bash
   scripts/lock.sh            # tras tocar las dependencias de pyproject.toml: añade o quita lo que cambió
   scripts/lock.sh --upgrade  # subir todo a lo último dentro de cada rango (decisión explícita)
   ```
-  Necesita Docker; tarda unos 3 minutos. Si `pyproject.toml` declara algo que el lock no tiene, la CI falla en `pip check`.
+  Necesita Docker; tarda unos 3 minutos. Solo acepta `--upgrade`: cualquier otra opción se rechaza antes de hacer nada. Si `pyproject.toml` declara algo que el lock no tiene, la CI falla en `pip check`.
 - **CI:** `.github/workflows/ci.yml` ejecuta en cada push y pull request ([GitHub Actions](https://github.com/serrano1996/alcampo-scraper/actions)), en `ubuntu-24.04` con Python 3.11: instala desde `requirements-dev.lock`, `pip check`, `ruff check`, `ruff format --check`, `mypy`, `pytest -q` y `docker build`. Usa `pytest` a secas, como aquí: `python -m pytest` añade la raíz a `sys.path` y escondió durante días un fallo que solo veía la CI.
 
 ## Uso del endpoint
