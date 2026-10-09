@@ -20,7 +20,7 @@ Formato de commit: `<tipo>(015-alcampo-scraper-sibling-review-fixes): <descripci
 - **GREEN:** `retry.py`.
 - **RF:** RF-1
 
-### [ ] T2 — `Retry-After` desbordado (F2)
+### [x] T2 — `Retry-After` desbordado (F2)
 - **RED:** `test_retry.py`: la fecha con año `99999999999999999999` y un valor infinito → `None`; un `429` con esa cabecera espera el backoff (plan-D2).
 - **GREEN:** `parse_retry_after`.
 - **RF:** RF-2

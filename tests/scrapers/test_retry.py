@@ -472,3 +472,27 @@ async def test_exhausted_request_errors_raise_upstream_unavailable(
 
     errors = [r.getMessage() for r in caplog.records if r.levelno == logging.ERROR]
     assert errors == [f"retries exhausted attempts=3 reason={type(error).__name__} url='-'"]
+
+
+# --- Spec 015 RF-2: a Retry-After that cannot become a finite wait (F2, plan-D2) ---
+
+OVERFLOWING_DATE = "Wed, 21 Oct 99999999999999999999 07:28:00 GMT"
+
+
+@pytest.mark.parametrize(
+    "value", [OVERFLOWING_DATE, "9" * 400], ids=["overflowing-year", "infinite-seconds"]
+)
+def test_a_retry_after_that_is_not_a_finite_wait_is_ignored(value: str) -> None:
+    # Before: the date raised OverflowError (a 500) and the digits became `inf`.
+    assert parse_retry_after(value, now=NOW) is None
+
+
+async def test_429_with_an_overflowing_retry_after_falls_back_to_backoff() -> None:
+    waits = await retry_waits(too_many_requests(OVERFLOWING_DATE), make_response(200))
+
+    assert waits == [pytest.approx(0.8)]
+
+
+def test_a_huge_but_finite_retry_after_is_still_a_wait() -> None:
+    # Capped to 60 s by the caller, as before (spec 015 §5).
+    assert parse_retry_after("99999999999999999999", now=NOW) == 1e20

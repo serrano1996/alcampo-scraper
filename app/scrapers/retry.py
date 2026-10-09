@@ -6,6 +6,7 @@ injectable `sleep`, so tests never wait for real time (plan-D3).
 
 import asyncio
 import logging
+import math
 import random
 import re
 from collections.abc import Awaitable, Callable
@@ -37,16 +38,19 @@ def parse_retry_after(value: str | None, *, now: datetime) -> float | None:
 
     Accepts the two HTTP formats: non-negative integer seconds, or an HTTP date.
     A date in the past means "retry now" (0.0). Anything else returns `None`, so
-    the caller falls back to exponential backoff.
+    the caller falls back to exponential backoff; so does a value that is no
+    finite wait, such as a date whose year overflows or hundreds of digits
+    (spec 015 RF-2).
     """
     if value is None:
         return None
     value = value.strip()
     if _RETRY_AFTER_SECONDS.match(value):
-        return float(value)
+        seconds = float(value)
+        return seconds if math.isfinite(seconds) else None
     try:
         retry_at = parsedate_to_datetime(value)
-    except (TypeError, ValueError):
+    except (TypeError, ValueError, OverflowError):  # a year too big overflows
         return None
     if retry_at.tzinfo is None:
         retry_at = retry_at.replace(tzinfo=UTC)
