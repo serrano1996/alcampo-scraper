@@ -36,7 +36,7 @@ Formato de commit: `<tipo>(015-alcampo-scraper-sibling-review-fixes): <descripci
 - **Nota:** la línea `request started` pasa de `params={'term': 'leche'}` a `params=[('term', 'leche')]` (una lista de pares, para que los parámetros repetidos no se pierdan). Se han actualizado las dos aserciones de integración que dependían del formato anterior (`test_auth.py`, `test_logging_integration.py`).
 - **RF:** RF-4, RF-5
 
-### [ ] T5 — El `500` sin el mensaje (F10)
+### [x] T5 — El `500` sin el mensaje (F10)
 - **RED:** `test_request_context.py`: un error no controlado con un marcador en el mensaje: el log tiene el tipo y los frames, no el marcador ni `exc_info` (plan-D4).
 - **GREEN:** `request_context.py`.
 - **RF:** RF-10

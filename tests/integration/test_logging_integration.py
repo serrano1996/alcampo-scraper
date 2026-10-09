@@ -91,7 +91,7 @@ def test_each_request_gets_a_new_request_id(client: TestClient, respx_mock) -> N
     assert first.headers["X-Request-ID"] != second.headers["X-Request-ID"]
 
 
-def test_unhandled_exception_returns_500_logged_with_traceback(
+def test_unhandled_exception_returns_500_logged_without_its_message(
     integration_env: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
     caplog.set_level(logging.INFO)
@@ -108,7 +108,12 @@ def test_unhandled_exception_returns_500_logged_with_traceback(
     assert response.json() == {"detail": "Internal server error"}
     assert "secret detail" not in response.text
     [error] = [r for r in caplog.records if r.levelno == logging.ERROR]
-    assert error.exc_info is not None
+    # Spec 015 RF-10 (F10): type and frames, never the message, which can carry
+    # an Alcampo body fragment or a URL with the client's term.
+    assert error.getMessage().startswith("unhandled error type=RuntimeError frames=")
+    assert "boom" in error.getMessage()  # the frame that raised
+    assert "secret detail" not in caplog.text
+    assert error.exc_info is None
     assert error.request_id == response.headers["X-Request-ID"]
     [finished] = request_records(caplog, "request finished")
     assert "status=500" in finished.getMessage()
@@ -227,8 +232,8 @@ def test_an_error_after_the_response_started_is_logged_and_re_raised(
         client.get("/stream")
 
     [error] = [r for r in caplog.records if r.levelno == logging.ERROR]
-    assert error.getMessage() == "unhandled error"
-    assert error.exc_info is not None
+    assert error.getMessage().startswith("unhandled error type=RuntimeError frames=")
+    assert "broken stream" not in caplog.text  # spec 015 RF-10
     assert error.request_id != "-"
     [finished] = request_records(caplog, "request finished")
     assert "status=200" in finished.getMessage()  # no 500 sent after the 200

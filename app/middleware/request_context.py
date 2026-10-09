@@ -11,6 +11,7 @@ written once the whole response has gone out.
 
 import logging
 import time
+import traceback
 import uuid
 
 from starlette.datastructures import MutableHeaders, QueryParams
@@ -93,11 +94,20 @@ class RequestContextMiddleware:
         try:
             try:
                 await self.app(scope, receive, send_with_request_id)
-            except Exception:
+            except Exception as exc:
                 # Handled here, not with app.exception_handler(Exception): that
                 # one runs outside this middleware, after the request id is gone
                 # and without X-Request-ID on the response (spec 003 plan-D2).
-                logger.exception("unhandled error")
+                # Type and frames, never the message: it can carry an Alcampo
+                # body fragment or a URL with the client's term (spec 015 RF-10).
+                logger.error(
+                    "unhandled error type=%s frames=%r",
+                    type(exc).__name__,
+                    [
+                        (frame.filename, frame.lineno, frame.name)
+                        for frame in traceback.extract_tb(exc.__traceback__)
+                    ],
+                )
                 if response_started:
                     raise  # a response already on its way cannot become a 500
                 error = JSONResponse({"detail": "Internal server error"}, status_code=500)
