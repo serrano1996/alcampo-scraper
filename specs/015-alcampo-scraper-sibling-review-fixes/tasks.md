@@ -70,6 +70,7 @@ Formato de commit: `<tipo>(015-alcampo-scraper-sibling-review-fixes): <descripci
 - **Desvío del plan (plan-D8, corregido allí):** `is_active` no mira primero lo local. Mientras Redis responde decide Redis, así que borrar la clave sigue terminando el enfriamiento en todas partes. Un test lo fija (`test_with_redis_up_redis_still_decides`).
 - **RF:** RF-9
 
-### [ ] T10 — Docs
+### [x] T10 — Docs
 - **Hacer:** README: la redacción por subcadena, los tres locks y `lock.sh --upgrade`, y en "sin Redis" que solo una petición por periodo prueba Redis y que el enfriamiento iniciado se respeta aunque Redis caiga.
 - **RF:** criterios de finalización
+- **Hecho:** el `500` y los locks ya quedaron documentados en T5 y T6. Aquí: la redacción por subcadena y el formato de los parámetros, el circuito (una sola prueba), el enfriamiento que sobrevive a Redis y el rechazo del límite.

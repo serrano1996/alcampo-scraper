@@ -129,8 +129,8 @@ Alcampo cambia precio y catálogo según la región (la tienda que sirve): por e
 ## Redis
 
 - **Timeouts:** conexión y operaciones cortan a los `REDIS_TIMEOUT_SECONDS` (2 s). Un Redis colgado ya no deja peticiones esperando para siempre.
-- **Redis caído o colgado → el servicio degrada, no se cae:** las búsquedas van a Alcampo sin cache (`200`) con un `WARNING "redis unavailable op=…"`. El límite de peticiones, el de resoluciones y el enfriamiento siguen actuando con un respaldo **local a cada proceso** (se pierde la coordinación entre instancias), y las regiones ya conocidas siguen en la memoria del proceso. `/health` no toca Redis.
-- **Circuit breaker:** tras el primer fallo, el servicio deja de intentar Redis durante `REDIS_CIRCUIT_OPEN_SECONDS` (10 s) y usa directamente los respaldos, sin esperar ningún timeout; luego lo vuelve a probar. Sin Redis, una búsqueda pasó de ~9 s a ~1 s. En los logs: un `WARNING "redis circuit open"` al abrirse y un `INFO "redis circuit closed"` al volver.
+- **Redis caído o colgado → el servicio degrada, no se cae:** las búsquedas van a Alcampo sin cache (`200`) con un `WARNING "redis unavailable op=…"`. El límite de peticiones, el de resoluciones y el enfriamiento siguen actuando con un respaldo **local a cada proceso** (se pierde la coordinación entre instancias), y las regiones ya conocidas siguen en la memoria del proceso. Un enfriamiento del WAF iniciado con Redis se recuerda también en el proceso: si Redis cae en mitad del bloqueo, se sigue respetando, y un nuevo challenge sigue creciendo desde la última duración. Si Redis rechaza una petición por límite, se rechaza aunque falle algo después. `/health` no toca Redis.
+- **Circuit breaker:** tras el primer fallo, el servicio deja de intentar Redis durante `REDIS_CIRCUIT_OPEN_SECONDS` (10 s) y usa directamente los respaldos, sin esperar ningún timeout; luego **una sola** petición lo vuelve a probar mientras las demás siguen con los respaldos, así que con Redis colgado solo esa paga el timeout ([spec 015](specs/015-alcampo-scraper-sibling-review-fixes/spec.md)). Sin Redis, una búsqueda pasó de ~9 s a ~1 s. En los logs: un `WARNING "redis circuit open"` al abrirse y un `INFO "redis circuit closed"` al volver.
 - **`GET /ready`** dice si la instancia tiene Redis, con el mismo contrato que Mercadona ([spec 012](specs/012-alcampo-scraper-operational-robustness/spec.md)): `200 {"status": "ready"}` o `503 {"status": "unavailable", "redis": "unreachable"}`, sin la URL ni el error. Es público (sin `X-API-Key`), no llama a Alcampo y pasa por el circuit breaker: con el circuito abierto responde `503` al momento sin tocar Redis, y vuelve a `200` como mucho `REDIS_CIRCUIT_OPEN_SECONDS` después de que Redis se recupere. **Ojo:** sin Redis la app **sigue sirviendo** (sin cache); si un orquestador saca de servicio las instancias con `/ready` en `503`, con Redis caído se quedarían todas fuera. Para saber si el proceso está vivo, `/health`.
 
 ## Autenticación
@@ -155,7 +155,7 @@ Todo lo que cuelga de `/api/v1/` exige la cabecera **`X-API-Key`** con un token 
   ```
 
 - El rechazo ocurre **antes** de tocar la cache o Alcampo: una petición sin token no puede provocar tráfico hacia Alcampo ni un bloqueo de su WAF.
-- El token solo se acepta en la cabecera. Nunca se registra en los logs; si se envía por error en la URL (`?api_key=…`, `?token=…`, `?key=…`), aparece como `'***'`.
+- El token solo se acepta en la cabecera. Nunca se registra en los logs; si se envía por error en la URL, se oculta como `'***'` todo parámetro cuyo nombre contenga `key`, `token`, `secret`, `auth` o `pass` (`?api_key=…`, `?access_token=…`, `?password=…`…; también algún inocente como `keyword`). La línea `request started` registra todos los valores, también los repetidos, y se corta a 500 caracteres.
 
 ## Medidas antibaneo
 
