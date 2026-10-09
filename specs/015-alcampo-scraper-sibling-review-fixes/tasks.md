@@ -54,7 +54,7 @@ Formato de commit: `<tipo>(015-alcampo-scraper-sibling-review-fixes): <descripci
   - README actualizado.
 - **RF:** RF-6
 
-### [ ] T7 — Circuito: una sola prueba (F7)
+### [x] T7 — Circuito: una sola prueba (F7)
 - **RED:** `test_redis_circuit.py`: 20 llamadas concurrentes → 1 prueba; mientras prueba, las demás lo ven abierto; un error ajeno deja probar a la siguiente (plan-D6).
 - **GREEN:** `redis_circuit.py`.
 - **RF:** RF-7

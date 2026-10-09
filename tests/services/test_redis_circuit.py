@@ -1,5 +1,6 @@
 """Spec 007 RF-18: stop trying Redis for a while after a failure."""
 
+import asyncio
 import logging
 from datetime import UTC, datetime
 
@@ -226,3 +227,71 @@ async def test_the_region_repository_uses_its_memory_while_open(
 
     assert redis.attempts == 0
     assert skipped_quietly(caplog)
+
+
+# --- Spec 015 RF-7: one probe at a time (F7, plan-D6) ---
+
+
+async def test_after_the_period_only_one_call_probes_redis(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    # Before: all 20 probed. Against a hung Redis each pays the timeout.
+    clock = FakeClock()
+    breaker = RedisCircuitBreaker(open_seconds=OPEN, now=clock)
+    with pytest.raises(RedisError):
+        await breaker.call(Operation(fails=True))
+    clock.now += OPEN
+    caplog.set_level(logging.WARNING, logger="app.services.redis_circuit")
+    caplog.clear()
+    hung = Operation(fails=True)
+
+    async def slow_probe() -> str:
+        await asyncio.sleep(0.01)
+        return await hung()
+
+    results = await asyncio.gather(
+        *[breaker.call(slow_probe) for _ in range(20)], return_exceptions=True
+    )
+
+    assert hung.calls == 1
+    assert sum(isinstance(r, RedisCircuitOpenError) for r in results) == 19
+    assert len(records(caplog, logging.WARNING)) == 1
+
+
+async def test_while_a_probe_runs_the_others_see_the_circuit_open() -> None:
+    clock = FakeClock()
+    breaker = RedisCircuitBreaker(open_seconds=OPEN, now=clock)
+    with pytest.raises(RedisError):
+        await breaker.call(Operation(fails=True))
+    clock.now += OPEN
+    release = asyncio.Event()
+
+    async def probe() -> str:
+        await release.wait()
+        return "ok"
+
+    task = asyncio.create_task(breaker.call(probe))
+    await asyncio.sleep(0)
+    with pytest.raises(RedisCircuitOpenError):
+        await breaker.call(Operation(fails=False))
+    release.set()
+
+    assert await task == "ok"
+    assert await breaker.call(Operation(fails=False)) == "ok"  # closed by the probe
+
+
+async def test_a_probe_ending_without_a_redis_answer_lets_the_next_call_probe() -> None:
+    # A bug or a cancellation in the probe says nothing about Redis.
+    clock = FakeClock()
+    breaker = RedisCircuitBreaker(open_seconds=OPEN, now=clock)
+    with pytest.raises(RedisError):
+        await breaker.call(Operation(fails=True))
+    clock.now += OPEN
+
+    async def buggy() -> str:
+        raise ValueError("bug")
+
+    with pytest.raises(ValueError):
+        await breaker.call(buggy)
+
+    assert await breaker.call(Operation(fails=False)) == "ok"

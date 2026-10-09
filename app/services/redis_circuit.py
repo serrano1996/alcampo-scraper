@@ -11,8 +11,10 @@ so repositories go straight to their local fallbacks (spec 007 RF-15).
 that, so their error handling does not change.
 
 After the period the next operation probes Redis: success closes the circuit,
-failure opens it again. Concurrent operations may probe at the same time; they
-are few and each is bounded by the Redis timeout.
+failure opens it again. Only one probe runs at a time; meanwhile the others still
+see the circuit open, so against a hung Redis one request pays the timeout, not
+every request in flight (spec 015 RF-7). A probe that ends without an answer
+from Redis (a bug, a cancellation) lets the next call probe.
 """
 
 import logging
@@ -38,15 +40,18 @@ class RedisCircuitBreaker:
         self._open_seconds = open_seconds
         self._now = now
         self._open_until: float | None = None
+        self._probing = False
 
     async def call(self, operation: Callable[[], Awaitable[T]]) -> T:
         """Run `operation` unless the circuit is open. `open_seconds == 0` never opens."""
         if self._open_seconds == 0:
             return await operation()
-        if self._open_until is not None and self._now() < self._open_until:
-            raise RedisCircuitOpenError("redis circuit open")
-
-        probing = self._open_until is not None
+        open_until = self._open_until
+        probing = open_until is not None
+        if open_until is not None:
+            if self._probing or self._now() < open_until:
+                raise RedisCircuitOpenError("redis circuit open")
+            self._probing = True
         try:
             result = await operation()
         except RedisError as exc:
@@ -55,6 +60,9 @@ class RedisCircuitBreaker:
                 "redis circuit open for %ds after %s", self._open_seconds, type(exc).__name__
             )
             raise
+        finally:
+            if probing:
+                self._probing = False
         if probing:
             self._open_until = None
             logger.info("redis circuit closed: redis answered again")
