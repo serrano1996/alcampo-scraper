@@ -59,7 +59,7 @@ Formato de commit: `<tipo>(015-alcampo-scraper-sibling-review-fixes): <descripci
 - **GREEN:** `redis_circuit.py`.
 - **RF:** RF-7
 
-### [ ] T8 — El rechazo del limitador se mantiene (F8)
+### [x] T8 — El rechazo del limitador se mantiene (F8)
 - **RED:** `test_rate_limiter.py`: con el `ZREM` fallando, la segunda `acquire` se rechaza; un rechazo durante una prueba cierra el circuito (plan-D7).
 - **GREEN:** `rate_limiter.py`.
 - **RF:** RF-8

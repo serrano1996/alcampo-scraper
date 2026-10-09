@@ -2,9 +2,11 @@ import logging
 
 import fakeredis
 import pytest
+from redis.exceptions import RedisError
 
 from app.exceptions import OutboundRateLimitedError, UpstreamUnavailableError
 from app.services.rate_limiter import RATE_LIMIT_KEY, LocalRateLimiter, OutboundRateLimiter
+from app.services.redis_circuit import RedisCircuitBreaker
 from tests.services.redis_doubles import DOWN, HUNG, BrokenRedis
 
 
@@ -220,3 +222,50 @@ async def test_release_also_works_on_the_local_fallback(clock: FakeClock) -> Non
     await limiter.release(slot)
 
     await limiter.acquire()  # would raise if the local slot were still taken
+
+
+# --- Spec 015 RF-8: Redis' refusal stands (F8, plan-D7) ---
+
+
+async def test_a_refusal_holds_even_if_giving_the_slot_back_fails(
+    redis: fakeredis.FakeAsyncRedis, clock: FakeClock
+) -> None:
+    # Before: the failing ZREM sent it to the empty local window, which admitted it.
+    limiter = OutboundRateLimiter(
+        redis,
+        limit=1,
+        window_seconds=60,
+        now=clock,
+        circuit=RedisCircuitBreaker(open_seconds=10, now=clock),
+    )
+    await limiter.acquire()
+
+    async def failing_zrem(*args: object) -> int:
+        raise DOWN
+
+    redis.zrem = failing_zrem  # type: ignore[method-assign]
+
+    with pytest.raises(OutboundRateLimitedError):
+        await limiter.acquire()
+
+
+async def test_a_refusal_from_redis_closes_a_probing_circuit(
+    redis: fakeredis.FakeAsyncRedis, clock: FakeClock, caplog: pytest.LogCaptureFixture
+) -> None:
+    # Redis answered the probe ("no"): the circuit closes.
+    circuit = RedisCircuitBreaker(open_seconds=10, now=clock)
+    limiter = OutboundRateLimiter(redis, limit=1, window_seconds=60, now=clock, circuit=circuit)
+    await limiter.acquire()
+
+    async def down() -> None:
+        raise DOWN
+
+    with pytest.raises(RedisError):
+        await circuit.call(down)
+    clock.now += 10
+    caplog.set_level(logging.INFO, logger="app.services.redis_circuit")
+
+    with pytest.raises(OutboundRateLimitedError):
+        await limiter.acquire()
+
+    assert "redis circuit closed: redis answered again" in caplog.messages

@@ -98,12 +98,23 @@ class OutboundRateLimiter:
         now = self._now()
         slot = uuid.uuid4().hex
         try:
-            await self._circuit.call(lambda: self._acquire_in_redis(now, slot))
+            admitted = await self._circuit.call(lambda: self._acquire_in_redis(now, slot))
         except RedisError as exc:
             redis_unavailable(logger, f"rate_limit key={self._key}", exc)
             self._fallback.acquire(
                 now=now, limit=self._limit, window_seconds=self._window, slot=slot
             )
+            return slot
+        if not admitted:
+            # Redis' verdict stands once given (spec 015 RF-8). A rejected attempt
+            # must not consume quota, or a burst of rejected searches would keep
+            # the limit exhausted forever; if giving it back fails, the slot
+            # leaves with the window.
+            try:
+                await self._circuit.call(lambda: self._redis.zrem(self._key, slot))
+            except RedisError as exc:
+                redis_unavailable(logger, f"rate_limit.refund key={self._key}", exc)
+            raise OutboundRateLimitedError("outbound rate limit reached")
         return slot
 
     async def release(self, slot: str) -> None:
@@ -115,15 +126,16 @@ class OutboundRateLimiter:
         except RedisError as exc:
             redis_unavailable(logger, f"rate_limit.release key={self._key}", exc)
 
-    async def _acquire_in_redis(self, now: float, member: str) -> None:
+    async def _acquire_in_redis(self, now: float, member: str) -> bool:
+        """Add `member` to the window; whether it fits within the limit.
+
+        Returns the verdict instead of raising it: a refusal is an answer from
+        Redis, so it must close a probing circuit (spec 015 RF-8, plan-D7).
+        """
         async with self._redis.pipeline(transaction=True) as pipe:
             pipe.zremrangebyscore(self._key, "-inf", now - self._window)
             pipe.zadd(self._key, {member: now})
             pipe.zcard(self._key)
             pipe.expire(self._key, self._window)
             _, _, count, _ = await pipe.execute()
-        if count > self._limit:
-            # A rejected attempt must not consume quota, or a burst of rejected
-            # searches would keep the limit exhausted forever.
-            await self._redis.zrem(self._key, member)
-            raise OutboundRateLimitedError("outbound rate limit reached")
+        return bool(count <= self._limit)
