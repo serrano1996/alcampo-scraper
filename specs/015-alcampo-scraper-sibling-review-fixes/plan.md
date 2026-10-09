@@ -52,7 +52,7 @@
 **D8 — Enfriamiento del WAF: lo local refleja lo de Redis** (spec-D3):
 - `LocalCooldown.hold(duration, max_seconds)` fija `until = max(until, now + duration)` y recuerda `duration` como la última. Así, si Redis cae, el crecimiento local sigue desde ahí.
 - `WafCooldownRepository.activate` lo llama con la duración que devolvió Redis.
-- `is_active()` = lo local o Redis; antes solo se miraba lo local si Redis fallaba.
+- `is_active()` no cambia: mientras Redis responde, decide Redis; lo local solo cuando Redis falla. *(Corregido en T9: el borrador decía "lo local o Redis", como Dia, pero así borrar `waf:cooldown`, sea por caducidad o a mano, no terminaría el enfriamiento en el proceso que vio el bloqueo, y `test_outbound_protection.py` depende de ello. Para F9 basta con que lo local lo sepa.)*
 
 ## 3. Estrategia de test
 

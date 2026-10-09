@@ -64,9 +64,10 @@ Formato de commit: `<tipo>(015-alcampo-scraper-sibling-review-fixes): <descripci
 - **GREEN:** `rate_limiter.py`.
 - **RF:** RF-8
 
-### [ ] T9 — El enfriamiento del WAF sobrevive a Redis (F9)
+### [x] T9 — El enfriamiento del WAF sobrevive a Redis (F9)
 - **RED:** `test_waf_cooldown.py`: uno iniciado con Redis sano sigue activo con Redis caído; con varios desafíos y Redis sano, la duración local sigue a la de Redis (plan-D8).
-- **GREEN:** `waf_cooldown.py`.
+- **GREEN:** `waf_cooldown.py` (`LocalCooldown.hold`; `activate` lo llama con la duración de Redis).
+- **Desvío del plan (plan-D8, corregido allí):** `is_active` no mira primero lo local. Mientras Redis responde decide Redis, así que borrar la clave sigue terminando el enfriamiento en todas partes. Un test lo fija (`test_with_redis_up_redis_still_decides`).
 - **RF:** RF-9
 
 ### [ ] T10 — Docs

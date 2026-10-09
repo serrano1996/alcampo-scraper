@@ -10,7 +10,10 @@ renews the block. A second key remembers the last duration for
 `max_seconds`, which is what "recent" means.
 
 Without Redis each process falls back to a local marker with the same rules
-(spec 007 RF-15, plan-D10).
+(spec 007 RF-15, plan-D10). Every cooldown set in Redis is also held locally, so
+one started while Redis worked still holds if Redis dies during it, and the
+growth goes on from Redis' last duration (spec 015 RF-9, plan-D8). While Redis
+answers, Redis decides: clearing the key ends the cooldown everywhere.
 """
 
 import logging
@@ -54,6 +57,12 @@ class LocalCooldown:
         self._until = now + duration
         self._last, self._last_at = duration, now
         return duration
+
+    def hold(self, duration: int) -> None:
+        """Mirror a cooldown Redis started: same end and same last duration."""
+        now = self._now()
+        self._until = max(self._until, now + duration)
+        self._last, self._last_at = duration, now
 
 
 class WafCooldownRepository:
@@ -102,7 +111,9 @@ class WafCooldownRepository:
             return duration
 
         try:
-            return await self._circuit.call(activate_in_redis)
+            duration = await self._circuit.call(activate_in_redis)
         except RedisError as exc:
             redis_unavailable(logger, "cooldown.activate", exc)
             return self._fallback.activate(base_seconds=base_seconds, max_seconds=max_seconds)
+        self._fallback.hold(duration)
+        return duration

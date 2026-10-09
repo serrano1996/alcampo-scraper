@@ -152,3 +152,57 @@ async def test_local_cooldown_with_zero_base_stays_disabled() -> None:
 
     assert await activate(repo, base=0) == 0
     assert await repo.is_active() is False
+
+
+# --- Spec 015 RF-9: a cooldown started in Redis survives Redis dying (F9, plan-D8) ---
+
+
+class SwitchableRedis:
+    """A fakeredis that can go down."""
+
+    def __init__(self) -> None:
+        self.fake = fakeredis.FakeAsyncRedis()
+        self.down = False
+
+    def __getattr__(self, name: str) -> object:
+        if self.down:
+            raise DOWN
+        return getattr(self.fake, name)
+
+
+async def test_a_cooldown_started_in_redis_holds_if_redis_dies() -> None:
+    # Before: only Redis knew; with Redis gone the instance called Alcampo again.
+    clock = FakeMonotonic()
+    redis = SwitchableRedis()
+    repo = WafCooldownRepository(redis, fallback=LocalCooldown(now=clock))
+    assert await activate(repo) == BASE
+
+    redis.down = True
+    clock.now += BASE - 1
+
+    assert await repo.is_active() is True
+    clock.now += 1
+    assert await repo.is_active() is False
+
+
+async def test_with_redis_gone_the_growth_continues_from_redis(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    clock = FakeMonotonic()
+    redis = SwitchableRedis()
+    repo = WafCooldownRepository(redis, fallback=LocalCooldown(now=clock))
+    assert [await activate(repo), await activate(repo)] == [180, 360]
+
+    redis.down = True
+
+    assert await activate(repo) == 720  # not back to 180
+
+
+async def test_with_redis_up_redis_still_decides(redis: fakeredis.FakeAsyncRedis) -> None:
+    # Clearing the key (expiry, or an operator) ends it everywhere, this process included.
+    repo = WafCooldownRepository(redis, fallback=LocalCooldown())
+    await activate(repo)
+
+    await redis.delete(WAF_COOLDOWN_KEY)
+
+    assert await repo.is_active() is False
