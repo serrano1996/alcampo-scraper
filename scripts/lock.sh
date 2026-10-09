@@ -16,6 +16,9 @@ set -eu
 
 # Only the one option we know, checked before any other command: anything else
 # would end up inside `sh -c` (spec 015 RF-6, plan-D5).
+if [ "$#" -gt 1 ]; then
+    echo "usage: scripts/lock.sh [--upgrade]" >&2; exit 2
+fi
 case "${1:-}" in
     "" | --upgrade) UPGRADE="${1:-}" ;;
     *) echo "usage: scripts/lock.sh [--upgrade]" >&2; exit 2 ;;

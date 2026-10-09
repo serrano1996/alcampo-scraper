@@ -78,6 +78,7 @@ También `scripts/lock.sh` pasa `$*` sin filtrar dentro de `sh -c` y no limpia `
 - Cambiar el tope de 60 s de `Retry-After` por un `502` como hace Dia: es una diferencia de diseño, no un fallo.
 - Unificar el código de Alcampo y Dia en una librería común.
 - Fijar las acciones de la CI por SHA.
+- El traceback que registra uvicorn cuando un error llega con la respuesta ya empezada: el middleware tiene que relanzarlo. Documentado como límite conocido (revisión T11, W2).
 
 ## 7. Criterios de finalización
 

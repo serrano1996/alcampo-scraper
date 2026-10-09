@@ -74,3 +74,23 @@ Formato de commit: `<tipo>(015-alcampo-scraper-sibling-review-fixes): <descripci
 - **Hacer:** README: la redacción por subcadena, los tres locks y `lock.sh --upgrade`, y en "sin Redis" que solo una petición por periodo prueba Redis y que el enfriamiento iniciado se respeta aunque Redis caiga.
 - **RF:** criterios de finalización
 - **Hecho:** el `500` y los locks ya quedaron documentados en T5 y T6. Aquí: la redacción por subcadena y el formato de los parámetros, el circuito (una sola prueba), el enfriamiento que sobrevive a Redis y el rechazo del límite.
+
+---
+
+## Revisión con contexto nuevo (2026-10-09)
+
+Revisión adversarial de `7f59eae..HEAD` antes del PR: 0 CRITICAL, 2 WARNING, 6 SUGGESTION.
+
+- **W1, confirmado:** la normalización no cumple RF-4. Solo cambia `-` por `_`, así que `to.ken`, `pa_ss` y `ＫＥＹ` (ancho completo) salen en claro.
+- **W2:** si el error llega con la respuesta ya empezada, el middleware relanza la excepción y uvicorn registra su traceback **con el mensaje** (`Exception in ASGI application`). Es comportamiento del servidor, no de la app.
+- **S2, refutado:** decía que `setuptools` entra ahora en la imagen. Un venv recién creado en `python:3.11-slim` ya trae `setuptools 79.0.1`, así que la imagen ya lo llevaba; ahora es el del lock (84.0.0), con hash.
+- **S6, ya verificado:** el test de `lock.sh` falló en el RED de T6 con 127 (sin Docker) en Windows.
+- **Aceptados sin cambio:**
+  - S1: `hold` no acorta un enfriamiento local anterior y no refleja los que inició otra instancia. Peca de prudente.
+  - S4: `lock.sh` borra `build/` de la raíz. Ya lo hacía antes.
+
+### [x] T11 — Correcciones de la revisión
+- **RED:** `test_request_context.py`: `to.ken`, `pa_ss`, `a pi key` y `ＫＥＹ` → `***`. `test_lockfiles.py`: `lock.sh --upgrade extra` → código 2. `test_redis_circuit.py`: el test de "las demás ven el circuito abierto" espera a que la prueba haya empezado con un `Event`, no con `sleep(0)` (S5).
+- **GREEN:** `_is_secret_name` normaliza con NFKC + `casefold()` y quita `-`, `_`, `.` y espacios (W1). `lock.sh` acepta como mucho un argumento (S3).
+- **Docs:** README y spec §6: el traceback de uvicorn en un error con la respuesta ya empezada, como límite conocido (W2).
+- **Hecho:** W1, S3 y S5 corregidos; W2 documentado en el README (limitaciones conocidas) y en la spec §6. En el test, el nombre de ancho completo va como escapes Unicode, porque ruff (RUF001) rechaza caracteres ambiguos en el código.

@@ -109,3 +109,18 @@ def test_lock_script_rejects_unknown_options_before_running_anything() -> None:
 
     assert result.returncode == 2
     assert "usage: scripts/lock.sh [--upgrade]" in result.stderr
+
+
+@pytest.mark.skipif(SH is None, reason="needs a POSIX sh")
+def test_lock_script_rejects_extra_arguments() -> None:
+    # Review T11 (S3): only `$1` was checked, so `--upgrade extra` slipped through.
+    assert SH is not None
+    result = subprocess.run(
+        [SH, str(ROOT / "scripts" / "lock.sh"), "--upgrade", "extra"],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        env={"PATH": ""},
+    )
+
+    assert result.returncode == 2

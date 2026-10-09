@@ -264,14 +264,16 @@ async def test_while_a_probe_runs_the_others_see_the_circuit_open() -> None:
     with pytest.raises(RedisError):
         await breaker.call(Operation(fails=True))
     clock.now += OPEN
+    started = asyncio.Event()
     release = asyncio.Event()
 
     async def probe() -> str:
+        started.set()
         await release.wait()
         return "ok"
 
     task = asyncio.create_task(breaker.call(probe))
-    await asyncio.sleep(0)
+    await started.wait()  # the probe is in flight (review T11, S5)
     with pytest.raises(RedisCircuitOpenError):
         await breaker.call(Operation(fails=False))
     release.set()

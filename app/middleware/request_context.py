@@ -10,8 +10,10 @@ written once the whole response has gone out.
 """
 
 import logging
+import re
 import time
 import traceback
+import unicodedata
 import uuid
 
 from starlette.datastructures import MutableHeaders, QueryParams
@@ -27,12 +29,13 @@ REQUEST_ID_HEADER = "X-Request-ID"
 MAX_PARAMS_LOGGED = 500
 # A query param whose name contains any of these is hidden on the start line: a
 # client sending its key in the URL by mistake must not leak it into our logs
-# (spec 004 RF-14, plan-D7). Judged by the normalised name (trimmed, lower case,
-# "-" as "_"), never by the value; broader than the five exact names of spec 004
-# since dia-scraper's review found `api-key`, `access_token`, `password` and the
-# like leaking (spec 015 RF-4, spec-D2). None of the API's own params
-# (postal_code, term, page, page_size) matches.
+# (spec 004 RF-14, plan-D7). Judged by the normalised name (NFKC, case-folded,
+# without "-", "_", "." or spaces), never by the value; broader than the five
+# exact names of spec 004 since dia-scraper's review found `api-key`,
+# `access_token`, `password` and the like leaking (spec 015 RF-4, spec-D2). None
+# of the API's own params (postal_code, term, page, page_size) matches.
 SECRET_NAME_MARKERS = ("key", "token", "secret", "auth", "pass")
+_SEPARATORS = re.compile(r"[-_.\s]")
 REDACTED = "***"
 
 logger = logging.getLogger(__name__)
@@ -52,7 +55,10 @@ def redact_params(params: list[tuple[str, str]]) -> list[tuple[str, str]]:
 
 
 def _is_secret_name(name: str) -> bool:
-    normalised = name.strip().lower().replace("-", "_")
+    # NFKC folds compatibility forms (fullwidth letters), casefold() any case, and
+    # separators go, so "to.ken" or "pa_ss" still contain their marker (RF-4).
+    folded = unicodedata.normalize("NFKC", name).casefold()
+    normalised = _SEPARATORS.sub("", folded)
     return any(marker in normalised for marker in SECRET_NAME_MARKERS)
 
 

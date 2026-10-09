@@ -79,3 +79,12 @@ def test_short_params_are_logged_whole() -> None:
     assert params_for_log(b"postal_code=28001&term=leche") == repr(
         [("postal_code", "28001"), ("term", "leche")]
     )
+
+
+# --- Review T11: the normalisation RF-4 asks for (W1) ---
+
+
+@pytest.mark.parametrize("name", ["to.ken", "pa_ss", "a pi key", "\uff2b\uff25\uff39", "K.E-Y"])
+def test_separators_and_unicode_variants_do_not_hide_a_marker(name: str) -> None:
+    # Before: only "-" was normalised, and fullwidth letters were not folded.
+    assert redact_params([(name, "s3cr3t")]) == [(name, "***")]
