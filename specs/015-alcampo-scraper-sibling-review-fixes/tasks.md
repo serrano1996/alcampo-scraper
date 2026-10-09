@@ -25,7 +25,7 @@ Formato de commit: `<tipo>(015-alcampo-scraper-sibling-review-fixes): <descripci
 - **GREEN:** `parse_retry_after`.
 - **RF:** RF-2
 
-### [ ] T3 — `API_KEYS` fuera de los volcados (F3)
+### [x] T3 — `API_KEYS` fuera de los volcados (F3)
 - **RED:** `test_config.py`: el token no está en `model_dump()` ni en `model_dump_json()`.
 - **GREEN:** `exclude=True`.
 - **RF:** RF-3

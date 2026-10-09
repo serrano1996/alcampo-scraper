@@ -399,3 +399,15 @@ def test_a_non_positive_http_timeout_fails(monkeypatch: pytest.MonkeyPatch, raw:
         Settings(_env_file=None)
 
     assert "http_timeout_seconds" in str(exc_info.value)
+
+
+def test_api_keys_are_left_out_of_every_dump(monkeypatch: pytest.MonkeyPatch) -> None:
+    # Spec 015 RF-3 (F3): `repr=False` hid them from repr only; a dump for
+    # debugging or a log of the settings still carried every token.
+    set_required(monkeypatch)
+    monkeypatch.setenv("API_KEYS", "secret-one,secret-two")
+    settings = Settings(_env_file=None)
+
+    assert settings.api_keys == frozenset({"secret-one", "secret-two"})
+    assert "api_keys" not in settings.model_dump()
+    assert "secret-one" not in settings.model_dump_json()

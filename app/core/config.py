@@ -59,8 +59,12 @@ class Settings(BaseSettings):
     # Comma-separated in the environment. `NoDecode` stops pydantic-settings from
     # parsing it as JSON (a plain frozenset raises SettingsError on "a,b"), and
     # `repr=False` keeps the tokens out of any printed or logged Settings
-    # (spec 004 RF-7, RF-12, plan-D1). Empty = nobody authenticates (RF-8).
-    api_keys: Annotated[frozenset[str], NoDecode] = Field(default=frozenset(), repr=False)
+    # (spec 004 RF-7, RF-12, plan-D1); `exclude=True` keeps them out of
+    # model_dump() and model_dump_json() too (spec 015 RF-3). Empty = nobody
+    # authenticates (RF-8).
+    api_keys: Annotated[frozenset[str], NoDecode] = Field(
+        default=frozenset(), repr=False, exclude=True
+    )
 
     @field_validator("log_level")
     @classmethod
