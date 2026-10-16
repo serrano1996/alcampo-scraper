@@ -4,7 +4,7 @@ API REST asíncrona (FastAPI) que extrae, procesa y sirve datos de productos de
 [Alcampo online](https://www.compraonline.alcampo.es). Ofrece el mismo contrato que
 `mercadona-scraper` para poder comparar ambos supermercados sin adaptar el consumidor.
 
-> Estado: implementadas `specs/001-alcampo-scraper-mvp` (MVP de búsqueda), `specs/002-alcampo-scraper-antibaneo` (medidas antibaneo), `specs/003-alcampo-scraper-logging` (logging), `specs/004-alcampo-scraper-authentication` (autenticación), `specs/005-alcampo-scraper-dockerization` (Docker), `specs/006-alcampo-scraper-refactor` (refactor y calidad), `specs/007-alcampo-scraper-warehouse-resolution` (región por código postal y Redis degradado) y `specs/008-alcampo-scraper-outbound-protection` (protección de salida hacia Alcampo). Ver [limitaciones conocidas](#limitaciones-conocidas).
+> Estado: implementadas `specs/001-alcampo-scraper-mvp` (MVP de búsqueda), `specs/002-alcampo-scraper-antibaneo` (medidas antibaneo), `specs/003-alcampo-scraper-logging` (logging), `specs/004-alcampo-scraper-authentication` (autenticación), `specs/005-alcampo-scraper-dockerization` (Docker), `specs/006-alcampo-scraper-refactor` (refactor y calidad), `specs/007-alcampo-scraper-warehouse-resolution` (región por código postal y Redis degradado) `specs/008-alcampo-scraper-outbound-protection` (protección de salida hacia Alcampo), `specs/009-alcampo-scraper-contract-parity` (paridad de contrato con Mercadona y paginación), `specs/010-alcampo-scraper-outbound-pacing` (ritmo de salida), `specs/011-alcampo-scraper-upstream-format-resilience` (cambios de formato de Alcampo), `specs/012-alcampo-scraper-operational-robustness` (robustez operativa), `specs/013-alcampo-scraper-price-units` (unidades de precio), `specs/014-alcampo-scraper-lockfile` (dependencias fijadas), `specs/015-alcampo-scraper-sibling-review-fixes` (fallos de las revisiones de dia-scraper) y `specs/016-alcampo-scraper-audit-fixes` (fallos de la auditoría). Ver [limitaciones conocidas](#limitaciones-conocidas).
 
 ## Puesta en marcha
 
@@ -184,7 +184,8 @@ Invisibles para el consumidor, salvo algo más de latencia en los reintentos y `
 | `ALCAMPO_RATE_WINDOW_LONG_SECONDS` | `900` | Ventana larga (15 min). Menor que `1`: la app no arranca |
 | `ALCAMPO_MIN_INTERVAL_MS` | `500` | Espaciado mínimo entre peticiones del mismo proceso. `0` = sin espaciado |
 | `ALCAMPO_INTERVAL_JITTER_MS` | `500` | Jitter máximo añadido al espaciado |
-| `SEARCH_TIMEOUT_SECONDS` | `15` | Tiempo máximo total de una búsqueda en Alcampo (y de una resolución de región). `≤ 0`: la app no arranca |
+| `SEARCH_TIMEOUT_SECONDS` | `15` | Tiempo máximo total de una búsqueda en Alcampo (y de una renovación de sesión). `≤ 0`: la app no arranca |
+| `REGION_RESOLUTION_TIMEOUT_SECONDS` | `30` | Tiempo máximo total para resolver un código postal nuevo (~9 peticiones espaciadas). `≤ 0`: la app no arranca |
 | `HTTP_TIMEOUT_SECONDS` | `10` | Tiempo límite de cada petición a Alcampo (conexión, lectura, escritura y pool); superarlo es un error de transporte que se reintenta. `≤ 0`: la app no arranca |
 | `REDIS_TIMEOUT_SECONDS` | `2` | Timeout de conexión y de cada operación con Redis. `≤ 0`: la app no arranca |
 | `REDIS_CIRCUIT_OPEN_SECONDS` | `10` | Tras un fallo de Redis, cuánto tiempo se deja de intentar (se usan los respaldos locales). `0` = desactivado |

@@ -40,6 +40,7 @@ Formato de commit: `<tipo>(016-alcampo-scraper-audit-fixes): <descripción en in
 - **Comprobado:** `ruff`, `mypy` y `pytest` (588) en verde. La fila del README va en T4.
 - **RF:** RF-3
 
-### [ ] T4 — README (F5)
+### [x] T4 — README (F5)
 - Línea de estado hasta la 016; `REGION_RESOLUTION_TIMEOUT_SECONDS` en la tabla de variables; la fila de `SEARCH_TIMEOUT_SECONDS` deja de decir "y de una resolución de región".
+- **Comprobado:** línea de estado con las specs 001–016; fila nueva en la tabla de variables. `pytest` (588) en verde.
 - **RF:** RF-4

@@ -57,9 +57,9 @@ Cada caso se ha **reproducido** el 2026-10-16 (`9078ebd`) con un `.venv` de Pyth
 
 ## 7. Criterios de finalización
 
-- [ ] F1, F2 y F3, reproducidos en un test RED y en verde tras el cambio.
-- [ ] `ruff`, `mypy` y `pytest` en verde.
-- [ ] README y `.env.example` actualizados.
+- [x] F1, F2 y F3, reproducidos en un test RED y en verde tras el cambio.
+- [x] `ruff`, `mypy` y `pytest` en verde.
+- [x] README y `.env.example` actualizados.
 
 ## 8. Decisiones (dudas resueltas el 2026-10-16)
 
