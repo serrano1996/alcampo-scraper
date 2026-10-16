@@ -105,18 +105,33 @@ class WafCooldownRepository:
         if base_seconds <= 0:
             return 0
 
-        async def activate_in_redis() -> tuple[int, int]:
-            """`(seconds left, full duration)` of the cooldown now in force."""
-            left = await self._redis.ttl(WAF_COOLDOWN_KEY)
+        async def in_force() -> tuple[int, int] | None:
+            """`(seconds left, full duration)` of the cooldown in force, if any.
+
+            Never rewritten, even without `last` (spec 017 RF-2). PTTL, not TTL:
+            a key in its last half second is still a cooldown (RF-3).
+            """
+            pttl = await self._redis.pttl(WAF_COOLDOWN_KEY)
+            if pttl == -2:
+                return None
+            # -1: set by hand without expiry, respected (spec 017 spec-D3).
+            left = base_seconds if pttl < 0 else max(1, math.ceil(pttl / 1000))
             last = await self._redis.get(WAF_COOLDOWN_LAST_KEY)
-            if left > 0 and last is not None:
-                return left, int(last)
+            return left, max(left, 0 if last is None else int(last))
+
+        async def activate_in_redis() -> tuple[int, int]:
+            current = await in_force()
+            if current is not None:
+                return current
+            last = await self._redis.get(WAF_COOLDOWN_LAST_KEY)
             duration = _grow(
                 None if last is None else int(last),
                 base_seconds=base_seconds,
                 max_seconds=max_seconds,
             )
-            await self._redis.set(WAF_COOLDOWN_KEY, "1", ex=duration)
+            # NX: one start per block; whoever loses joins the winner's (spec 017 RF-1).
+            if not await self._redis.set(WAF_COOLDOWN_KEY, "1", ex=duration, nx=True):
+                return await in_force() or (duration, duration)
             await self._redis.set(WAF_COOLDOWN_LAST_KEY, str(duration), ex=max_seconds)
             return duration, duration
 
