@@ -284,7 +284,7 @@ async def test_a_forgotten_region_is_resolved_again() -> None:
     h = Harness()
     await h.repository.save_region(TELDE)
     await h.repository.save_postal_code("35001", TELDE_ID)
-    await h.repository.forget_region(TELDE_ID)  # its destination stopped working
+    await h.repository.forget_region(TELDE)  # its destination stopped working
 
     assert await h.service.region_for("35001") == TELDE
     assert "create_destination" in h.log

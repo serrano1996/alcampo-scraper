@@ -226,7 +226,7 @@ En local, uvicorn sigue emitiendo su propio access log, sin request id (se desac
 ## Limitaciones conocidas
 
 - **El umbral del WAF para crear destinos es una hipótesis** (3–4 por ventana e IP, Fase 0). El límite de 2 cada 10 minutos es prudente, no medido. En un arranque en frío con muchos códigos postales nuevos, parte de ellos reciben `502` hasta que se van resolviendo.
-- **No se sabe cuánto vive un destino temporal** en Alcampo (se reutilizó a los 13 minutos). Si caduca, la región se olvida y se vuelve a resolver (con su coste).
+- **No se sabe cuánto vive un destino temporal** en Alcampo (se reutilizó a los 13 minutos). Si caduca, la región se olvida y se vuelve a resolver (con su coste). Con varias instancias, la que olvida una región solo la borra de Redis si sigue guardando el destino caducado: si otra ya la resolvió de nuevo, se queda con la nueva.
 - **La región se lee del HTML de la portada de Alcampo.** Si cambia su forma, ninguna sesión se podrá confirmar y las búsquedas no cacheadas darán `502` (con un `ERROR` que indica el paso).
 - Las sesiones de región viven en memoria de cada proceso: con varias instancias, cada una confirma las suyas.
 - **`price_format` solo conoce las unidades vistas en respuestas reales:** `PER_LITRE` (`€/L`) y `PER_1KG` (`€/kg`) ([spec 013](specs/013-alcampo-scraper-price-units/spec.md)). Hasta la spec 013 se esperaba `PER_KG`, un nombre supuesto: todo lo que se vende al peso (90 de 100 productos de `arroz`) salía con `price_format: null`. Cualquier otra unidad da `null` y un `WARNING` `unknown price units`: si aparece en los logs, es una unidad real que se puede añadir a la tabla con su fixture.

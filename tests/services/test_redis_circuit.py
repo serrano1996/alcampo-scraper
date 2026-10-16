@@ -11,7 +11,7 @@ from redis.exceptions import RedisError
 from app.models.product import ProductSearchResponse, SearchMetadata
 from app.services.rate_limiter import LocalRateLimiter, OutboundRateLimiter
 from app.services.redis_circuit import RedisCircuitBreaker, RedisCircuitOpenError
-from app.services.region_repository import RegionMemory, RegionRepository
+from app.services.region_repository import Region, RegionMemory, RegionRepository
 from app.services.search_cache import SearchCacheRepository
 from app.services.waf_cooldown import LocalCooldown, WafCooldownRepository
 from tests.services.redis_doubles import DOWN, CountingBrokenRedis
@@ -223,7 +223,9 @@ async def test_the_region_repository_uses_its_memory_while_open(
     await repo.save_postal_code("35001", "telde")
     assert await repo.region_id_for("35001") == "telde"
     assert await repo.region_id_for("28001") is None
-    await repo.forget_region("telde")
+    await repo.forget_region(
+        Region(region_id="telde", retailer_region_id="32", delivery_destination_id="d32")
+    )
 
     assert redis.attempts == 0
     assert skipped_quietly(caplog)
