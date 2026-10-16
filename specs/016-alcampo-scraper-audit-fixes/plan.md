@@ -21,7 +21,7 @@
 - En Redis, `activate_in_redis` lee primero `TTL waf:cooldown`. Si es `> 0`, devuelve ese valor sin escribir nada.
 - Si no, sigue como hoy: crece desde `waf:cooldown:last`.
 - `LocalCooldown.activate` hace lo mismo: si `is_active()`, devuelve `ceil(until - now)` y no cambia `_last`.
-- El espejo local (`hold`) solo se llama cuando Redis **inició** un enfriamiento. Con uno ya activo, `hold` guardaría lo que queda como "última duración" y el crecimiento local partiría de un valor menor si Redis cae.
+- El espejo local (`hold`) se llama en **cada** desafío, con lo que queda en Redis como fin y la duración completa (`waf:cooldown:last`) como última, nunca lo que queda. *(Corregido en T5: el borrador solo lo llamaba cuando Redis iniciaba el enfriamiento, y así una instancia que se sumaba al de otra quedaba sin enfriamiento local, contra la spec 015 RF-9.)*
 - Dos `activate` simultáneos sin enfriamiento siguen leyendo los dos `last` vacío y ponen 180: igual que hoy, sin crecer.
 
 **D2 — Comparar y borrar** (spec-D2): `forget_region(region: Region)`:
