@@ -108,7 +108,8 @@ class Harness:
     def __init__(
         self,
         *,
-        timeout: float = 15,
+        timeout: float = 30,
+        search_timeout: float = 15,
         exhausted: bool = False,
         cooldown: bool = False,
         **overrides: object,
@@ -135,7 +136,8 @@ class Harness:
                 _env_file=None,
                 alcampo_base_url="https://alcampo.test",
                 redis_url="redis://localhost:6379/0",
-                search_timeout_seconds=timeout,
+                search_timeout_seconds=search_timeout,
+                region_resolution_timeout_seconds=timeout,
             ),
         )
 
@@ -278,6 +280,19 @@ async def test_a_resolution_past_the_timeout_fails_and_closes_its_session() -> N
 
     assert exc_info.value.reason == "region resolution timeout"
     assert h.sessions_made[0].closed is True
+
+
+async def test_a_resolution_slower_than_a_search_but_within_its_own_timeout_succeeds() -> None:
+    # Spec 016 RF-3 (F3): it used to share SEARCH_TIMEOUT_SECONDS, which ~9 spaced
+    # requests behind a busy pacer can exceed, after creating the destination.
+    h = Harness(search_timeout=0.05, timeout=2)
+    h.gate = asyncio.Event()
+    task = asyncio.create_task(h.service.region_for("35001"))
+
+    await asyncio.sleep(0.1)  # past the search timeout
+    h.gate.set()
+
+    assert await task == TELDE
 
 
 async def test_a_forgotten_region_is_resolved_again() -> None:
