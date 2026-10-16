@@ -10,8 +10,8 @@ renews the block. A second key remembers the last duration for
 `max_seconds`, which is what "recent" means.
 
 Without Redis each process falls back to a local marker with the same rules
-(spec 007 RF-15, plan-D10). Every cooldown set in Redis is also held locally, so
-one started while Redis worked still holds if Redis dies during it, and the
+(spec 007 RF-15, plan-D10). Every challenge also holds Redis' cooldown locally,
+even one another instance started, so it still holds if Redis dies during it, and the
 growth goes on from Redis' last duration (spec 015 RF-9, plan-D8). While Redis
 answers, Redis decides: clearing the key ends the cooldown everywhere.
 """
@@ -62,11 +62,11 @@ class LocalCooldown:
         self._last, self._last_at = duration, now
         return duration
 
-    def hold(self, duration: int) -> None:
-        """Mirror a cooldown Redis started: same end and same last duration."""
+    def hold(self, remaining: int, *, last: int) -> None:
+        """Mirror the cooldown in Redis: same end and same last duration."""
         now = self._now()
-        self._until = max(self._until, now + duration)
-        self._last, self._last_at = duration, now
+        self._until = max(self._until, now + remaining)
+        self._last, self._last_at = last, now
 
 
 class WafCooldownRepository:
@@ -105,11 +105,12 @@ class WafCooldownRepository:
         if base_seconds <= 0:
             return 0
 
-        async def activate_in_redis() -> tuple[int, bool]:
+        async def activate_in_redis() -> tuple[int, int]:
+            """`(seconds left, full duration)` of the cooldown now in force."""
             left = await self._redis.ttl(WAF_COOLDOWN_KEY)
-            if left > 0:
-                return left, False
             last = await self._redis.get(WAF_COOLDOWN_LAST_KEY)
+            if left > 0 and last is not None:
+                return left, int(last)
             duration = _grow(
                 None if last is None else int(last),
                 base_seconds=base_seconds,
@@ -117,15 +118,15 @@ class WafCooldownRepository:
             )
             await self._redis.set(WAF_COOLDOWN_KEY, "1", ex=duration)
             await self._redis.set(WAF_COOLDOWN_LAST_KEY, str(duration), ex=max_seconds)
-            return duration, True
+            return duration, duration
 
         try:
-            duration, started = await self._circuit.call(activate_in_redis)
+            left, duration = await self._circuit.call(activate_in_redis)
         except RedisError as exc:
             redis_unavailable(logger, "cooldown.activate", exc)
             return self._fallback.activate(base_seconds=base_seconds, max_seconds=max_seconds)
-        if started:
-            # Only a cooldown Redis started: mirroring "what is left" as the last
-            # duration would make the local growth start lower.
-            self._fallback.hold(duration)
-        return duration
+        # Every challenge arms the local one too, also when it joins a cooldown
+        # another instance started (spec 015 RF-9); its growth goes on from the
+        # full duration, never from what was left.
+        self._fallback.hold(left, last=duration)
+        return left

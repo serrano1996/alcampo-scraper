@@ -44,3 +44,19 @@ Formato de commit: `<tipo>(016-alcampo-scraper-audit-fixes): <descripción en in
 - Línea de estado hasta la 016; `REGION_RESOLUTION_TIMEOUT_SECONDS` en la tabla de variables; la fila de `SEARCH_TIMEOUT_SECONDS` deja de decir "y de una resolución de región".
 - **Comprobado:** línea de estado con las specs 001–016; fila nueva en la tabla de variables. `pytest` (588) en verde.
 - **RF:** RF-4
+
+### [x] T5 — Correcciones de la revisión con contexto nuevo
+- **Revisión (2026-10-16):** un bloqueante y cinco avisos.
+- **B1 (bloqueante, regresión de T1):** con dos instancias, un desafío que se sumaba al enfriamiento de otra no armaba el local (contra la spec 015 RF-9). Si Redis caía después, esa instancia volvía a llamar a Alcampo durante el bloqueo. En `main` sí lo armaba.
+  - **RED:** `test_joining_another_instance_cooldown_still_arms_the_local_one` (dos repositorios sobre el mismo `FakeServer`): `is_active()` daba `False` con Redis caído.
+  - **GREEN:** `activate` devuelve `(lo que queda, duración completa)` y siempre llama a `hold(lo que queda, last=duración completa)` (plan-D1 corregido).
+- **A5:** el docstring del módulo dice ahora que cada desafío arma el local.
+- **README:** faltaba la coma entre las entradas 007 y 008 de la línea de estado (introducido en T4).
+- **No se corrigen (avisos):**
+  - A1: dos instancias que **inician** un enfriamiento a la vez aún pueden duplicarlo (`TTL`, `GET`, `SET` no son atómicos; `SET … NX` lo cerraría). Mejor que en `main`, que siempre lo duplicaba.
+  - A2: si Redis redondea `TTL` a 0 en el último medio segundo, un desafío justo ahí haría crecer el enfriamiento. Ventana despreciable; no verificado contra un Redis real.
+  - A3: un registro de región corrupto ya no se borra en `forget_region`; es lo que pide plan-D2, y las lecturas ya lo tratan como ausente.
+  - A4: comprobado que un `WatchError` no abre el circuito.
+- **Recomprobación de B1 (solo B1):** corregido. Con dos instancias, B sigue en enfriamiento con Redis caído y su siguiente activación local crece desde la duración completa de Redis (360 → 720); RF-1 se mantiene en una instancia.
+  - Aviso nuevo, no corregido (los hallazgos nuevos no abren otra corrección): si `waf:cooldown` está activo pero `waf:cooldown:last` falta, se trata como si no hubiera enfriamiento y se reescribe con la duración base, lo que podría acortar uno más largo. Solo pasa si alguien borra `last` a mano, porque `last` dura `WAF_COOLDOWN_MAX_SECONDS ≥ WAF_COOLDOWN_SECONDS`.
+- **Comprobado:** `ruff`, `mypy` y `pytest` (589) en verde.

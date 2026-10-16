@@ -168,8 +168,8 @@ async def test_local_cooldown_with_zero_base_stays_disabled() -> None:
 class SwitchableRedis:
     """A fakeredis that can go down."""
 
-    def __init__(self) -> None:
-        self.fake = fakeredis.FakeAsyncRedis()
+    def __init__(self, server: fakeredis.FakeServer | None = None) -> None:
+        self.fake = fakeredis.FakeAsyncRedis(server=server)
         self.down = False
 
     def __getattr__(self, name: str) -> object:
@@ -252,6 +252,26 @@ async def test_a_challenge_during_a_redis_cooldown_keeps_the_local_mirror_intact
 
     assert await repo.is_active() is False
     assert await activate(repo) == 360
+
+
+async def test_joining_another_instance_cooldown_still_arms_the_local_one() -> None:
+    # Spec 015 RF-9 with two instances (spec 016 review B1): B's challenge joins
+    # A's cooldown; if Redis then dies, B must still hold it, and keep growing
+    # from Redis' last duration, not from what was left.
+    server = fakeredis.FakeServer()
+    clock_a, clock_b = FakeMonotonic(), FakeMonotonic()
+    redis_b = SwitchableRedis(server)
+    a = WafCooldownRepository(SwitchableRedis(server), fallback=LocalCooldown(now=clock_a))
+    b = WafCooldownRepository(redis_b, fallback=LocalCooldown(now=clock_b))
+    assert await activate(a) == BASE
+    assert BASE - 1 <= await activate(b) <= BASE
+
+    redis_b.down = True
+
+    assert await b.is_active() is True
+    clock_b.now += BASE
+    assert await b.is_active() is False
+    assert await activate(b) == 360
 
 
 async def test_with_redis_up_redis_still_decides(redis: fakeredis.FakeAsyncRedis) -> None:
