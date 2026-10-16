@@ -121,7 +121,7 @@ class RegionSessions:
             await session.aclose()
             if exc.status_code is not None:
                 # Alcampo rejected the stored destination: resolve the region again.
-                await self._repository.forget_region(region.region_id)
+                await self._repository.forget_region(region)
             raise
         except BaseException:
             await session.aclose()

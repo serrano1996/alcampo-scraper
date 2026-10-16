@@ -23,9 +23,13 @@ Formato de commit: `<tipo>(016-alcampo-scraper-audit-fixes): <descripción en in
 - **Comprobado:** el caso de la spec §1 ahora da `cooldown_s=180` dos veces y `waf:cooldown:last = 180`. `ruff`, `mypy` y `pytest` (581) en verde. README actualizado.
 - **RF:** RF-1
 
-### [ ] T2 — `forget_region` no borra el registro de otro proceso (F2)
-- **RED:** `test_region_repository.py` (plan §3, RF-2).
+### [x] T2 — `forget_region` no borra el registro de otro proceso (F2)
+- **RED:** `test_region_repository.py` (plan §3, RF-2). Los tests con la firma nueva (`forget_region(region)`) fallaban sobre el código viejo porque este usaba el objeto como id. El motivo de F2 en sí (B borra el registro nuevo de A) ya estaba reproducido sobre el código viejo con el script de la auditoría: `region:r` quedaba vacío.
 - **GREEN:** `region_repository.py`, `region_sessions.py` (plan-D2).
+- **Añadido:** un test de la carrera entre la lectura y el borrado (otro cliente cambia el registro justo después del `GET`): el registro nuevo sobrevive y no hay `WARNING`. Comprobado que falla sin el `except WatchError`.
+- **Nota:** `Pipeline.multi()` no tiene anotaciones en redis-py 8.1, así que lleva un `type: ignore[no-untyped-call]` con su motivo. Es el primero en `app/`; la alternativa sin `WATCH` reabría la carrera.
+- **Tests adaptados:** las llamadas a `forget_region` de `test_region_service.py` y `test_redis_circuit.py` pasan la región entera.
+- **Comprobado:** el script de la spec §1 ahora deja el destino `new` en Redis. `ruff`, `mypy` y `pytest` (585) en verde. README actualizado.
 - **RF:** RF-2
 
 ### [ ] T3 — Tiempo máximo propio para resolver un CP (F3)

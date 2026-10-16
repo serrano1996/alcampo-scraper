@@ -20,7 +20,7 @@ from typing import Final
 
 from pydantic import BaseModel, ConfigDict, ValidationError
 from redis.asyncio import Redis
-from redis.exceptions import RedisError
+from redis.exceptions import RedisError, WatchError
 
 from app.services.redis_circuit import RedisCircuitBreaker, redis_unavailable
 
@@ -45,6 +45,14 @@ def _postal_code_key(postal_code: str) -> str:
 
 def _region_key(region_id: str) -> str:
     return f"region:{region_id}"
+
+
+def _holds(raw: bytes | str, destination_id: str) -> bool:
+    """Whether a stored region record still points to `destination_id`."""
+    try:
+        return Region.model_validate_json(raw).delivery_destination_id == destination_id
+    except ValidationError:
+        return False
 
 
 class RegionMemory:
@@ -114,12 +122,31 @@ class RegionRepository:
             _region_key(region.region_id), region.model_dump_json(), ttl_seconds=self._ttl
         )
 
-    async def forget_region(self, region_id: str) -> None:
-        """Drop a region whose destination no longer works (plan-D6)."""
-        key = _region_key(region_id)
+    async def forget_region(self, region: Region) -> None:
+        """Drop a region whose destination no longer works (plan-D6).
+
+        Redis keeps the record if it already holds another destination: another
+        process resolved the region again meanwhile, and deleting it would cost
+        one more resolution (spec 016 RF-2).
+        """
+        key = _region_key(region.region_id)
         self._memory.delete(key)
+
+        async def delete_if_unchanged() -> None:
+            async with self._redis.pipeline(transaction=True) as pipe:
+                await pipe.watch(key)
+                raw = await pipe.get(key)
+                if raw is None or not _holds(raw, region.delivery_destination_id):
+                    return
+                pipe.multi()  # type: ignore[no-untyped-call]  # unannotated in redis-py 8.1
+                pipe.delete(key)
+                try:
+                    await pipe.execute()
+                except WatchError:
+                    pass  # replaced between the read and the delete: not ours any more
+
         try:
-            await self._circuit.call(lambda: self._redis.delete(key))
+            await self._circuit.call(delete_if_unchanged)
         except RedisError as exc:
             redis_unavailable(logger, "region.forget", exc)
 

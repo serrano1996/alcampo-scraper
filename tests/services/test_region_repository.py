@@ -3,6 +3,7 @@ import logging
 import fakeredis
 import pytest
 
+from app.services import region_repository
 from app.services.region_repository import (
     NOT_SERVED,
     Region,
@@ -130,10 +131,63 @@ async def test_forget_region_removes_it_everywhere(redis: fakeredis.FakeAsyncRed
     repo = make_repo(redis, memory)
     await repo.save_region(TELDE)
 
-    await repo.forget_region(TELDE.region_id)
+    await repo.forget_region(TELDE)
 
     assert await repo.region(TELDE.region_id) is None
     assert await redis.exists(f"region:{TELDE.region_id}") == 0
+
+
+async def test_forget_region_keeps_the_record_another_process_replaced(
+    redis: fakeredis.FakeAsyncRedis,
+) -> None:
+    # Spec 016 RF-2 (F2): B, with the old record in its memory, used to delete
+    # the new one A had just saved, so the region was resolved once more.
+    a, b = make_repo(redis), make_repo(redis)
+    await a.save_region(TELDE)
+    await b.region(TELDE.region_id)  # B keeps the old record in its L1
+    renewed = TELDE.model_copy(update={"delivery_destination_id": "new-destination"})
+    await a.forget_region(TELDE)
+    await a.save_region(renewed)
+
+    await b.forget_region(TELDE)  # B's old destination is rejected too
+
+    assert await a.region(TELDE.region_id) == renewed
+    assert await b.region(TELDE.region_id) == renewed  # B reads the new one from Redis
+
+
+async def test_forget_region_keeps_a_record_replaced_between_the_read_and_the_delete(
+    monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    server = fakeredis.FakeServer()
+    other_process = fakeredis.FakeRedis(server=server)
+    repo = make_repo(fakeredis.FakeAsyncRedis(server=server))
+    await repo.save_region(TELDE)
+    renewed = TELDE.model_copy(update={"delivery_destination_id": "new-destination"})
+
+    def replaced_right_after_the_read(raw: bytes | str, destination_id: str) -> bool:
+        other_process.set(f"region:{TELDE.region_id}", renewed.model_dump_json())
+        return True  # it still held ours when read
+
+    monkeypatch.setattr(region_repository, "_holds", replaced_right_after_the_read)
+
+    await repo.forget_region(TELDE)
+
+    assert await repo.region(TELDE.region_id) == renewed
+    assert not any("redis unavailable" in r.getMessage() for r in caplog.records)  # not a failure
+
+
+@pytest.mark.parametrize("error", [DOWN, HUNG], ids=["down", "hung"])
+async def test_forget_region_without_redis_drops_the_memory_copy(
+    caplog: pytest.LogCaptureFixture, error: Exception
+) -> None:
+    memory = RegionMemory()
+    memory.set(f"region:{TELDE.region_id}", TELDE.model_dump_json(), ttl_seconds=TTL)
+    repo = make_repo(BrokenRedis(error), memory)
+
+    await repo.forget_region(TELDE)
+
+    assert memory.get(f"region:{TELDE.region_id}") is None
+    assert any("redis unavailable op=region.forget" in r.getMessage() for r in caplog.records)
 
 
 async def test_corrupted_region_record_is_treated_as_missing(
