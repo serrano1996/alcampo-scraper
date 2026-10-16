@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 import fakeredis
@@ -282,3 +283,105 @@ async def test_with_redis_up_redis_still_decides(redis: fakeredis.FakeAsyncRedis
     await redis.delete(WAF_COOLDOWN_KEY)
 
     assert await repo.is_active() is False
+
+
+# --- Spec 017: one start per block (F1..F3, plan-D1) ---------------------------
+
+
+class HeldRedis:
+    """A fakeredis view whose `held` command waits until `release` is set."""
+
+    def __init__(self, server: fakeredis.FakeServer, held: str) -> None:
+        self.fake = fakeredis.FakeAsyncRedis(server=server)
+        self.held = held
+        self.release = asyncio.Event()
+
+    def __getattr__(self, name: str) -> object:
+        command = getattr(self.fake, name)
+        if name != self.held:
+            return command
+
+        async def held(*args: object, **kwargs: object) -> object:
+            await self.release.wait()
+            return await command(*args, **kwargs)
+
+        return held
+
+
+async def start_both(
+    server: fakeredis.FakeServer, b_redis: HeldRedis, *, b_base: int = BASE
+) -> tuple[int, int]:
+    """B starts first and stops at its held command; A starts a cooldown; B goes on."""
+    a = WafCooldownRepository(fakeredis.FakeAsyncRedis(server=server), fallback=LocalCooldown())
+    b = WafCooldownRepository(b_redis, fallback=LocalCooldown())
+    b_task = asyncio.create_task(b.activate(base_seconds=b_base, max_seconds=MAX))
+    for _ in range(10):
+        await asyncio.sleep(0)
+    a_applied = await activate(a)
+    b_redis.release.set()
+    return a_applied, await b_task
+
+
+async def test_two_simultaneous_starts_make_one_cooldown() -> None:
+    # Spec 017 F1: B saw no cooldown, then read the `last` A had just written
+    # and doubled it (A 180, B 360).
+    server = fakeredis.FakeServer()
+
+    a_applied, b_applied = await start_both(server, HeldRedis(server, held="get"))
+
+    redis = fakeredis.FakeAsyncRedis(server=server)
+    assert a_applied == BASE
+    assert b_applied <= BASE
+    assert await redis.get(WAF_COOLDOWN_LAST_KEY) == b"180"
+    assert await redis.ttl(WAF_COOLDOWN_KEY) <= BASE
+
+
+async def test_the_loser_of_the_start_never_rewrites_the_winner_cooldown() -> None:
+    # B decided to start one, but A wrote first: B joins A's (spec 017 RF-1).
+    server = fakeredis.FakeServer()
+
+    a_applied, b_applied = await start_both(server, HeldRedis(server, held="set"), b_base=60)
+
+    assert a_applied == BASE
+    assert BASE - 1 <= b_applied <= BASE
+    redis = fakeredis.FakeAsyncRedis(server=server)
+    assert BASE - 1 <= await redis.ttl(WAF_COOLDOWN_KEY) <= BASE  # not shortened to 60
+    assert await redis.get(WAF_COOLDOWN_LAST_KEY) == b"180"
+
+
+async def test_an_active_cooldown_without_last_is_joined_not_rewritten() -> None:
+    # Spec 017 F2: it used to be rewritten with the base, shortening it (600 -> 180).
+    clock = FakeMonotonic()
+    redis = SwitchableRedis()
+    await redis.fake.set(WAF_COOLDOWN_KEY, "1", ex=600)
+    repo = WafCooldownRepository(redis, fallback=LocalCooldown(now=clock))
+
+    assert 599 <= await activate(repo) <= 600
+    assert 599 <= await redis.fake.ttl(WAF_COOLDOWN_KEY) <= 600
+
+    redis.down = True
+    assert await repo.is_active() is True
+    clock.now += 600
+    assert await activate(repo) == MAX  # grows from 600, capped
+
+
+async def test_the_last_fraction_of_a_second_still_counts_as_active(
+    redis: fakeredis.FakeAsyncRedis,
+) -> None:
+    # Spec 017 F3: measured with PTTL, a live key is never "no cooldown".
+    await redis.set(WAF_COOLDOWN_LAST_KEY, "180", ex=MAX)
+    await redis.set(WAF_COOLDOWN_KEY, "1", px=400)
+    repo = WafCooldownRepository(redis)
+
+    assert await activate(repo) == 1
+    assert await redis.get(WAF_COOLDOWN_LAST_KEY) == b"180"  # not grown to 360
+
+
+async def test_a_cooldown_without_expiry_is_respected(redis: fakeredis.FakeAsyncRedis) -> None:
+    # Spec 017 spec-D3: an operator stopping traffic by hand is not overridden.
+    await redis.set(WAF_COOLDOWN_KEY, "1")
+    repo = WafCooldownRepository(redis)
+
+    assert await activate(repo) == BASE
+    assert await redis.ttl(WAF_COOLDOWN_KEY) == -1
+    assert await redis.get(WAF_COOLDOWN_LAST_KEY) is None
