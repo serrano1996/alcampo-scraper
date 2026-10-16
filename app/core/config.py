@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     alcampo_min_interval_ms: int = Field(default=500, ge=0)
     alcampo_interval_jitter_ms: int = Field(default=500, ge=0)
     search_timeout_seconds: float = Field(default=15, gt=0)
+    # Resolving a new postal code: ~9 spaced requests behind the same pacer as
+    # every search, so it needs more than one search's budget (spec 016 RF-3).
+    region_resolution_timeout_seconds: float = Field(default=30, gt=0)
     # Each request to Alcampo: connect, read, write and pool (spec 012 RF-4).
     # 10, the value of the former constant (spec-D3).
     http_timeout_seconds: float = Field(default=10, gt=0)

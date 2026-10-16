@@ -30,6 +30,7 @@ OPTIONAL = [
     "ALCAMPO_RATE_WINDOW_LONG_SECONDS",
     "ALCAMPO_MIN_INTERVAL_MS",
     "ALCAMPO_INTERVAL_JITTER_MS",
+    "REGION_RESOLUTION_TIMEOUT_SECONDS",
 ]
 
 
@@ -207,6 +208,7 @@ def test_outbound_protection_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
     assert settings.alcampo_rate_window_seconds == 60
     assert settings.search_timeout_seconds == 15
     assert settings.waf_cooldown_max_seconds == 900
+    assert settings.region_resolution_timeout_seconds == 30  # spec 016 RF-3
 
 
 def test_rate_limit_zero_disables_it(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -223,6 +225,8 @@ def test_rate_limit_zero_disables_it(monkeypatch: pytest.MonkeyPatch) -> None:
         ("ALCAMPO_RATE_WINDOW_SECONDS", "0"),
         ("SEARCH_TIMEOUT_SECONDS", "0"),
         ("SEARCH_TIMEOUT_SECONDS", "-1"),
+        ("REGION_RESOLUTION_TIMEOUT_SECONDS", "0"),
+        ("REGION_RESOLUTION_TIMEOUT_SECONDS", "-1"),
         ("WAF_COOLDOWN_MAX_SECONDS", "-1"),
     ],
 )

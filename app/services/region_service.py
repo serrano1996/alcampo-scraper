@@ -109,9 +109,9 @@ class RegionService:
         return region
 
     async def _resolve_within_timeout(self, postal_code: str) -> Region:
-        # Its own budget, like each search (spec 008 RF-7, plan-D9).
+        # Its own budget, larger than a search's (spec 008 RF-7, spec 016 RF-3).
         try:
-            async with asyncio.timeout(self._settings.search_timeout_seconds):
+            async with asyncio.timeout(self._settings.region_resolution_timeout_seconds):
                 return await self._resolve(postal_code)
         except TimeoutError as exc:
             raise UpstreamUnavailableError("region resolution timeout") from exc

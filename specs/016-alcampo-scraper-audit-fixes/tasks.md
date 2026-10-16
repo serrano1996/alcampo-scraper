@@ -32,10 +32,12 @@ Formato de commit: `<tipo>(016-alcampo-scraper-audit-fixes): <descripción en in
 - **Comprobado:** el script de la spec §1 ahora deja el destino `new` en Redis. `ruff`, `mypy` y `pytest` (585) en verde. README actualizado.
 - **RF:** RF-2
 
-### [ ] T3 — Tiempo máximo propio para resolver un CP (F3)
-- **RED:** `test_config.py`, `test_region_service.py` (plan §3, RF-3).
+### [x] T3 — Tiempo máximo propio para resolver un CP (F3)
+- **RED:** `test_config.py`, `test_region_service.py` (plan §3, RF-3). La resolución más lenta que una búsqueda fallaba con `region resolution timeout`, el motivo esperado.
 - **GREEN:** `config.py`, `region_service.py` (plan-D3).
-- **Parar:** el usuario añade `REGION_RESOLUTION_TIMEOUT_SECONDS` a `.env.example`.
+- **Tests adaptados:** el `Harness` de `test_region_service.py` separa los dos tiempos (`timeout` es el de la resolución; `search_timeout`, el de la búsqueda). El test del tiempo máximo de la resolución no cambia.
+- **Parada:** el usuario añadió `REGION_RESOLUTION_TIMEOUT_SECONDS` a `.env.example` (2026-10-16); el test de sincronización pasa.
+- **Comprobado:** `ruff`, `mypy` y `pytest` (588) en verde. La fila del README va en T4.
 - **RF:** RF-3
 
 ### [ ] T4 — README (F5)
