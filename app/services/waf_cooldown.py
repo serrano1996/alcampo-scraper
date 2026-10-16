@@ -17,6 +17,7 @@ answers, Redis decides: clearing the key ends the cooldown everywhere.
 """
 
 import logging
+import math
 import time
 from collections.abc import Callable
 
@@ -52,6 +53,9 @@ class LocalCooldown:
         if base_seconds <= 0:
             return 0
         now = self._now()
+        if now < self._until:
+            # Same block (spec 016 RF-1): neither grown nor extended.
+            return math.ceil(self._until - now)
         recent = self._last if now - self._last_at < max_seconds else None
         duration = _grow(recent, base_seconds=base_seconds, max_seconds=max_seconds)
         self._until = now + duration
@@ -93,13 +97,18 @@ class WafCooldownRepository:
 
         The first challenge gets `base_seconds`; one within `max_seconds` of the
         previous gets double the previous duration, capped at `max_seconds`
-        (180 -> 360 -> 720 -> 900 with the defaults). Always overwritten, never
-        `NX`: a new challenge re-confirms the block (spec 002 plan-D5).
+        (180 -> 360 -> 720 -> 900 with the defaults). A challenge while one is
+        active returns what is left and changes nothing: no request leaves during
+        a cooldown, so it comes from one sent before, and confirms the same block
+        (spec 016 RF-1; it replaces spec 002 plan-D5's "always overwritten").
         """
         if base_seconds <= 0:
             return 0
 
-        async def activate_in_redis() -> int:
+        async def activate_in_redis() -> tuple[int, bool]:
+            left = await self._redis.ttl(WAF_COOLDOWN_KEY)
+            if left > 0:
+                return left, False
             last = await self._redis.get(WAF_COOLDOWN_LAST_KEY)
             duration = _grow(
                 None if last is None else int(last),
@@ -108,12 +117,15 @@ class WafCooldownRepository:
             )
             await self._redis.set(WAF_COOLDOWN_KEY, "1", ex=duration)
             await self._redis.set(WAF_COOLDOWN_LAST_KEY, str(duration), ex=max_seconds)
-            return duration
+            return duration, True
 
         try:
-            duration = await self._circuit.call(activate_in_redis)
+            duration, started = await self._circuit.call(activate_in_redis)
         except RedisError as exc:
             redis_unavailable(logger, "cooldown.activate", exc)
             return self._fallback.activate(base_seconds=base_seconds, max_seconds=max_seconds)
-        self._fallback.hold(duration)
+        if started:
+            # Only a cooldown Redis started: mirroring "what is left" as the last
+            # duration would make the local growth start lower.
+            self._fallback.hold(duration)
         return duration

@@ -59,6 +59,7 @@ async def test_recent_second_challenge_doubles_the_cooldown(
     # challenge now doubles the previous duration instead (spec 008 RF-8).
     repo = WafCooldownRepository(redis)
     await activate(repo)
+    await redis.delete(WAF_COOLDOWN_KEY)  # over, but recent (spec 016 RF-1)
 
     applied = await activate(repo)
 
@@ -71,8 +72,10 @@ async def test_consecutive_challenges_grow_up_to_the_cap(
     redis: fakeredis.FakeAsyncRedis,
 ) -> None:
     repo = WafCooldownRepository(redis)
-
-    applied = [await activate(repo) for _ in range(5)]
+    applied = []
+    for _ in range(5):
+        applied.append(await activate(repo))
+        await redis.delete(WAF_COOLDOWN_KEY)  # each one over, the last still recent
 
     assert applied == [180, 360, 720, 900, 900]
 
@@ -123,11 +126,16 @@ class FakeMonotonic:
 async def test_without_redis_the_local_cooldown_grows_the_same_way(
     caplog: pytest.LogCaptureFixture, error: Exception
 ) -> None:
-    repo = WafCooldownRepository(BrokenRedis(error), fallback=LocalCooldown())
+    clock = FakeMonotonic()
+    repo = WafCooldownRepository(BrokenRedis(error), fallback=LocalCooldown(now=clock))
+    applied = []
+    for _ in range(4):
+        applied.append(await activate(repo))
+        clock.now += applied[-1]  # each one over (spec 016 RF-1), the last still recent
 
-    applied = [await activate(repo) for _ in range(5)]
-
-    assert applied == [180, 360, 720, 900, 900]
+    # The 900 is over 900 s later: no longer recent, so the local one never repeats it.
+    assert applied == [180, 360, 720, 900]
+    assert await activate(repo) == 180
     assert await repo.is_active() is True
     warnings = [r for r in caplog.records if r.levelno == logging.WARNING]
     assert warnings
@@ -191,11 +199,59 @@ async def test_with_redis_gone_the_growth_continues_from_redis(
     clock = FakeMonotonic()
     redis = SwitchableRedis()
     repo = WafCooldownRepository(redis, fallback=LocalCooldown(now=clock))
-    assert [await activate(repo), await activate(repo)] == [180, 360]
+    assert await activate(repo) == 180
+    await redis.fake.delete(WAF_COOLDOWN_KEY)
+    clock.now += 180
+    assert await activate(repo) == 360
 
     redis.down = True
+    clock.now += 360
 
     assert await activate(repo) == 720  # not back to 180
+
+
+async def test_a_challenge_during_the_cooldown_neither_grows_nor_extends_it(
+    redis: fakeredis.FakeAsyncRedis,
+) -> None:
+    # Spec 016 RF-1 (F1): a request sent before the cooldown that gets challenged
+    # during it confirms the same block; it used to double it (180 -> 360).
+    repo = WafCooldownRepository(redis)
+    await activate(repo)
+
+    applied = await activate(repo)
+
+    assert BASE - 1 <= applied <= BASE
+    assert await redis.get(WAF_COOLDOWN_LAST_KEY) == b"180"
+    assert await redis.ttl(WAF_COOLDOWN_KEY) <= BASE
+
+
+async def test_without_redis_a_challenge_during_the_local_cooldown_does_not_grow_it() -> None:
+    clock = FakeMonotonic()
+    repo = WafCooldownRepository(BrokenRedis(DOWN), fallback=LocalCooldown(now=clock))
+    assert await activate(repo) == BASE
+
+    clock.now += 60
+    assert await activate(repo) == BASE - 60  # what is left, the end unchanged
+
+    clock.now += BASE - 60
+    assert await repo.is_active() is False
+    assert await activate(repo) == 360  # grows from 180, not from 120
+
+
+async def test_a_challenge_during_a_redis_cooldown_keeps_the_local_mirror_intact() -> None:
+    # Mirroring "what is left" as the last duration would make the local growth
+    # start from less than Redis' if Redis died afterwards.
+    clock = FakeMonotonic()
+    redis = SwitchableRedis()
+    repo = WafCooldownRepository(redis, fallback=LocalCooldown(now=clock))
+    await activate(repo)
+    await activate(repo)
+
+    redis.down = True
+    clock.now += BASE
+
+    assert await repo.is_active() is False
+    assert await activate(repo) == 360
 
 
 async def test_with_redis_up_redis_still_decides(redis: fakeredis.FakeAsyncRedis) -> None:

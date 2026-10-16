@@ -544,6 +544,46 @@ async def test_a_shared_waf_challenge_starts_a_single_cooldown(
     assert await redis.get("waf:cooldown:last") == b"180"  # not doubled by the waiters
 
 
+class PerTermGatedBlock:
+    """Every term waits for its own gate, then gets a WAF challenge."""
+
+    def __init__(self, *terms: str) -> None:
+        self.gates = {term: asyncio.Event() for term in terms}
+
+    async def search(
+        self,
+        term: str,
+        *,
+        client: object = None,
+        page_size: int = 50,
+        page_token: str | None = None,
+    ) -> AlcampoSearchResponse:
+        await self.gates[term].wait()
+        raise UpstreamBlockedError("WAF challenge")
+
+
+async def test_two_searches_in_flight_challenged_one_after_the_other_start_one_cooldown(
+    redis: fakeredis.FakeAsyncRedis, caplog: pytest.LogCaptureFixture
+) -> None:
+    # Spec 016 F1: both were sent before the block; the second challenge used to
+    # double the cooldown of a single block (180 -> 360).
+    scraper = PerTermGatedBlock("leche", "arroz")
+    service, _ = make_service(scraper, redis)
+    tasks = [
+        asyncio.create_task(service.search(ProductQuery(postal_code="28001", term=term)))
+        for term in ("leche", "arroz")
+    ]
+    await settle()
+
+    scraper.gates["leche"].set()
+    await settle()
+    scraper.gates["arroz"].set()
+    await asyncio.gather(*tasks, return_exceptions=True)
+
+    assert await redis.get("waf:cooldown:last") == b"180"
+    assert all("cooldown_s=360" not in r.getMessage() for r in service_records(caplog))
+
+
 async def test_a_cache_hit_is_logged_as_hit(
     redis: fakeredis.FakeAsyncRedis, caplog: pytest.LogCaptureFixture
 ) -> None:
